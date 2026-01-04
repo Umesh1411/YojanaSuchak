@@ -1,0 +1,3402 @@
+[
+  {
+    "schemeName": "Maharashtra Scholarship for Meritorious Students",
+    "department": "Education Department",
+    "targetGroup": "Student",
+    "eligibility": "Resident of Maharashtra, minimum age 18 years, annual income below ₹500,000, student category",
+    "benefits": "Scholarship amount up to ₹50,000 per year, free books, hostel facility",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Income Certificate",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": 500000,
+    "ageLimit": 18,
+    "category": "student"
+  },
+  {
+    "schemeName": "Post Matric Scholarship Scheme",
+    "department": "Agriculture Department",
+    "targetGroup": "Farmer",
+    "eligibility": "Resident of Maharashtra, maximum age 60 years, annual income below ₹1,000,000, farmer category",
+    "benefits": "Subsidy up to ₹50,000, crop insurance, loan waiver benefits",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Income Certificate",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": 1000000,
+    "ageLimit": 60,
+    "category": "farmer"
+  },
+  {
+    "schemeName": "Pre Matric Scholarship for SC/ST",
+    "department": "Social Welfare Department",
+    "targetGroup": "Woman",
+    "eligibility": "Resident of Maharashtra, woman category",
+    "benefits": "Financial assistance up to ₹25,000, skill training, loan support",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Identity Proof",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": null,
+    "ageLimit": null,
+    "category": "woman"
+  },
+  {
+    "schemeName": "Earn and Learn Scheme",
+    "department": "Health Department",
+    "targetGroup": "Senior Citizen",
+    "eligibility": "Resident of Maharashtra, annual income below ₹500,000, senior citizen category",
+    "benefits": "Monthly pension ₹1,000-3,000, health insurance, travel concessions",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Income Certificate",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": 500000,
+    "ageLimit": null,
+    "category": "senior_citizen"
+  },
+  {
+    "schemeName": "Student Credit Card Scheme",
+    "department": "Rural Development Department",
+    "targetGroup": "Unemployed",
+    "eligibility": "Resident of Maharashtra, minimum age 18 years, annual income below ₹1,000,000, unemployed category",
+    "benefits": "Unemployment allowance, skill training, job placement assistance",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Income Certificate",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": 1000000,
+    "ageLimit": 18,
+    "category": "unemployed"
+  },
+  {
+    "schemeName": "Free Laptop Scheme for Students",
+    "department": "Urban Development Department",
+    "targetGroup": "All Citizens",
+    "eligibility": "Resident of Maharashtra, maximum age 60 years",
+    "benefits": "Various benefits including financial assistance, subsidies, and support services",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Identity Proof",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": null,
+    "ageLimit": 60,
+    "category": "general"
+  },
+  {
+    "schemeName": "Book Bank Scheme",
+    "department": "Employment Department",
+    "targetGroup": "Student",
+    "eligibility": "Resident of Maharashtra, annual income below ₹500,000, student category",
+    "benefits": "Scholarship amount up to ₹50,000 per year, free books, hostel facility",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Income Certificate",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": 500000,
+    "ageLimit": null,
+    "category": "student"
+  },
+  {
+    "schemeName": "Hostel Facility Scheme",
+    "department": "Finance Department",
+    "targetGroup": "Farmer",
+    "eligibility": "Resident of Maharashtra, annual income below ₹1,000,000, farmer category",
+    "benefits": "Subsidy up to ₹50,000, crop insurance, loan waiver benefits",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Income Certificate",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": 1000000,
+    "ageLimit": null,
+    "category": "farmer"
+  },
+  {
+    "schemeName": "Tuition Fee Waiver Scheme",
+    "department": "Women and Child Development",
+    "targetGroup": "Woman",
+    "eligibility": "Resident of Maharashtra, minimum age 18 years, woman category",
+    "benefits": "Financial assistance up to ₹25,000, skill training, loan support",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Identity Proof",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": null,
+    "ageLimit": 18,
+    "category": "woman"
+  },
+  {
+    "schemeName": "Merit Scholarship for Engineering Students",
+    "department": "Housing Department",
+    "targetGroup": "Senior Citizen",
+    "eligibility": "Resident of Maharashtra, maximum age 60 years, annual income below ₹500,000, senior citizen category",
+    "benefits": "Monthly pension ₹1,000-3,000, health insurance, travel concessions",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Income Certificate",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": 500000,
+    "ageLimit": 60,
+    "category": "senior_citizen"
+  },
+  {
+    "schemeName": "Girl Child Education Scheme",
+    "department": "Education Department",
+    "targetGroup": "Unemployed",
+    "eligibility": "Resident of Maharashtra, annual income below ₹1,000,000, unemployed category",
+    "benefits": "Unemployment allowance, skill training, job placement assistance",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Income Certificate",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": 1000000,
+    "ageLimit": null,
+    "category": "unemployed"
+  },
+  {
+    "schemeName": "Digital Education Initiative",
+    "department": "Agriculture Department",
+    "targetGroup": "All Citizens",
+    "eligibility": "Resident of Maharashtra",
+    "benefits": "Various benefits including financial assistance, subsidies, and support services",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Identity Proof",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": null,
+    "ageLimit": null,
+    "category": "general"
+  },
+  {
+    "schemeName": "Skill Development Scholarship",
+    "department": "Social Welfare Department",
+    "targetGroup": "Student",
+    "eligibility": "Resident of Maharashtra, minimum age 18 years, annual income below ₹500,000, student category",
+    "benefits": "Scholarship amount up to ₹50,000 per year, free books, hostel facility",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Income Certificate",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": 500000,
+    "ageLimit": 18,
+    "category": "student"
+  },
+  {
+    "schemeName": "Research Fellowship Scheme",
+    "department": "Health Department",
+    "targetGroup": "Farmer",
+    "eligibility": "Resident of Maharashtra, maximum age 60 years, annual income below ₹1,000,000, farmer category",
+    "benefits": "Subsidy up to ₹50,000, crop insurance, loan waiver benefits",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Income Certificate",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": 1000000,
+    "ageLimit": 60,
+    "category": "farmer"
+  },
+  {
+    "schemeName": "Study Abroad Scholarship",
+    "department": "Rural Development Department",
+    "targetGroup": "Woman",
+    "eligibility": "Resident of Maharashtra, woman category",
+    "benefits": "Financial assistance up to ₹25,000, skill training, loan support",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Identity Proof",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": null,
+    "ageLimit": null,
+    "category": "woman"
+  },
+  {
+    "schemeName": "Pradhan Mantri Kisan Samman Nidhi",
+    "department": "Urban Development Department",
+    "targetGroup": "Senior Citizen",
+    "eligibility": "Resident of Maharashtra, annual income below ₹500,000, senior citizen category",
+    "benefits": "Monthly pension ₹1,000-3,000, health insurance, travel concessions",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Income Certificate",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": 500000,
+    "ageLimit": null,
+    "category": "senior_citizen"
+  },
+  {
+    "schemeName": "Maharashtra Krishi Sanjivani Yojana",
+    "department": "Employment Department",
+    "targetGroup": "Unemployed",
+    "eligibility": "Resident of Maharashtra, minimum age 18 years, annual income below ₹1,000,000, unemployed category",
+    "benefits": "Unemployment allowance, skill training, job placement assistance",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Income Certificate",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": 1000000,
+    "ageLimit": 18,
+    "category": "unemployed"
+  },
+  {
+    "schemeName": "Crop Insurance Scheme",
+    "department": "Finance Department",
+    "targetGroup": "All Citizens",
+    "eligibility": "Resident of Maharashtra, maximum age 60 years",
+    "benefits": "Various benefits including financial assistance, subsidies, and support services",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Identity Proof",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": null,
+    "ageLimit": 60,
+    "category": "general"
+  },
+  {
+    "schemeName": "Farm Loan Waiver Scheme",
+    "department": "Women and Child Development",
+    "targetGroup": "Student",
+    "eligibility": "Resident of Maharashtra, annual income below ₹500,000, student category",
+    "benefits": "Scholarship amount up to ₹50,000 per year, free books, hostel facility",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Income Certificate",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": 500000,
+    "ageLimit": null,
+    "category": "student"
+  },
+  {
+    "schemeName": "Solar Pump Scheme for Farmers",
+    "department": "Housing Department",
+    "targetGroup": "Farmer",
+    "eligibility": "Resident of Maharashtra, annual income below ₹1,000,000, farmer category",
+    "benefits": "Subsidy up to ₹50,000, crop insurance, loan waiver benefits",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Income Certificate",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": 1000000,
+    "ageLimit": null,
+    "category": "farmer"
+  },
+  {
+    "schemeName": "Organic Farming Incentive Scheme",
+    "department": "Education Department",
+    "targetGroup": "Woman",
+    "eligibility": "Resident of Maharashtra, minimum age 18 years, woman category",
+    "benefits": "Financial assistance up to ₹25,000, skill training, loan support",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Identity Proof",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": null,
+    "ageLimit": 18,
+    "category": "woman"
+  },
+  {
+    "schemeName": "Drip Irrigation Subsidy",
+    "department": "Agriculture Department",
+    "targetGroup": "Senior Citizen",
+    "eligibility": "Resident of Maharashtra, maximum age 60 years, annual income below ₹500,000, senior citizen category",
+    "benefits": "Monthly pension ₹1,000-3,000, health insurance, travel concessions",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Income Certificate",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": 500000,
+    "ageLimit": 60,
+    "category": "senior_citizen"
+  },
+  {
+    "schemeName": "Seed Subsidy Scheme",
+    "department": "Social Welfare Department",
+    "targetGroup": "Unemployed",
+    "eligibility": "Resident of Maharashtra, annual income below ₹1,000,000, unemployed category",
+    "benefits": "Unemployment allowance, skill training, job placement assistance",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Income Certificate",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": 1000000,
+    "ageLimit": null,
+    "category": "unemployed"
+  },
+  {
+    "schemeName": "Farm Equipment Subsidy",
+    "department": "Health Department",
+    "targetGroup": "All Citizens",
+    "eligibility": "Resident of Maharashtra",
+    "benefits": "Various benefits including financial assistance, subsidies, and support services",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Identity Proof",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": null,
+    "ageLimit": null,
+    "category": "general"
+  },
+  {
+    "schemeName": "Farmer Accident Insurance",
+    "department": "Rural Development Department",
+    "targetGroup": "Student",
+    "eligibility": "Resident of Maharashtra, minimum age 18 years, annual income below ₹500,000, student category",
+    "benefits": "Scholarship amount up to ₹50,000 per year, free books, hostel facility",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Income Certificate",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": 500000,
+    "ageLimit": 18,
+    "category": "student"
+  },
+  {
+    "schemeName": "Agricultural Land Development Scheme",
+    "department": "Urban Development Department",
+    "targetGroup": "Farmer",
+    "eligibility": "Resident of Maharashtra, maximum age 60 years, annual income below ₹1,000,000, farmer category",
+    "benefits": "Subsidy up to ₹50,000, crop insurance, loan waiver benefits",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Income Certificate",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": 1000000,
+    "ageLimit": 60,
+    "category": "farmer"
+  },
+  {
+    "schemeName": "Livestock Development Scheme",
+    "department": "Employment Department",
+    "targetGroup": "Woman",
+    "eligibility": "Resident of Maharashtra, woman category",
+    "benefits": "Financial assistance up to ₹25,000, skill training, loan support",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Identity Proof",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": null,
+    "ageLimit": null,
+    "category": "woman"
+  },
+  {
+    "schemeName": "Fisheries Development Scheme",
+    "department": "Finance Department",
+    "targetGroup": "Senior Citizen",
+    "eligibility": "Resident of Maharashtra, annual income below ₹500,000, senior citizen category",
+    "benefits": "Monthly pension ₹1,000-3,000, health insurance, travel concessions",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Income Certificate",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": 500000,
+    "ageLimit": null,
+    "category": "senior_citizen"
+  },
+  {
+    "schemeName": "Horticulture Development Scheme",
+    "department": "Women and Child Development",
+    "targetGroup": "Unemployed",
+    "eligibility": "Resident of Maharashtra, minimum age 18 years, annual income below ₹1,000,000, unemployed category",
+    "benefits": "Unemployment allowance, skill training, job placement assistance",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Income Certificate",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": 1000000,
+    "ageLimit": 18,
+    "category": "unemployed"
+  },
+  {
+    "schemeName": "Farmer Producer Organization Scheme",
+    "department": "Housing Department",
+    "targetGroup": "All Citizens",
+    "eligibility": "Resident of Maharashtra, maximum age 60 years",
+    "benefits": "Various benefits including financial assistance, subsidies, and support services",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Identity Proof",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": null,
+    "ageLimit": 60,
+    "category": "general"
+  },
+  {
+    "schemeName": "Mahila Shakti Yojana",
+    "department": "Education Department",
+    "targetGroup": "Student",
+    "eligibility": "Resident of Maharashtra, annual income below ₹500,000, student category",
+    "benefits": "Scholarship amount up to ₹50,000 per year, free books, hostel facility",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Income Certificate",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": 500000,
+    "ageLimit": null,
+    "category": "student"
+  },
+  {
+    "schemeName": "Working Women Hostel Scheme",
+    "department": "Agriculture Department",
+    "targetGroup": "Farmer",
+    "eligibility": "Resident of Maharashtra, annual income below ₹1,000,000, farmer category",
+    "benefits": "Subsidy up to ₹50,000, crop insurance, loan waiver benefits",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Income Certificate",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": 1000000,
+    "ageLimit": null,
+    "category": "farmer"
+  },
+  {
+    "schemeName": "Women Entrepreneurship Scheme",
+    "department": "Social Welfare Department",
+    "targetGroup": "Woman",
+    "eligibility": "Resident of Maharashtra, minimum age 18 years, woman category",
+    "benefits": "Financial assistance up to ₹25,000, skill training, loan support",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Identity Proof",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": null,
+    "ageLimit": 18,
+    "category": "woman"
+  },
+  {
+    "schemeName": "Maternity Benefit Scheme",
+    "department": "Health Department",
+    "targetGroup": "Senior Citizen",
+    "eligibility": "Resident of Maharashtra, maximum age 60 years, annual income below ₹500,000, senior citizen category",
+    "benefits": "Monthly pension ₹1,000-3,000, health insurance, travel concessions",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Income Certificate",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": 500000,
+    "ageLimit": 60,
+    "category": "senior_citizen"
+  },
+  {
+    "schemeName": "Women Safety Scheme",
+    "department": "Rural Development Department",
+    "targetGroup": "Unemployed",
+    "eligibility": "Resident of Maharashtra, annual income below ₹1,000,000, unemployed category",
+    "benefits": "Unemployment allowance, skill training, job placement assistance",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Income Certificate",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": 1000000,
+    "ageLimit": null,
+    "category": "unemployed"
+  },
+  {
+    "schemeName": "Self Help Group Loan Scheme",
+    "department": "Urban Development Department",
+    "targetGroup": "All Citizens",
+    "eligibility": "Resident of Maharashtra",
+    "benefits": "Various benefits including financial assistance, subsidies, and support services",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Identity Proof",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": null,
+    "ageLimit": null,
+    "category": "general"
+  },
+  {
+    "schemeName": "Women Skill Development Scheme",
+    "department": "Employment Department",
+    "targetGroup": "Student",
+    "eligibility": "Resident of Maharashtra, minimum age 18 years, annual income below ₹500,000, student category",
+    "benefits": "Scholarship amount up to ₹50,000 per year, free books, hostel facility",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Income Certificate",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": 500000,
+    "ageLimit": 18,
+    "category": "student"
+  },
+  {
+    "schemeName": "Beti Bachao Beti Padhao",
+    "department": "Finance Department",
+    "targetGroup": "Farmer",
+    "eligibility": "Resident of Maharashtra, maximum age 60 years, annual income below ₹1,000,000, farmer category",
+    "benefits": "Subsidy up to ₹50,000, crop insurance, loan waiver benefits",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Income Certificate",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": 1000000,
+    "ageLimit": 60,
+    "category": "farmer"
+  },
+  {
+    "schemeName": "Women Health Checkup Scheme",
+    "department": "Women and Child Development",
+    "targetGroup": "Woman",
+    "eligibility": "Resident of Maharashtra, woman category",
+    "benefits": "Financial assistance up to ₹25,000, skill training, loan support",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Identity Proof",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": null,
+    "ageLimit": null,
+    "category": "woman"
+  },
+  {
+    "schemeName": "Single Women Pension Scheme",
+    "department": "Housing Department",
+    "targetGroup": "Senior Citizen",
+    "eligibility": "Resident of Maharashtra, annual income below ₹500,000, senior citizen category",
+    "benefits": "Monthly pension ₹1,000-3,000, health insurance, travel concessions",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Income Certificate",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": 500000,
+    "ageLimit": null,
+    "category": "senior_citizen"
+  },
+  {
+    "schemeName": "Widow Pension Scheme",
+    "department": "Education Department",
+    "targetGroup": "Unemployed",
+    "eligibility": "Resident of Maharashtra, minimum age 18 years, annual income below ₹1,000,000, unemployed category",
+    "benefits": "Unemployment allowance, skill training, job placement assistance",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Income Certificate",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": 1000000,
+    "ageLimit": 18,
+    "category": "unemployed"
+  },
+  {
+    "schemeName": "Women Legal Aid Scheme",
+    "department": "Agriculture Department",
+    "targetGroup": "All Citizens",
+    "eligibility": "Resident of Maharashtra, maximum age 60 years",
+    "benefits": "Various benefits including financial assistance, subsidies, and support services",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Identity Proof",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": null,
+    "ageLimit": 60,
+    "category": "general"
+  },
+  {
+    "schemeName": "Women Startup Scheme",
+    "department": "Social Welfare Department",
+    "targetGroup": "Student",
+    "eligibility": "Resident of Maharashtra, annual income below ₹500,000, student category",
+    "benefits": "Scholarship amount up to ₹50,000 per year, free books, hostel facility",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Income Certificate",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": 500000,
+    "ageLimit": null,
+    "category": "student"
+  },
+  {
+    "schemeName": "Women Farmer Scheme",
+    "department": "Health Department",
+    "targetGroup": "Farmer",
+    "eligibility": "Resident of Maharashtra, annual income below ₹1,000,000, farmer category",
+    "benefits": "Subsidy up to ₹50,000, crop insurance, loan waiver benefits",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Income Certificate",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": 1000000,
+    "ageLimit": null,
+    "category": "farmer"
+  },
+  {
+    "schemeName": "Women Education Scholarship",
+    "department": "Rural Development Department",
+    "targetGroup": "Woman",
+    "eligibility": "Resident of Maharashtra, minimum age 18 years, woman category",
+    "benefits": "Financial assistance up to ₹25,000, skill training, loan support",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Identity Proof",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": null,
+    "ageLimit": 18,
+    "category": "woman"
+  },
+  {
+    "schemeName": "Senior Citizen Pension Scheme",
+    "department": "Urban Development Department",
+    "targetGroup": "Senior Citizen",
+    "eligibility": "Resident of Maharashtra, maximum age 60 years, annual income below ₹500,000, senior citizen category",
+    "benefits": "Monthly pension ₹1,000-3,000, health insurance, travel concessions",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Income Certificate",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": 500000,
+    "ageLimit": 60,
+    "category": "senior_citizen"
+  },
+  {
+    "schemeName": "Old Age Home Scheme",
+    "department": "Employment Department",
+    "targetGroup": "Unemployed",
+    "eligibility": "Resident of Maharashtra, annual income below ₹1,000,000, unemployed category",
+    "benefits": "Unemployment allowance, skill training, job placement assistance",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Income Certificate",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": 1000000,
+    "ageLimit": null,
+    "category": "unemployed"
+  },
+  {
+    "schemeName": "Health Insurance for Senior Citizens",
+    "department": "Finance Department",
+    "targetGroup": "All Citizens",
+    "eligibility": "Resident of Maharashtra",
+    "benefits": "Various benefits including financial assistance, subsidies, and support services",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Identity Proof",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": null,
+    "ageLimit": null,
+    "category": "general"
+  },
+  {
+    "schemeName": "Senior Citizen Travel Concession",
+    "department": "Women and Child Development",
+    "targetGroup": "Student",
+    "eligibility": "Resident of Maharashtra, minimum age 18 years, annual income below ₹500,000, student category",
+    "benefits": "Scholarship amount up to ₹50,000 per year, free books, hostel facility",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Income Certificate",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": 500000,
+    "ageLimit": 18,
+    "category": "student"
+  },
+  {
+    "schemeName": "Elderly Care Scheme",
+    "department": "Housing Department",
+    "targetGroup": "Farmer",
+    "eligibility": "Resident of Maharashtra, maximum age 60 years, annual income below ₹1,000,000, farmer category",
+    "benefits": "Subsidy up to ₹50,000, crop insurance, loan waiver benefits",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Income Certificate",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": 1000000,
+    "ageLimit": 60,
+    "category": "farmer"
+  },
+  {
+    "schemeName": "Senior Citizen Savings Scheme",
+    "department": "Education Department",
+    "targetGroup": "Woman",
+    "eligibility": "Resident of Maharashtra, woman category",
+    "benefits": "Financial assistance up to ₹25,000, skill training, loan support",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Identity Proof",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": null,
+    "ageLimit": null,
+    "category": "woman"
+  },
+  {
+    "schemeName": "Medical Assistance for Elderly",
+    "department": "Agriculture Department",
+    "targetGroup": "Senior Citizen",
+    "eligibility": "Resident of Maharashtra, annual income below ₹500,000, senior citizen category",
+    "benefits": "Monthly pension ₹1,000-3,000, health insurance, travel concessions",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Income Certificate",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": 500000,
+    "ageLimit": null,
+    "category": "senior_citizen"
+  },
+  {
+    "schemeName": "Senior Citizen Housing Scheme",
+    "department": "Social Welfare Department",
+    "targetGroup": "Unemployed",
+    "eligibility": "Resident of Maharashtra, minimum age 18 years, annual income below ₹1,000,000, unemployed category",
+    "benefits": "Unemployment allowance, skill training, job placement assistance",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Income Certificate",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": 1000000,
+    "ageLimit": 18,
+    "category": "unemployed"
+  },
+  {
+    "schemeName": "Elderly Day Care Center Scheme",
+    "department": "Health Department",
+    "targetGroup": "All Citizens",
+    "eligibility": "Resident of Maharashtra, maximum age 60 years",
+    "benefits": "Various benefits including financial assistance, subsidies, and support services",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Identity Proof",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": null,
+    "ageLimit": 60,
+    "category": "general"
+  },
+  {
+    "schemeName": "Senior Citizen Helpline",
+    "department": "Rural Development Department",
+    "targetGroup": "Student",
+    "eligibility": "Resident of Maharashtra, annual income below ₹500,000, student category",
+    "benefits": "Scholarship amount up to ₹50,000 per year, free books, hostel facility",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Income Certificate",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": 500000,
+    "ageLimit": null,
+    "category": "student"
+  },
+  {
+    "schemeName": "Maharashtra Employment Guarantee Scheme",
+    "department": "Urban Development Department",
+    "targetGroup": "Farmer",
+    "eligibility": "Resident of Maharashtra, annual income below ₹1,000,000, farmer category",
+    "benefits": "Subsidy up to ₹50,000, crop insurance, loan waiver benefits",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Income Certificate",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": 1000000,
+    "ageLimit": null,
+    "category": "farmer"
+  },
+  {
+    "schemeName": "Skill India Maharashtra",
+    "department": "Employment Department",
+    "targetGroup": "Woman",
+    "eligibility": "Resident of Maharashtra, minimum age 18 years, woman category",
+    "benefits": "Financial assistance up to ₹25,000, skill training, loan support",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Identity Proof",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": null,
+    "ageLimit": 18,
+    "category": "woman"
+  },
+  {
+    "schemeName": "Startup Maharashtra Scheme",
+    "department": "Finance Department",
+    "targetGroup": "Senior Citizen",
+    "eligibility": "Resident of Maharashtra, maximum age 60 years, annual income below ₹500,000, senior citizen category",
+    "benefits": "Monthly pension ₹1,000-3,000, health insurance, travel concessions",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Income Certificate",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": 500000,
+    "ageLimit": 60,
+    "category": "senior_citizen"
+  },
+  {
+    "schemeName": "Unemployment Allowance Scheme",
+    "department": "Women and Child Development",
+    "targetGroup": "Unemployed",
+    "eligibility": "Resident of Maharashtra, annual income below ₹1,000,000, unemployed category",
+    "benefits": "Unemployment allowance, skill training, job placement assistance",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Income Certificate",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": 1000000,
+    "ageLimit": null,
+    "category": "unemployed"
+  },
+  {
+    "schemeName": "Self Employment Loan Scheme",
+    "department": "Housing Department",
+    "targetGroup": "All Citizens",
+    "eligibility": "Resident of Maharashtra",
+    "benefits": "Various benefits including financial assistance, subsidies, and support services",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Identity Proof",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": null,
+    "ageLimit": null,
+    "category": "general"
+  },
+  {
+    "schemeName": "Rural Employment Scheme",
+    "department": "Education Department",
+    "targetGroup": "Student",
+    "eligibility": "Resident of Maharashtra, minimum age 18 years, annual income below ₹500,000, student category",
+    "benefits": "Scholarship amount up to ₹50,000 per year, free books, hostel facility",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Income Certificate",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": 500000,
+    "ageLimit": 18,
+    "category": "student"
+  },
+  {
+    "schemeName": "Urban Employment Scheme",
+    "department": "Agriculture Department",
+    "targetGroup": "Farmer",
+    "eligibility": "Resident of Maharashtra, maximum age 60 years, annual income below ₹1,000,000, farmer category",
+    "benefits": "Subsidy up to ₹50,000, crop insurance, loan waiver benefits",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Income Certificate",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": 1000000,
+    "ageLimit": 60,
+    "category": "farmer"
+  },
+  {
+    "schemeName": "Youth Employment Scheme",
+    "department": "Social Welfare Department",
+    "targetGroup": "Woman",
+    "eligibility": "Resident of Maharashtra, woman category",
+    "benefits": "Financial assistance up to ₹25,000, skill training, loan support",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Identity Proof",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": null,
+    "ageLimit": null,
+    "category": "woman"
+  },
+  {
+    "schemeName": "Entrepreneurship Development Scheme",
+    "department": "Health Department",
+    "targetGroup": "Senior Citizen",
+    "eligibility": "Resident of Maharashtra, annual income below ₹500,000, senior citizen category",
+    "benefits": "Monthly pension ₹1,000-3,000, health insurance, travel concessions",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Income Certificate",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": 500000,
+    "ageLimit": null,
+    "category": "senior_citizen"
+  },
+  {
+    "schemeName": "Job Placement Scheme",
+    "department": "Rural Development Department",
+    "targetGroup": "Unemployed",
+    "eligibility": "Resident of Maharashtra, minimum age 18 years, annual income below ₹1,000,000, unemployed category",
+    "benefits": "Unemployment allowance, skill training, job placement assistance",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Income Certificate",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": 1000000,
+    "ageLimit": 18,
+    "category": "unemployed"
+  },
+  {
+    "schemeName": "Aadhaar Card Registration",
+    "department": "Urban Development Department",
+    "targetGroup": "All Citizens",
+    "eligibility": "Resident of Maharashtra, maximum age 60 years",
+    "benefits": "Various benefits including financial assistance, subsidies, and support services",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Identity Proof",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": null,
+    "ageLimit": 60,
+    "category": "general"
+  },
+  {
+    "schemeName": "Ration Card Scheme",
+    "department": "Employment Department",
+    "targetGroup": "Student",
+    "eligibility": "Resident of Maharashtra, annual income below ₹500,000, student category",
+    "benefits": "Scholarship amount up to ₹50,000 per year, free books, hostel facility",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Income Certificate",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": 500000,
+    "ageLimit": null,
+    "category": "student"
+  },
+  {
+    "schemeName": "Housing Scheme for All",
+    "department": "Finance Department",
+    "targetGroup": "Farmer",
+    "eligibility": "Resident of Maharashtra, annual income below ₹1,000,000, farmer category",
+    "benefits": "Subsidy up to ₹50,000, crop insurance, loan waiver benefits",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Income Certificate",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": 1000000,
+    "ageLimit": null,
+    "category": "farmer"
+  },
+  {
+    "schemeName": "Health Insurance Scheme",
+    "department": "Women and Child Development",
+    "targetGroup": "Woman",
+    "eligibility": "Resident of Maharashtra, minimum age 18 years, woman category",
+    "benefits": "Financial assistance up to ₹25,000, skill training, loan support",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Identity Proof",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": null,
+    "ageLimit": 18,
+    "category": "woman"
+  },
+  {
+    "schemeName": "Electricity Connection Scheme",
+    "department": "Housing Department",
+    "targetGroup": "Senior Citizen",
+    "eligibility": "Resident of Maharashtra, maximum age 60 years, annual income below ₹500,000, senior citizen category",
+    "benefits": "Monthly pension ₹1,000-3,000, health insurance, travel concessions",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Income Certificate",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": 500000,
+    "ageLimit": 60,
+    "category": "senior_citizen"
+  },
+  {
+    "schemeName": "Water Connection Scheme",
+    "department": "Education Department",
+    "targetGroup": "Unemployed",
+    "eligibility": "Resident of Maharashtra, annual income below ₹1,000,000, unemployed category",
+    "benefits": "Unemployment allowance, skill training, job placement assistance",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Income Certificate",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": 1000000,
+    "ageLimit": null,
+    "category": "unemployed"
+  },
+  {
+    "schemeName": "Toilet Construction Scheme",
+    "department": "Agriculture Department",
+    "targetGroup": "All Citizens",
+    "eligibility": "Resident of Maharashtra",
+    "benefits": "Various benefits including financial assistance, subsidies, and support services",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Identity Proof",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": null,
+    "ageLimit": null,
+    "category": "general"
+  },
+  {
+    "schemeName": "Road Connectivity Scheme",
+    "department": "Social Welfare Department",
+    "targetGroup": "Student",
+    "eligibility": "Resident of Maharashtra, minimum age 18 years, annual income below ₹500,000, student category",
+    "benefits": "Scholarship amount up to ₹50,000 per year, free books, hostel facility",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Income Certificate",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": 500000,
+    "ageLimit": 18,
+    "category": "student"
+  },
+  {
+    "schemeName": "Internet Connectivity Scheme",
+    "department": "Health Department",
+    "targetGroup": "Farmer",
+    "eligibility": "Resident of Maharashtra, maximum age 60 years, annual income below ₹1,000,000, farmer category",
+    "benefits": "Subsidy up to ₹50,000, crop insurance, loan waiver benefits",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Income Certificate",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": 1000000,
+    "ageLimit": 60,
+    "category": "farmer"
+  },
+  {
+    "schemeName": "Disability Pension Scheme",
+    "department": "Rural Development Department",
+    "targetGroup": "Woman",
+    "eligibility": "Resident of Maharashtra, woman category",
+    "benefits": "Financial assistance up to ₹25,000, skill training, loan support",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Identity Proof",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": null,
+    "ageLimit": null,
+    "category": "woman"
+  },
+  {
+    "schemeName": "Below Poverty Line Card",
+    "department": "Urban Development Department",
+    "targetGroup": "Senior Citizen",
+    "eligibility": "Resident of Maharashtra, annual income below ₹500,000, senior citizen category",
+    "benefits": "Monthly pension ₹1,000-3,000, health insurance, travel concessions",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Income Certificate",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": 500000,
+    "ageLimit": null,
+    "category": "senior_citizen"
+  },
+  {
+    "schemeName": "Food Security Scheme",
+    "department": "Employment Department",
+    "targetGroup": "Unemployed",
+    "eligibility": "Resident of Maharashtra, minimum age 18 years, annual income below ₹1,000,000, unemployed category",
+    "benefits": "Unemployment allowance, skill training, job placement assistance",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Income Certificate",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": 1000000,
+    "ageLimit": 18,
+    "category": "unemployed"
+  },
+  {
+    "schemeName": "Medical Treatment Assistance",
+    "department": "Finance Department",
+    "targetGroup": "All Citizens",
+    "eligibility": "Resident of Maharashtra, maximum age 60 years",
+    "benefits": "Various benefits including financial assistance, subsidies, and support services",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Identity Proof",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": null,
+    "ageLimit": 60,
+    "category": "general"
+  },
+  {
+    "schemeName": "Disaster Relief Scheme",
+    "department": "Women and Child Development",
+    "targetGroup": "Student",
+    "eligibility": "Resident of Maharashtra, annual income below ₹500,000, student category",
+    "benefits": "Scholarship amount up to ₹50,000 per year, free books, hostel facility",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Income Certificate",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": 500000,
+    "ageLimit": null,
+    "category": "student"
+  },
+  {
+    "schemeName": "Legal Aid Scheme",
+    "department": "Housing Department",
+    "targetGroup": "Farmer",
+    "eligibility": "Resident of Maharashtra, annual income below ₹1,000,000, farmer category",
+    "benefits": "Subsidy up to ₹50,000, crop insurance, loan waiver benefits",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Income Certificate",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": 1000000,
+    "ageLimit": null,
+    "category": "farmer"
+  },
+  {
+    "schemeName": "Maharashtra Scholarship for Meritorious Students - Variant 2",
+    "department": "Education Department",
+    "targetGroup": "Woman",
+    "eligibility": "Resident of Maharashtra, minimum age 18 years, woman category",
+    "benefits": "Financial assistance up to ₹25,000, skill training, loan support",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Identity Proof",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": null,
+    "ageLimit": 18,
+    "category": "woman"
+  },
+  {
+    "schemeName": "Post Matric Scholarship Scheme - Variant 2",
+    "department": "Agriculture Department",
+    "targetGroup": "Senior Citizen",
+    "eligibility": "Resident of Maharashtra, maximum age 60 years, annual income below ₹500,000, senior citizen category",
+    "benefits": "Monthly pension ₹1,000-3,000, health insurance, travel concessions",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Income Certificate",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": 500000,
+    "ageLimit": 60,
+    "category": "senior_citizen"
+  },
+  {
+    "schemeName": "Pre Matric Scholarship for SC/ST - Variant 2",
+    "department": "Social Welfare Department",
+    "targetGroup": "Unemployed",
+    "eligibility": "Resident of Maharashtra, annual income below ₹1,000,000, unemployed category",
+    "benefits": "Unemployment allowance, skill training, job placement assistance",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Income Certificate",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": 1000000,
+    "ageLimit": null,
+    "category": "unemployed"
+  },
+  {
+    "schemeName": "Earn and Learn Scheme - Variant 2",
+    "department": "Health Department",
+    "targetGroup": "All Citizens",
+    "eligibility": "Resident of Maharashtra",
+    "benefits": "Various benefits including financial assistance, subsidies, and support services",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Identity Proof",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": null,
+    "ageLimit": null,
+    "category": "general"
+  },
+  {
+    "schemeName": "Student Credit Card Scheme - Variant 2",
+    "department": "Rural Development Department",
+    "targetGroup": "Student",
+    "eligibility": "Resident of Maharashtra, minimum age 18 years, annual income below ₹500,000, student category",
+    "benefits": "Scholarship amount up to ₹50,000 per year, free books, hostel facility",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Income Certificate",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": 500000,
+    "ageLimit": 18,
+    "category": "student"
+  },
+  {
+    "schemeName": "Free Laptop Scheme for Students - Variant 2",
+    "department": "Urban Development Department",
+    "targetGroup": "Farmer",
+    "eligibility": "Resident of Maharashtra, maximum age 60 years, annual income below ₹1,000,000, farmer category",
+    "benefits": "Subsidy up to ₹50,000, crop insurance, loan waiver benefits",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Income Certificate",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": 1000000,
+    "ageLimit": 60,
+    "category": "farmer"
+  },
+  {
+    "schemeName": "Book Bank Scheme - Variant 2",
+    "department": "Employment Department",
+    "targetGroup": "Woman",
+    "eligibility": "Resident of Maharashtra, woman category",
+    "benefits": "Financial assistance up to ₹25,000, skill training, loan support",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Identity Proof",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": null,
+    "ageLimit": null,
+    "category": "woman"
+  },
+  {
+    "schemeName": "Hostel Facility Scheme - Variant 2",
+    "department": "Finance Department",
+    "targetGroup": "Senior Citizen",
+    "eligibility": "Resident of Maharashtra, annual income below ₹500,000, senior citizen category",
+    "benefits": "Monthly pension ₹1,000-3,000, health insurance, travel concessions",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Income Certificate",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": 500000,
+    "ageLimit": null,
+    "category": "senior_citizen"
+  },
+  {
+    "schemeName": "Tuition Fee Waiver Scheme - Variant 2",
+    "department": "Women and Child Development",
+    "targetGroup": "Unemployed",
+    "eligibility": "Resident of Maharashtra, minimum age 18 years, annual income below ₹1,000,000, unemployed category",
+    "benefits": "Unemployment allowance, skill training, job placement assistance",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Income Certificate",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": 1000000,
+    "ageLimit": 18,
+    "category": "unemployed"
+  },
+  {
+    "schemeName": "Merit Scholarship for Engineering Students - Variant 2",
+    "department": "Housing Department",
+    "targetGroup": "All Citizens",
+    "eligibility": "Resident of Maharashtra, maximum age 60 years",
+    "benefits": "Various benefits including financial assistance, subsidies, and support services",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Identity Proof",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": null,
+    "ageLimit": 60,
+    "category": "general"
+  },
+  {
+    "schemeName": "Girl Child Education Scheme - Variant 2",
+    "department": "Education Department",
+    "targetGroup": "Student",
+    "eligibility": "Resident of Maharashtra, annual income below ₹500,000, student category",
+    "benefits": "Scholarship amount up to ₹50,000 per year, free books, hostel facility",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Income Certificate",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": 500000,
+    "ageLimit": null,
+    "category": "student"
+  },
+  {
+    "schemeName": "Digital Education Initiative - Variant 2",
+    "department": "Agriculture Department",
+    "targetGroup": "Farmer",
+    "eligibility": "Resident of Maharashtra, annual income below ₹1,000,000, farmer category",
+    "benefits": "Subsidy up to ₹50,000, crop insurance, loan waiver benefits",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Income Certificate",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": 1000000,
+    "ageLimit": null,
+    "category": "farmer"
+  },
+  {
+    "schemeName": "Skill Development Scholarship - Variant 2",
+    "department": "Social Welfare Department",
+    "targetGroup": "Woman",
+    "eligibility": "Resident of Maharashtra, minimum age 18 years, woman category",
+    "benefits": "Financial assistance up to ₹25,000, skill training, loan support",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Identity Proof",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": null,
+    "ageLimit": 18,
+    "category": "woman"
+  },
+  {
+    "schemeName": "Research Fellowship Scheme - Variant 2",
+    "department": "Health Department",
+    "targetGroup": "Senior Citizen",
+    "eligibility": "Resident of Maharashtra, maximum age 60 years, annual income below ₹500,000, senior citizen category",
+    "benefits": "Monthly pension ₹1,000-3,000, health insurance, travel concessions",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Income Certificate",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": 500000,
+    "ageLimit": 60,
+    "category": "senior_citizen"
+  },
+  {
+    "schemeName": "Study Abroad Scholarship - Variant 2",
+    "department": "Rural Development Department",
+    "targetGroup": "Unemployed",
+    "eligibility": "Resident of Maharashtra, annual income below ₹1,000,000, unemployed category",
+    "benefits": "Unemployment allowance, skill training, job placement assistance",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Income Certificate",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": 1000000,
+    "ageLimit": null,
+    "category": "unemployed"
+  },
+  {
+    "schemeName": "Pradhan Mantri Kisan Samman Nidhi - Variant 2",
+    "department": "Urban Development Department",
+    "targetGroup": "All Citizens",
+    "eligibility": "Resident of Maharashtra",
+    "benefits": "Various benefits including financial assistance, subsidies, and support services",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Identity Proof",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": null,
+    "ageLimit": null,
+    "category": "general"
+  },
+  {
+    "schemeName": "Maharashtra Krishi Sanjivani Yojana - Variant 2",
+    "department": "Employment Department",
+    "targetGroup": "Student",
+    "eligibility": "Resident of Maharashtra, minimum age 18 years, annual income below ₹500,000, student category",
+    "benefits": "Scholarship amount up to ₹50,000 per year, free books, hostel facility",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Income Certificate",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": 500000,
+    "ageLimit": 18,
+    "category": "student"
+  },
+  {
+    "schemeName": "Crop Insurance Scheme - Variant 2",
+    "department": "Finance Department",
+    "targetGroup": "Farmer",
+    "eligibility": "Resident of Maharashtra, maximum age 60 years, annual income below ₹1,000,000, farmer category",
+    "benefits": "Subsidy up to ₹50,000, crop insurance, loan waiver benefits",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Income Certificate",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": 1000000,
+    "ageLimit": 60,
+    "category": "farmer"
+  },
+  {
+    "schemeName": "Farm Loan Waiver Scheme - Variant 2",
+    "department": "Women and Child Development",
+    "targetGroup": "Woman",
+    "eligibility": "Resident of Maharashtra, woman category",
+    "benefits": "Financial assistance up to ₹25,000, skill training, loan support",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Identity Proof",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": null,
+    "ageLimit": null,
+    "category": "woman"
+  },
+  {
+    "schemeName": "Solar Pump Scheme for Farmers - Variant 2",
+    "department": "Housing Department",
+    "targetGroup": "Senior Citizen",
+    "eligibility": "Resident of Maharashtra, annual income below ₹500,000, senior citizen category",
+    "benefits": "Monthly pension ₹1,000-3,000, health insurance, travel concessions",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Income Certificate",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": 500000,
+    "ageLimit": null,
+    "category": "senior_citizen"
+  },
+  {
+    "schemeName": "Organic Farming Incentive Scheme - Variant 2",
+    "department": "Education Department",
+    "targetGroup": "Unemployed",
+    "eligibility": "Resident of Maharashtra, minimum age 18 years, annual income below ₹1,000,000, unemployed category",
+    "benefits": "Unemployment allowance, skill training, job placement assistance",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Income Certificate",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": 1000000,
+    "ageLimit": 18,
+    "category": "unemployed"
+  },
+  {
+    "schemeName": "Drip Irrigation Subsidy - Variant 2",
+    "department": "Agriculture Department",
+    "targetGroup": "All Citizens",
+    "eligibility": "Resident of Maharashtra, maximum age 60 years",
+    "benefits": "Various benefits including financial assistance, subsidies, and support services",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Identity Proof",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": null,
+    "ageLimit": 60,
+    "category": "general"
+  },
+  {
+    "schemeName": "Seed Subsidy Scheme - Variant 2",
+    "department": "Social Welfare Department",
+    "targetGroup": "Student",
+    "eligibility": "Resident of Maharashtra, annual income below ₹500,000, student category",
+    "benefits": "Scholarship amount up to ₹50,000 per year, free books, hostel facility",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Income Certificate",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": 500000,
+    "ageLimit": null,
+    "category": "student"
+  },
+  {
+    "schemeName": "Farm Equipment Subsidy - Variant 2",
+    "department": "Health Department",
+    "targetGroup": "Farmer",
+    "eligibility": "Resident of Maharashtra, annual income below ₹1,000,000, farmer category",
+    "benefits": "Subsidy up to ₹50,000, crop insurance, loan waiver benefits",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Income Certificate",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": 1000000,
+    "ageLimit": null,
+    "category": "farmer"
+  },
+  {
+    "schemeName": "Farmer Accident Insurance - Variant 2",
+    "department": "Rural Development Department",
+    "targetGroup": "Woman",
+    "eligibility": "Resident of Maharashtra, minimum age 18 years, woman category",
+    "benefits": "Financial assistance up to ₹25,000, skill training, loan support",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Identity Proof",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": null,
+    "ageLimit": 18,
+    "category": "woman"
+  },
+  {
+    "schemeName": "Agricultural Land Development Scheme - Variant 2",
+    "department": "Urban Development Department",
+    "targetGroup": "Senior Citizen",
+    "eligibility": "Resident of Maharashtra, maximum age 60 years, annual income below ₹500,000, senior citizen category",
+    "benefits": "Monthly pension ₹1,000-3,000, health insurance, travel concessions",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Income Certificate",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": 500000,
+    "ageLimit": 60,
+    "category": "senior_citizen"
+  },
+  {
+    "schemeName": "Livestock Development Scheme - Variant 2",
+    "department": "Employment Department",
+    "targetGroup": "Unemployed",
+    "eligibility": "Resident of Maharashtra, annual income below ₹1,000,000, unemployed category",
+    "benefits": "Unemployment allowance, skill training, job placement assistance",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Income Certificate",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": 1000000,
+    "ageLimit": null,
+    "category": "unemployed"
+  },
+  {
+    "schemeName": "Fisheries Development Scheme - Variant 2",
+    "department": "Finance Department",
+    "targetGroup": "All Citizens",
+    "eligibility": "Resident of Maharashtra",
+    "benefits": "Various benefits including financial assistance, subsidies, and support services",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Identity Proof",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": null,
+    "ageLimit": null,
+    "category": "general"
+  },
+  {
+    "schemeName": "Horticulture Development Scheme - Variant 2",
+    "department": "Women and Child Development",
+    "targetGroup": "Student",
+    "eligibility": "Resident of Maharashtra, minimum age 18 years, annual income below ₹500,000, student category",
+    "benefits": "Scholarship amount up to ₹50,000 per year, free books, hostel facility",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Income Certificate",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": 500000,
+    "ageLimit": 18,
+    "category": "student"
+  },
+  {
+    "schemeName": "Farmer Producer Organization Scheme - Variant 2",
+    "department": "Housing Department",
+    "targetGroup": "Farmer",
+    "eligibility": "Resident of Maharashtra, maximum age 60 years, annual income below ₹1,000,000, farmer category",
+    "benefits": "Subsidy up to ₹50,000, crop insurance, loan waiver benefits",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Income Certificate",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": 1000000,
+    "ageLimit": 60,
+    "category": "farmer"
+  },
+  {
+    "schemeName": "Mahila Shakti Yojana - Variant 2",
+    "department": "Education Department",
+    "targetGroup": "Woman",
+    "eligibility": "Resident of Maharashtra, woman category",
+    "benefits": "Financial assistance up to ₹25,000, skill training, loan support",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Identity Proof",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": null,
+    "ageLimit": null,
+    "category": "woman"
+  },
+  {
+    "schemeName": "Working Women Hostel Scheme - Variant 2",
+    "department": "Agriculture Department",
+    "targetGroup": "Senior Citizen",
+    "eligibility": "Resident of Maharashtra, annual income below ₹500,000, senior citizen category",
+    "benefits": "Monthly pension ₹1,000-3,000, health insurance, travel concessions",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Income Certificate",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": 500000,
+    "ageLimit": null,
+    "category": "senior_citizen"
+  },
+  {
+    "schemeName": "Women Entrepreneurship Scheme - Variant 2",
+    "department": "Social Welfare Department",
+    "targetGroup": "Unemployed",
+    "eligibility": "Resident of Maharashtra, minimum age 18 years, annual income below ₹1,000,000, unemployed category",
+    "benefits": "Unemployment allowance, skill training, job placement assistance",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Income Certificate",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": 1000000,
+    "ageLimit": 18,
+    "category": "unemployed"
+  },
+  {
+    "schemeName": "Maternity Benefit Scheme - Variant 2",
+    "department": "Health Department",
+    "targetGroup": "All Citizens",
+    "eligibility": "Resident of Maharashtra, maximum age 60 years",
+    "benefits": "Various benefits including financial assistance, subsidies, and support services",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Identity Proof",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": null,
+    "ageLimit": 60,
+    "category": "general"
+  },
+  {
+    "schemeName": "Women Safety Scheme - Variant 2",
+    "department": "Rural Development Department",
+    "targetGroup": "Student",
+    "eligibility": "Resident of Maharashtra, annual income below ₹500,000, student category",
+    "benefits": "Scholarship amount up to ₹50,000 per year, free books, hostel facility",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Income Certificate",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": 500000,
+    "ageLimit": null,
+    "category": "student"
+  },
+  {
+    "schemeName": "Self Help Group Loan Scheme - Variant 2",
+    "department": "Urban Development Department",
+    "targetGroup": "Farmer",
+    "eligibility": "Resident of Maharashtra, annual income below ₹1,000,000, farmer category",
+    "benefits": "Subsidy up to ₹50,000, crop insurance, loan waiver benefits",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Income Certificate",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": 1000000,
+    "ageLimit": null,
+    "category": "farmer"
+  },
+  {
+    "schemeName": "Women Skill Development Scheme - Variant 2",
+    "department": "Employment Department",
+    "targetGroup": "Woman",
+    "eligibility": "Resident of Maharashtra, minimum age 18 years, woman category",
+    "benefits": "Financial assistance up to ₹25,000, skill training, loan support",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Identity Proof",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": null,
+    "ageLimit": 18,
+    "category": "woman"
+  },
+  {
+    "schemeName": "Beti Bachao Beti Padhao - Variant 2",
+    "department": "Finance Department",
+    "targetGroup": "Senior Citizen",
+    "eligibility": "Resident of Maharashtra, maximum age 60 years, annual income below ₹500,000, senior citizen category",
+    "benefits": "Monthly pension ₹1,000-3,000, health insurance, travel concessions",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Income Certificate",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": 500000,
+    "ageLimit": 60,
+    "category": "senior_citizen"
+  },
+  {
+    "schemeName": "Women Health Checkup Scheme - Variant 2",
+    "department": "Women and Child Development",
+    "targetGroup": "Unemployed",
+    "eligibility": "Resident of Maharashtra, annual income below ₹1,000,000, unemployed category",
+    "benefits": "Unemployment allowance, skill training, job placement assistance",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Income Certificate",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": 1000000,
+    "ageLimit": null,
+    "category": "unemployed"
+  },
+  {
+    "schemeName": "Single Women Pension Scheme - Variant 2",
+    "department": "Housing Department",
+    "targetGroup": "All Citizens",
+    "eligibility": "Resident of Maharashtra",
+    "benefits": "Various benefits including financial assistance, subsidies, and support services",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Identity Proof",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": null,
+    "ageLimit": null,
+    "category": "general"
+  },
+  {
+    "schemeName": "Widow Pension Scheme - Variant 2",
+    "department": "Education Department",
+    "targetGroup": "Student",
+    "eligibility": "Resident of Maharashtra, minimum age 18 years, annual income below ₹500,000, student category",
+    "benefits": "Scholarship amount up to ₹50,000 per year, free books, hostel facility",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Income Certificate",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": 500000,
+    "ageLimit": 18,
+    "category": "student"
+  },
+  {
+    "schemeName": "Women Legal Aid Scheme - Variant 2",
+    "department": "Agriculture Department",
+    "targetGroup": "Farmer",
+    "eligibility": "Resident of Maharashtra, maximum age 60 years, annual income below ₹1,000,000, farmer category",
+    "benefits": "Subsidy up to ₹50,000, crop insurance, loan waiver benefits",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Income Certificate",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": 1000000,
+    "ageLimit": 60,
+    "category": "farmer"
+  },
+  {
+    "schemeName": "Women Startup Scheme - Variant 2",
+    "department": "Social Welfare Department",
+    "targetGroup": "Woman",
+    "eligibility": "Resident of Maharashtra, woman category",
+    "benefits": "Financial assistance up to ₹25,000, skill training, loan support",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Identity Proof",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": null,
+    "ageLimit": null,
+    "category": "woman"
+  },
+  {
+    "schemeName": "Women Farmer Scheme - Variant 2",
+    "department": "Health Department",
+    "targetGroup": "Senior Citizen",
+    "eligibility": "Resident of Maharashtra, annual income below ₹500,000, senior citizen category",
+    "benefits": "Monthly pension ₹1,000-3,000, health insurance, travel concessions",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Income Certificate",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": 500000,
+    "ageLimit": null,
+    "category": "senior_citizen"
+  },
+  {
+    "schemeName": "Women Education Scholarship - Variant 2",
+    "department": "Rural Development Department",
+    "targetGroup": "Unemployed",
+    "eligibility": "Resident of Maharashtra, minimum age 18 years, annual income below ₹1,000,000, unemployed category",
+    "benefits": "Unemployment allowance, skill training, job placement assistance",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Income Certificate",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": 1000000,
+    "ageLimit": 18,
+    "category": "unemployed"
+  },
+  {
+    "schemeName": "Senior Citizen Pension Scheme - Variant 2",
+    "department": "Urban Development Department",
+    "targetGroup": "All Citizens",
+    "eligibility": "Resident of Maharashtra, maximum age 60 years",
+    "benefits": "Various benefits including financial assistance, subsidies, and support services",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Identity Proof",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": null,
+    "ageLimit": 60,
+    "category": "general"
+  },
+  {
+    "schemeName": "Old Age Home Scheme - Variant 2",
+    "department": "Employment Department",
+    "targetGroup": "Student",
+    "eligibility": "Resident of Maharashtra, annual income below ₹500,000, student category",
+    "benefits": "Scholarship amount up to ₹50,000 per year, free books, hostel facility",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Income Certificate",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": 500000,
+    "ageLimit": null,
+    "category": "student"
+  },
+  {
+    "schemeName": "Health Insurance for Senior Citizens - Variant 2",
+    "department": "Finance Department",
+    "targetGroup": "Farmer",
+    "eligibility": "Resident of Maharashtra, annual income below ₹1,000,000, farmer category",
+    "benefits": "Subsidy up to ₹50,000, crop insurance, loan waiver benefits",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Income Certificate",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": 1000000,
+    "ageLimit": null,
+    "category": "farmer"
+  },
+  {
+    "schemeName": "Senior Citizen Travel Concession - Variant 2",
+    "department": "Women and Child Development",
+    "targetGroup": "Woman",
+    "eligibility": "Resident of Maharashtra, minimum age 18 years, woman category",
+    "benefits": "Financial assistance up to ₹25,000, skill training, loan support",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Identity Proof",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": null,
+    "ageLimit": 18,
+    "category": "woman"
+  },
+  {
+    "schemeName": "Elderly Care Scheme - Variant 2",
+    "department": "Housing Department",
+    "targetGroup": "Senior Citizen",
+    "eligibility": "Resident of Maharashtra, maximum age 60 years, annual income below ₹500,000, senior citizen category",
+    "benefits": "Monthly pension ₹1,000-3,000, health insurance, travel concessions",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Income Certificate",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": 500000,
+    "ageLimit": 60,
+    "category": "senior_citizen"
+  },
+  {
+    "schemeName": "Senior Citizen Savings Scheme - Variant 2",
+    "department": "Education Department",
+    "targetGroup": "Unemployed",
+    "eligibility": "Resident of Maharashtra, annual income below ₹1,000,000, unemployed category",
+    "benefits": "Unemployment allowance, skill training, job placement assistance",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Income Certificate",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": 1000000,
+    "ageLimit": null,
+    "category": "unemployed"
+  },
+  {
+    "schemeName": "Medical Assistance for Elderly - Variant 2",
+    "department": "Agriculture Department",
+    "targetGroup": "All Citizens",
+    "eligibility": "Resident of Maharashtra",
+    "benefits": "Various benefits including financial assistance, subsidies, and support services",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Identity Proof",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": null,
+    "ageLimit": null,
+    "category": "general"
+  },
+  {
+    "schemeName": "Senior Citizen Housing Scheme - Variant 2",
+    "department": "Social Welfare Department",
+    "targetGroup": "Student",
+    "eligibility": "Resident of Maharashtra, minimum age 18 years, annual income below ₹500,000, student category",
+    "benefits": "Scholarship amount up to ₹50,000 per year, free books, hostel facility",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Income Certificate",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": 500000,
+    "ageLimit": 18,
+    "category": "student"
+  },
+  {
+    "schemeName": "Elderly Day Care Center Scheme - Variant 2",
+    "department": "Health Department",
+    "targetGroup": "Farmer",
+    "eligibility": "Resident of Maharashtra, maximum age 60 years, annual income below ₹1,000,000, farmer category",
+    "benefits": "Subsidy up to ₹50,000, crop insurance, loan waiver benefits",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Income Certificate",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": 1000000,
+    "ageLimit": 60,
+    "category": "farmer"
+  },
+  {
+    "schemeName": "Senior Citizen Helpline - Variant 2",
+    "department": "Rural Development Department",
+    "targetGroup": "Woman",
+    "eligibility": "Resident of Maharashtra, woman category",
+    "benefits": "Financial assistance up to ₹25,000, skill training, loan support",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Identity Proof",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": null,
+    "ageLimit": null,
+    "category": "woman"
+  },
+  {
+    "schemeName": "Maharashtra Employment Guarantee Scheme - Variant 2",
+    "department": "Urban Development Department",
+    "targetGroup": "Senior Citizen",
+    "eligibility": "Resident of Maharashtra, annual income below ₹500,000, senior citizen category",
+    "benefits": "Monthly pension ₹1,000-3,000, health insurance, travel concessions",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Income Certificate",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": 500000,
+    "ageLimit": null,
+    "category": "senior_citizen"
+  },
+  {
+    "schemeName": "Skill India Maharashtra - Variant 2",
+    "department": "Employment Department",
+    "targetGroup": "Unemployed",
+    "eligibility": "Resident of Maharashtra, minimum age 18 years, annual income below ₹1,000,000, unemployed category",
+    "benefits": "Unemployment allowance, skill training, job placement assistance",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Income Certificate",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": 1000000,
+    "ageLimit": 18,
+    "category": "unemployed"
+  },
+  {
+    "schemeName": "Startup Maharashtra Scheme - Variant 2",
+    "department": "Finance Department",
+    "targetGroup": "All Citizens",
+    "eligibility": "Resident of Maharashtra, maximum age 60 years",
+    "benefits": "Various benefits including financial assistance, subsidies, and support services",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Identity Proof",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": null,
+    "ageLimit": 60,
+    "category": "general"
+  },
+  {
+    "schemeName": "Unemployment Allowance Scheme - Variant 2",
+    "department": "Women and Child Development",
+    "targetGroup": "Student",
+    "eligibility": "Resident of Maharashtra, annual income below ₹500,000, student category",
+    "benefits": "Scholarship amount up to ₹50,000 per year, free books, hostel facility",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Income Certificate",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": 500000,
+    "ageLimit": null,
+    "category": "student"
+  },
+  {
+    "schemeName": "Self Employment Loan Scheme - Variant 2",
+    "department": "Housing Department",
+    "targetGroup": "Farmer",
+    "eligibility": "Resident of Maharashtra, annual income below ₹1,000,000, farmer category",
+    "benefits": "Subsidy up to ₹50,000, crop insurance, loan waiver benefits",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Income Certificate",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": 1000000,
+    "ageLimit": null,
+    "category": "farmer"
+  },
+  {
+    "schemeName": "Rural Employment Scheme - Variant 2",
+    "department": "Education Department",
+    "targetGroup": "Woman",
+    "eligibility": "Resident of Maharashtra, minimum age 18 years, woman category",
+    "benefits": "Financial assistance up to ₹25,000, skill training, loan support",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Identity Proof",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": null,
+    "ageLimit": 18,
+    "category": "woman"
+  },
+  {
+    "schemeName": "Urban Employment Scheme - Variant 2",
+    "department": "Agriculture Department",
+    "targetGroup": "Senior Citizen",
+    "eligibility": "Resident of Maharashtra, maximum age 60 years, annual income below ₹500,000, senior citizen category",
+    "benefits": "Monthly pension ₹1,000-3,000, health insurance, travel concessions",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Income Certificate",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": 500000,
+    "ageLimit": 60,
+    "category": "senior_citizen"
+  },
+  {
+    "schemeName": "Youth Employment Scheme - Variant 2",
+    "department": "Social Welfare Department",
+    "targetGroup": "Unemployed",
+    "eligibility": "Resident of Maharashtra, annual income below ₹1,000,000, unemployed category",
+    "benefits": "Unemployment allowance, skill training, job placement assistance",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Income Certificate",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": 1000000,
+    "ageLimit": null,
+    "category": "unemployed"
+  },
+  {
+    "schemeName": "Entrepreneurship Development Scheme - Variant 2",
+    "department": "Health Department",
+    "targetGroup": "All Citizens",
+    "eligibility": "Resident of Maharashtra",
+    "benefits": "Various benefits including financial assistance, subsidies, and support services",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Identity Proof",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": null,
+    "ageLimit": null,
+    "category": "general"
+  },
+  {
+    "schemeName": "Job Placement Scheme - Variant 2",
+    "department": "Rural Development Department",
+    "targetGroup": "Student",
+    "eligibility": "Resident of Maharashtra, minimum age 18 years, annual income below ₹500,000, student category",
+    "benefits": "Scholarship amount up to ₹50,000 per year, free books, hostel facility",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Income Certificate",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": 500000,
+    "ageLimit": 18,
+    "category": "student"
+  },
+  {
+    "schemeName": "Aadhaar Card Registration - Variant 2",
+    "department": "Urban Development Department",
+    "targetGroup": "Farmer",
+    "eligibility": "Resident of Maharashtra, maximum age 60 years, annual income below ₹1,000,000, farmer category",
+    "benefits": "Subsidy up to ₹50,000, crop insurance, loan waiver benefits",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Income Certificate",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": 1000000,
+    "ageLimit": 60,
+    "category": "farmer"
+  },
+  {
+    "schemeName": "Ration Card Scheme - Variant 2",
+    "department": "Employment Department",
+    "targetGroup": "Woman",
+    "eligibility": "Resident of Maharashtra, woman category",
+    "benefits": "Financial assistance up to ₹25,000, skill training, loan support",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Identity Proof",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": null,
+    "ageLimit": null,
+    "category": "woman"
+  },
+  {
+    "schemeName": "Housing Scheme for All - Variant 2",
+    "department": "Finance Department",
+    "targetGroup": "Senior Citizen",
+    "eligibility": "Resident of Maharashtra, annual income below ₹500,000, senior citizen category",
+    "benefits": "Monthly pension ₹1,000-3,000, health insurance, travel concessions",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Income Certificate",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": 500000,
+    "ageLimit": null,
+    "category": "senior_citizen"
+  },
+  {
+    "schemeName": "Health Insurance Scheme - Variant 2",
+    "department": "Women and Child Development",
+    "targetGroup": "Unemployed",
+    "eligibility": "Resident of Maharashtra, minimum age 18 years, annual income below ₹1,000,000, unemployed category",
+    "benefits": "Unemployment allowance, skill training, job placement assistance",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Income Certificate",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": 1000000,
+    "ageLimit": 18,
+    "category": "unemployed"
+  },
+  {
+    "schemeName": "Electricity Connection Scheme - Variant 2",
+    "department": "Housing Department",
+    "targetGroup": "All Citizens",
+    "eligibility": "Resident of Maharashtra, maximum age 60 years",
+    "benefits": "Various benefits including financial assistance, subsidies, and support services",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Identity Proof",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": null,
+    "ageLimit": 60,
+    "category": "general"
+  },
+  {
+    "schemeName": "Water Connection Scheme - Variant 2",
+    "department": "Education Department",
+    "targetGroup": "Student",
+    "eligibility": "Resident of Maharashtra, annual income below ₹500,000, student category",
+    "benefits": "Scholarship amount up to ₹50,000 per year, free books, hostel facility",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Income Certificate",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": 500000,
+    "ageLimit": null,
+    "category": "student"
+  },
+  {
+    "schemeName": "Toilet Construction Scheme - Variant 2",
+    "department": "Agriculture Department",
+    "targetGroup": "Farmer",
+    "eligibility": "Resident of Maharashtra, annual income below ₹1,000,000, farmer category",
+    "benefits": "Subsidy up to ₹50,000, crop insurance, loan waiver benefits",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Income Certificate",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": 1000000,
+    "ageLimit": null,
+    "category": "farmer"
+  },
+  {
+    "schemeName": "Road Connectivity Scheme - Variant 2",
+    "department": "Social Welfare Department",
+    "targetGroup": "Woman",
+    "eligibility": "Resident of Maharashtra, minimum age 18 years, woman category",
+    "benefits": "Financial assistance up to ₹25,000, skill training, loan support",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Identity Proof",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": null,
+    "ageLimit": 18,
+    "category": "woman"
+  },
+  {
+    "schemeName": "Internet Connectivity Scheme - Variant 2",
+    "department": "Health Department",
+    "targetGroup": "Senior Citizen",
+    "eligibility": "Resident of Maharashtra, maximum age 60 years, annual income below ₹500,000, senior citizen category",
+    "benefits": "Monthly pension ₹1,000-3,000, health insurance, travel concessions",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Income Certificate",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": 500000,
+    "ageLimit": 60,
+    "category": "senior_citizen"
+  },
+  {
+    "schemeName": "Disability Pension Scheme - Variant 2",
+    "department": "Rural Development Department",
+    "targetGroup": "Unemployed",
+    "eligibility": "Resident of Maharashtra, annual income below ₹1,000,000, unemployed category",
+    "benefits": "Unemployment allowance, skill training, job placement assistance",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Income Certificate",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": 1000000,
+    "ageLimit": null,
+    "category": "unemployed"
+  },
+  {
+    "schemeName": "Below Poverty Line Card - Variant 2",
+    "department": "Urban Development Department",
+    "targetGroup": "All Citizens",
+    "eligibility": "Resident of Maharashtra",
+    "benefits": "Various benefits including financial assistance, subsidies, and support services",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Identity Proof",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": null,
+    "ageLimit": null,
+    "category": "general"
+  },
+  {
+    "schemeName": "Food Security Scheme - Variant 2",
+    "department": "Employment Department",
+    "targetGroup": "Student",
+    "eligibility": "Resident of Maharashtra, minimum age 18 years, annual income below ₹500,000, student category",
+    "benefits": "Scholarship amount up to ₹50,000 per year, free books, hostel facility",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Income Certificate",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": 500000,
+    "ageLimit": 18,
+    "category": "student"
+  },
+  {
+    "schemeName": "Medical Treatment Assistance - Variant 2",
+    "department": "Finance Department",
+    "targetGroup": "Farmer",
+    "eligibility": "Resident of Maharashtra, maximum age 60 years, annual income below ₹1,000,000, farmer category",
+    "benefits": "Subsidy up to ₹50,000, crop insurance, loan waiver benefits",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Income Certificate",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": 1000000,
+    "ageLimit": 60,
+    "category": "farmer"
+  },
+  {
+    "schemeName": "Disaster Relief Scheme - Variant 2",
+    "department": "Women and Child Development",
+    "targetGroup": "Woman",
+    "eligibility": "Resident of Maharashtra, woman category",
+    "benefits": "Financial assistance up to ₹25,000, skill training, loan support",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Identity Proof",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": null,
+    "ageLimit": null,
+    "category": "woman"
+  },
+  {
+    "schemeName": "Legal Aid Scheme - Variant 2",
+    "department": "Housing Department",
+    "targetGroup": "Senior Citizen",
+    "eligibility": "Resident of Maharashtra, annual income below ₹500,000, senior citizen category",
+    "benefits": "Monthly pension ₹1,000-3,000, health insurance, travel concessions",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Income Certificate",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": 500000,
+    "ageLimit": null,
+    "category": "senior_citizen"
+  },
+  {
+    "schemeName": "Maharashtra Scholarship for Meritorious Students - Variant 3",
+    "department": "Education Department",
+    "targetGroup": "Unemployed",
+    "eligibility": "Resident of Maharashtra, minimum age 18 years, annual income below ₹1,000,000, unemployed category",
+    "benefits": "Unemployment allowance, skill training, job placement assistance",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Income Certificate",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": 1000000,
+    "ageLimit": 18,
+    "category": "unemployed"
+  },
+  {
+    "schemeName": "Post Matric Scholarship Scheme - Variant 3",
+    "department": "Agriculture Department",
+    "targetGroup": "All Citizens",
+    "eligibility": "Resident of Maharashtra, maximum age 60 years",
+    "benefits": "Various benefits including financial assistance, subsidies, and support services",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Identity Proof",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": null,
+    "ageLimit": 60,
+    "category": "general"
+  },
+  {
+    "schemeName": "Pre Matric Scholarship for SC/ST - Variant 3",
+    "department": "Social Welfare Department",
+    "targetGroup": "Student",
+    "eligibility": "Resident of Maharashtra, annual income below ₹500,000, student category",
+    "benefits": "Scholarship amount up to ₹50,000 per year, free books, hostel facility",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Income Certificate",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": 500000,
+    "ageLimit": null,
+    "category": "student"
+  },
+  {
+    "schemeName": "Earn and Learn Scheme - Variant 3",
+    "department": "Health Department",
+    "targetGroup": "Farmer",
+    "eligibility": "Resident of Maharashtra, annual income below ₹1,000,000, farmer category",
+    "benefits": "Subsidy up to ₹50,000, crop insurance, loan waiver benefits",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Income Certificate",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": 1000000,
+    "ageLimit": null,
+    "category": "farmer"
+  },
+  {
+    "schemeName": "Student Credit Card Scheme - Variant 3",
+    "department": "Rural Development Department",
+    "targetGroup": "Woman",
+    "eligibility": "Resident of Maharashtra, minimum age 18 years, woman category",
+    "benefits": "Financial assistance up to ₹25,000, skill training, loan support",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Identity Proof",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": null,
+    "ageLimit": 18,
+    "category": "woman"
+  },
+  {
+    "schemeName": "Free Laptop Scheme for Students - Variant 3",
+    "department": "Urban Development Department",
+    "targetGroup": "Senior Citizen",
+    "eligibility": "Resident of Maharashtra, maximum age 60 years, annual income below ₹500,000, senior citizen category",
+    "benefits": "Monthly pension ₹1,000-3,000, health insurance, travel concessions",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Income Certificate",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": 500000,
+    "ageLimit": 60,
+    "category": "senior_citizen"
+  },
+  {
+    "schemeName": "Book Bank Scheme - Variant 3",
+    "department": "Employment Department",
+    "targetGroup": "Unemployed",
+    "eligibility": "Resident of Maharashtra, annual income below ₹1,000,000, unemployed category",
+    "benefits": "Unemployment allowance, skill training, job placement assistance",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Income Certificate",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": 1000000,
+    "ageLimit": null,
+    "category": "unemployed"
+  },
+  {
+    "schemeName": "Hostel Facility Scheme - Variant 3",
+    "department": "Finance Department",
+    "targetGroup": "All Citizens",
+    "eligibility": "Resident of Maharashtra",
+    "benefits": "Various benefits including financial assistance, subsidies, and support services",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Identity Proof",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": null,
+    "ageLimit": null,
+    "category": "general"
+  },
+  {
+    "schemeName": "Tuition Fee Waiver Scheme - Variant 3",
+    "department": "Women and Child Development",
+    "targetGroup": "Student",
+    "eligibility": "Resident of Maharashtra, minimum age 18 years, annual income below ₹500,000, student category",
+    "benefits": "Scholarship amount up to ₹50,000 per year, free books, hostel facility",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Income Certificate",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": 500000,
+    "ageLimit": 18,
+    "category": "student"
+  },
+  {
+    "schemeName": "Merit Scholarship for Engineering Students - Variant 3",
+    "department": "Housing Department",
+    "targetGroup": "Farmer",
+    "eligibility": "Resident of Maharashtra, maximum age 60 years, annual income below ₹1,000,000, farmer category",
+    "benefits": "Subsidy up to ₹50,000, crop insurance, loan waiver benefits",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Income Certificate",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": 1000000,
+    "ageLimit": 60,
+    "category": "farmer"
+  },
+  {
+    "schemeName": "Girl Child Education Scheme - Variant 3",
+    "department": "Education Department",
+    "targetGroup": "Woman",
+    "eligibility": "Resident of Maharashtra, woman category",
+    "benefits": "Financial assistance up to ₹25,000, skill training, loan support",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Identity Proof",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": null,
+    "ageLimit": null,
+    "category": "woman"
+  },
+  {
+    "schemeName": "Digital Education Initiative - Variant 3",
+    "department": "Agriculture Department",
+    "targetGroup": "Senior Citizen",
+    "eligibility": "Resident of Maharashtra, annual income below ₹500,000, senior citizen category",
+    "benefits": "Monthly pension ₹1,000-3,000, health insurance, travel concessions",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Income Certificate",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": 500000,
+    "ageLimit": null,
+    "category": "senior_citizen"
+  },
+  {
+    "schemeName": "Skill Development Scholarship - Variant 3",
+    "department": "Social Welfare Department",
+    "targetGroup": "Unemployed",
+    "eligibility": "Resident of Maharashtra, minimum age 18 years, annual income below ₹1,000,000, unemployed category",
+    "benefits": "Unemployment allowance, skill training, job placement assistance",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Income Certificate",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": 1000000,
+    "ageLimit": 18,
+    "category": "unemployed"
+  },
+  {
+    "schemeName": "Research Fellowship Scheme - Variant 3",
+    "department": "Health Department",
+    "targetGroup": "All Citizens",
+    "eligibility": "Resident of Maharashtra, maximum age 60 years",
+    "benefits": "Various benefits including financial assistance, subsidies, and support services",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Identity Proof",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": null,
+    "ageLimit": 60,
+    "category": "general"
+  },
+  {
+    "schemeName": "Study Abroad Scholarship - Variant 3",
+    "department": "Rural Development Department",
+    "targetGroup": "Student",
+    "eligibility": "Resident of Maharashtra, annual income below ₹500,000, student category",
+    "benefits": "Scholarship amount up to ₹50,000 per year, free books, hostel facility",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Income Certificate",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": 500000,
+    "ageLimit": null,
+    "category": "student"
+  },
+  {
+    "schemeName": "Pradhan Mantri Kisan Samman Nidhi - Variant 3",
+    "department": "Urban Development Department",
+    "targetGroup": "Farmer",
+    "eligibility": "Resident of Maharashtra, annual income below ₹1,000,000, farmer category",
+    "benefits": "Subsidy up to ₹50,000, crop insurance, loan waiver benefits",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Income Certificate",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": 1000000,
+    "ageLimit": null,
+    "category": "farmer"
+  },
+  {
+    "schemeName": "Maharashtra Krishi Sanjivani Yojana - Variant 3",
+    "department": "Employment Department",
+    "targetGroup": "Woman",
+    "eligibility": "Resident of Maharashtra, minimum age 18 years, woman category",
+    "benefits": "Financial assistance up to ₹25,000, skill training, loan support",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Identity Proof",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": null,
+    "ageLimit": 18,
+    "category": "woman"
+  },
+  {
+    "schemeName": "Crop Insurance Scheme - Variant 3",
+    "department": "Finance Department",
+    "targetGroup": "Senior Citizen",
+    "eligibility": "Resident of Maharashtra, maximum age 60 years, annual income below ₹500,000, senior citizen category",
+    "benefits": "Monthly pension ₹1,000-3,000, health insurance, travel concessions",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Income Certificate",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": 500000,
+    "ageLimit": 60,
+    "category": "senior_citizen"
+  },
+  {
+    "schemeName": "Farm Loan Waiver Scheme - Variant 3",
+    "department": "Women and Child Development",
+    "targetGroup": "Unemployed",
+    "eligibility": "Resident of Maharashtra, annual income below ₹1,000,000, unemployed category",
+    "benefits": "Unemployment allowance, skill training, job placement assistance",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Income Certificate",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": 1000000,
+    "ageLimit": null,
+    "category": "unemployed"
+  },
+  {
+    "schemeName": "Solar Pump Scheme for Farmers - Variant 3",
+    "department": "Housing Department",
+    "targetGroup": "All Citizens",
+    "eligibility": "Resident of Maharashtra",
+    "benefits": "Various benefits including financial assistance, subsidies, and support services",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Identity Proof",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": null,
+    "ageLimit": null,
+    "category": "general"
+  },
+  {
+    "schemeName": "Organic Farming Incentive Scheme - Variant 3",
+    "department": "Education Department",
+    "targetGroup": "Student",
+    "eligibility": "Resident of Maharashtra, minimum age 18 years, annual income below ₹500,000, student category",
+    "benefits": "Scholarship amount up to ₹50,000 per year, free books, hostel facility",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Income Certificate",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": 500000,
+    "ageLimit": 18,
+    "category": "student"
+  },
+  {
+    "schemeName": "Drip Irrigation Subsidy - Variant 3",
+    "department": "Agriculture Department",
+    "targetGroup": "Farmer",
+    "eligibility": "Resident of Maharashtra, maximum age 60 years, annual income below ₹1,000,000, farmer category",
+    "benefits": "Subsidy up to ₹50,000, crop insurance, loan waiver benefits",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Income Certificate",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": 1000000,
+    "ageLimit": 60,
+    "category": "farmer"
+  },
+  {
+    "schemeName": "Seed Subsidy Scheme - Variant 3",
+    "department": "Social Welfare Department",
+    "targetGroup": "Woman",
+    "eligibility": "Resident of Maharashtra, woman category",
+    "benefits": "Financial assistance up to ₹25,000, skill training, loan support",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Identity Proof",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": null,
+    "ageLimit": null,
+    "category": "woman"
+  },
+  {
+    "schemeName": "Farm Equipment Subsidy - Variant 3",
+    "department": "Health Department",
+    "targetGroup": "Senior Citizen",
+    "eligibility": "Resident of Maharashtra, annual income below ₹500,000, senior citizen category",
+    "benefits": "Monthly pension ₹1,000-3,000, health insurance, travel concessions",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Income Certificate",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": 500000,
+    "ageLimit": null,
+    "category": "senior_citizen"
+  },
+  {
+    "schemeName": "Farmer Accident Insurance - Variant 3",
+    "department": "Rural Development Department",
+    "targetGroup": "Unemployed",
+    "eligibility": "Resident of Maharashtra, minimum age 18 years, annual income below ₹1,000,000, unemployed category",
+    "benefits": "Unemployment allowance, skill training, job placement assistance",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Income Certificate",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": 1000000,
+    "ageLimit": 18,
+    "category": "unemployed"
+  },
+  {
+    "schemeName": "Agricultural Land Development Scheme - Variant 3",
+    "department": "Urban Development Department",
+    "targetGroup": "All Citizens",
+    "eligibility": "Resident of Maharashtra, maximum age 60 years",
+    "benefits": "Various benefits including financial assistance, subsidies, and support services",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Identity Proof",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": null,
+    "ageLimit": 60,
+    "category": "general"
+  },
+  {
+    "schemeName": "Livestock Development Scheme - Variant 3",
+    "department": "Employment Department",
+    "targetGroup": "Student",
+    "eligibility": "Resident of Maharashtra, annual income below ₹500,000, student category",
+    "benefits": "Scholarship amount up to ₹50,000 per year, free books, hostel facility",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Income Certificate",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": 500000,
+    "ageLimit": null,
+    "category": "student"
+  },
+  {
+    "schemeName": "Fisheries Development Scheme - Variant 3",
+    "department": "Finance Department",
+    "targetGroup": "Farmer",
+    "eligibility": "Resident of Maharashtra, annual income below ₹1,000,000, farmer category",
+    "benefits": "Subsidy up to ₹50,000, crop insurance, loan waiver benefits",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Income Certificate",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": 1000000,
+    "ageLimit": null,
+    "category": "farmer"
+  },
+  {
+    "schemeName": "Horticulture Development Scheme - Variant 3",
+    "department": "Women and Child Development",
+    "targetGroup": "Woman",
+    "eligibility": "Resident of Maharashtra, minimum age 18 years, woman category",
+    "benefits": "Financial assistance up to ₹25,000, skill training, loan support",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Identity Proof",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": null,
+    "ageLimit": 18,
+    "category": "woman"
+  },
+  {
+    "schemeName": "Farmer Producer Organization Scheme - Variant 3",
+    "department": "Housing Department",
+    "targetGroup": "Senior Citizen",
+    "eligibility": "Resident of Maharashtra, maximum age 60 years, annual income below ₹500,000, senior citizen category",
+    "benefits": "Monthly pension ₹1,000-3,000, health insurance, travel concessions",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Income Certificate",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": 500000,
+    "ageLimit": 60,
+    "category": "senior_citizen"
+  },
+  {
+    "schemeName": "Mahila Shakti Yojana - Variant 3",
+    "department": "Education Department",
+    "targetGroup": "Unemployed",
+    "eligibility": "Resident of Maharashtra, annual income below ₹1,000,000, unemployed category",
+    "benefits": "Unemployment allowance, skill training, job placement assistance",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Income Certificate",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": 1000000,
+    "ageLimit": null,
+    "category": "unemployed"
+  },
+  {
+    "schemeName": "Working Women Hostel Scheme - Variant 3",
+    "department": "Agriculture Department",
+    "targetGroup": "All Citizens",
+    "eligibility": "Resident of Maharashtra",
+    "benefits": "Various benefits including financial assistance, subsidies, and support services",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Identity Proof",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": null,
+    "ageLimit": null,
+    "category": "general"
+  },
+  {
+    "schemeName": "Women Entrepreneurship Scheme - Variant 3",
+    "department": "Social Welfare Department",
+    "targetGroup": "Student",
+    "eligibility": "Resident of Maharashtra, minimum age 18 years, annual income below ₹500,000, student category",
+    "benefits": "Scholarship amount up to ₹50,000 per year, free books, hostel facility",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Income Certificate",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": 500000,
+    "ageLimit": 18,
+    "category": "student"
+  },
+  {
+    "schemeName": "Maternity Benefit Scheme - Variant 3",
+    "department": "Health Department",
+    "targetGroup": "Farmer",
+    "eligibility": "Resident of Maharashtra, maximum age 60 years, annual income below ₹1,000,000, farmer category",
+    "benefits": "Subsidy up to ₹50,000, crop insurance, loan waiver benefits",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Income Certificate",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": 1000000,
+    "ageLimit": 60,
+    "category": "farmer"
+  },
+  {
+    "schemeName": "Women Safety Scheme - Variant 3",
+    "department": "Rural Development Department",
+    "targetGroup": "Woman",
+    "eligibility": "Resident of Maharashtra, woman category",
+    "benefits": "Financial assistance up to ₹25,000, skill training, loan support",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Identity Proof",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": null,
+    "ageLimit": null,
+    "category": "woman"
+  },
+  {
+    "schemeName": "Self Help Group Loan Scheme - Variant 3",
+    "department": "Urban Development Department",
+    "targetGroup": "Senior Citizen",
+    "eligibility": "Resident of Maharashtra, annual income below ₹500,000, senior citizen category",
+    "benefits": "Monthly pension ₹1,000-3,000, health insurance, travel concessions",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Income Certificate",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": 500000,
+    "ageLimit": null,
+    "category": "senior_citizen"
+  },
+  {
+    "schemeName": "Women Skill Development Scheme - Variant 3",
+    "department": "Employment Department",
+    "targetGroup": "Unemployed",
+    "eligibility": "Resident of Maharashtra, minimum age 18 years, annual income below ₹1,000,000, unemployed category",
+    "benefits": "Unemployment allowance, skill training, job placement assistance",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Income Certificate",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": 1000000,
+    "ageLimit": 18,
+    "category": "unemployed"
+  },
+  {
+    "schemeName": "Beti Bachao Beti Padhao - Variant 3",
+    "department": "Finance Department",
+    "targetGroup": "All Citizens",
+    "eligibility": "Resident of Maharashtra, maximum age 60 years",
+    "benefits": "Various benefits including financial assistance, subsidies, and support services",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Identity Proof",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": null,
+    "ageLimit": 60,
+    "category": "general"
+  },
+  {
+    "schemeName": "Women Health Checkup Scheme - Variant 3",
+    "department": "Women and Child Development",
+    "targetGroup": "Student",
+    "eligibility": "Resident of Maharashtra, annual income below ₹500,000, student category",
+    "benefits": "Scholarship amount up to ₹50,000 per year, free books, hostel facility",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Income Certificate",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": 500000,
+    "ageLimit": null,
+    "category": "student"
+  },
+  {
+    "schemeName": "Single Women Pension Scheme - Variant 3",
+    "department": "Housing Department",
+    "targetGroup": "Farmer",
+    "eligibility": "Resident of Maharashtra, annual income below ₹1,000,000, farmer category",
+    "benefits": "Subsidy up to ₹50,000, crop insurance, loan waiver benefits",
+    "requiredDocuments": [
+      "Aadhaar Card",
+      "Residence Proof",
+      "Income Certificate",
+      "Bank Account Details",
+      "Passport Size Photograph"
+    ],
+    "incomeLimit": 1000000,
+    "ageLimit": null,
+    "category": "farmer"
+  }
+]

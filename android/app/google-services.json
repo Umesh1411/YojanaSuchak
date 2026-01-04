@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "756630298408",
+    "project_id": "yojana-suchak-backend",
+    "storage_bucket": "yojana-suchak-backend.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:756630298408:android:6fa12f9d9583fc0333ba1d",
+        "android_client_info": {
+          "package_name": "com.company.yojanasuchak"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBq_yhZr-Iz6ak8oUwIQBKJKOyEASKZFYY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
