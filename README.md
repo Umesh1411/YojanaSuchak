@@ -1,6 +1,6 @@
-# MahaVoice Scheme Assistant
+# YojanaSuchak
 
-A Flutter application that uses voice interaction and Google Gemini AI to recommend the best government schemes from a dataset of 200 Maharashtra schemes.
+A Flutter application that uses voice interaction and Google Gemini AI to recommend the best government schemes from a comprehensive database of Maharashtra schemes.
 
 ## Features
 
@@ -9,116 +9,60 @@ A Flutter application that uses voice interaction and Google Gemini AI to recomm
 - 📊 **200+ Schemes**: Comprehensive database of Maharashtra government schemes
 - 🎯 **Smart Filtering**: Hybrid filtering (rule-based + AI) for optimal performance
 - 🔊 **Text-to-Speech**: AI voice feedback for better user experience
+- 🔐 **Firebase Integration**: User authentication and data persistence
+- 📧 **Email Notifications**: Send scheme details via email
 
 ## Prerequisites
 
 - Flutter SDK (>=3.0.0)
 - Dart SDK (>=3.0.0)
 - Google Gemini API Key ([Get it here](https://makersuite.google.com/app/apikey))
+- Firebase project (optional, for authentication and data storage)
 
-## Setup Instructions
+## Quick Start
 
-1. **Clone or download the project**
-
-2. **Install dependencies:**
+1. **Install dependencies:**
    ```bash
    flutter pub get
    ```
 
-3. **Add your Gemini API Key:**
-   - Open `lib/ui/home_screen.dart`
-   - Find the line: `const String geminiApiKey = 'YOUR_GEMINI_API_KEY_HERE';`
-   - Replace `YOUR_GEMINI_API_KEY_HERE` with your actual API key
+2. **Configure API Keys:**
+   - Open `lib/core/config/app_config.dart`
+   - Add your Gemini API key: `geminiApiKey`
+   - Configure email SMTP settings (optional)
 
-4. **Run on Chrome:**
+3. **Run the app:**
    ```bash
-   flutter run -d chrome
+   flutter run
    ```
 
-## Building APK for Android
+For detailed setup instructions, see [CONFIGURATION_GUIDE.md](CONFIGURATION_GUIDE.md)
 
-### Quick Build (Debug APK for Testing):
-```bash
-flutter build apk --debug
-```
-APK location: `build/app/outputs/flutter-apk/app-debug.apk`
+## Building APK
 
-### Build Release APK:
-```bash
-flutter build apk --release
-```
-APK location: `build/app/outputs/flutter-apk/app-release.apk`
-
-**For detailed APK build instructions including signing configuration, see:**
-- [QUICK_BUILD_APK.md](QUICK_BUILD_APK.md) - Quick reference
-- [BUILD_APK.md](BUILD_APK.md) - Complete guide with signing setup
-
-### What's Configured:
-- ✅ Android permissions (microphone, internet)
-- ✅ Minimum SDK 21 (Android 5.0+)
-- ✅ App name and icon
-- ✅ ProGuard rules for code obfuscation
-- ✅ Build configuration files
+See [QUICK_BUILD_APK.md](QUICK_BUILD_APK.md) for quick build instructions or [BUILD_APK.md](BUILD_APK.md) for complete guide with signing.
 
 ## Project Structure
 
 ```
 lib/
 ├── main.dart                 # App entry point
-├── models/
-│   ├── scheme.dart          # Scheme data model
-│   ├── user_profile.dart    # User profile model
-│   └── conversation_state.dart  # Conversation state enum
-├── services/
-│   ├── speech_service.dart  # Speech-to-text service
-│   ├── tts_service.dart     # Text-to-speech service
-│   ├── gemini_service.dart   # Gemini API integration
-│   ├── eligibility_filter.dart  # Rule-based filtering
-│   ├── profile_extractor.dart   # Extract profile from voice
-│   └── data_service.dart     # Load schemes from JSON
-└── ui/
-    └── home_screen.dart      # Main UI screen
+├── core/
+│   ├── config/
+│   │   └── app_config.dart   # API keys and configuration
+│   └── services/            # Core services
+├── models/                   # Data models
+├── services/                 # Business logic services
+└── ui/                       # UI screens
 ```
 
-## How It Works
+## Configuration
 
-1. **Greeting**: App greets the user and explains the process
-2. **Profile Collection**: Asks questions via voice:
-   - Age
-   - District (Maharashtra)
-   - Annual Income
-   - Category (student, farmer, woman, senior citizen, unemployed, general)
-3. **Filtering**: Applies rule-based filtering to reduce dataset size
-4. **AI Analysis**: Sends filtered schemes + user profile to Gemini
-5. **Recommendations**: Displays top 3 schemes with explanations
-
-## Conversation Flow
-
-The app uses a state machine to guide the conversation:
-- `GREETING` → `ASK_AGE` → `ASK_DISTRICT` → `ASK_INCOME` → `ASK_CATEGORY` → `SEND_TO_GEMINI` → `RESULT`
-
-## Technologies Used
-
-- **Flutter**: UI framework
-- **speech_to_text**: Voice recognition
-- **flutter_tts**: Text-to-speech
-- **google_generative_ai**: Gemini API integration
-- **Local JSON**: Scheme dataset
-
-## Notes
-
-- The app requires microphone permissions for voice input
-- Chrome browser supports speech recognition
-- Ensure you have a stable internet connection for Gemini API calls
-- The app works offline for basic filtering, but requires internet for AI recommendations
-
-## Troubleshooting
-
-1. **Speech recognition not working**: Check browser permissions for microphone
-2. **Gemini API errors**: Verify your API key is correct and has quota
-3. **Schemes not loading**: Ensure `assets/data/maharashtra_schemes.json` exists
+All API keys and configuration are centralized in `lib/core/config/app_config.dart`:
+- Gemini API Key
+- Email SMTP Settings
+- Admin Password
 
 ## License
 
 This project is created for educational/hackathon purposes.
-

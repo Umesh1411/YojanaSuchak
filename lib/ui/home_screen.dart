@@ -1,13 +1,13 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../models/user_profile.dart';
-import '../models/conversation_state.dart';
 import '../models/scheme.dart';
 import '../services/speech_service.dart';
 import '../services/tts_service.dart';
-import '../services/gemini_service.dart';
-import '../services/eligibility_filter.dart';
+import '../services/gemini_chat_service.dart';
 import '../services/profile_extractor.dart';
 import '../services/data_service.dart';
+import '../core/config/app_config.dart';
 
 /// Main screen with voice interaction and scheme recommendations
 class HomeScreen extends StatefulWidget {
@@ -22,16 +22,17 @@ class _HomeScreenState extends State<HomeScreen>
   // Services
   final SpeechService _speechService = SpeechService();
   final TTSService _ttsService = TTSService();
-  GeminiService? _geminiService;
+  GeminiChatService? _geminiChatService;
 
   // State
-  ConversationState _currentState = ConversationState.greeting;
   final UserProfile _userProfile = UserProfile();
   String _transcript = '';
+  String _botResponse = '';
   bool _isListening = false;
   bool _isLoading = false;
-  List<SchemeRecommendation> _recommendations = [];
   List<Scheme> _allSchemes = [];
+  List<Map<String, String>> _conversationHistory = [];
+  List<Scheme> _recommendations = [];
 
   // Animation
   late AnimationController _animationController;
@@ -63,111 +64,234 @@ class _HomeScreenState extends State<HomeScreen>
     await _speechService.initialize();
     await _ttsService.initialize();
 
-    // Load schemes
+    // Load schemes from Firestore only
     _allSchemes = await DataService.loadSchemes();
 
-    // Initialize Gemini service (API key should be set)
-    // TODO: Replace with your actual Gemini API key
-    const String geminiApiKey = 'YOUR_GEMINI_API_KEY_HERE';
-    if (geminiApiKey != 'YOUR_GEMINI_API_KEY_HERE') {
-      _geminiService = GeminiService(apiKey: geminiApiKey);
+    if (_allSchemes.isEmpty) {
+      setState(() {
+        _botResponse =
+            'No schemes found. Please ensure schemes are added to Firestore.';
+      });
+      return;
     }
 
-    // Start with greeting
-    _startConversation();
-  }
+    // Initialize Gemini Chat Service
+    if (AppConfig.isGeminiConfigured) {
+      _geminiChatService = GeminiChatService(apiKey: AppConfig.geminiApiKey);
 
-  void _startConversation() {
-    setState(() {
-      _currentState = ConversationState.greeting;
-    });
-    _speakMessage(ConversationState.greeting.getMessage());
-    Future.delayed(const Duration(seconds: 3), () {
-      _moveToNextState();
-    });
-  }
-
-  void _moveToNextState() {
-    if (!_userProfile.isComplete()) {
-      List<String> missing = _userProfile.getMissingFields();
-      if (missing.contains('age') && _currentState != ConversationState.askAge) {
-        setState(() {
-          _currentState = ConversationState.askAge;
-        });
-        _speakMessage(ConversationState.askAge.getMessage());
-      } else if (missing.contains('district') &&
-          _currentState != ConversationState.askDistrict) {
-        setState(() {
-          _currentState = ConversationState.askDistrict;
-        });
-        _speakMessage(ConversationState.askDistrict.getMessage());
-      } else if (missing.contains('income') &&
-          _currentState != ConversationState.askIncome) {
-        setState(() {
-          _currentState = ConversationState.askIncome;
-        });
-        _speakMessage(ConversationState.askIncome.getMessage());
-      } else if (missing.contains('category') &&
-          _currentState != ConversationState.askCategory) {
-        setState(() {
-          _currentState = ConversationState.askCategory;
-        });
-        _speakMessage(ConversationState.askCategory.getMessage());
-      }
+      // Start conversation with greeting
+      _startConversation();
     } else {
-      // Profile complete, send to Gemini
-      _sendToGemini();
+      setState(() {
+        _botResponse =
+            'Gemini API key not configured. Please set your API key in app_config.dart';
+      });
     }
   }
 
-  Future<void> _sendToGemini() async {
+  Future<void> _startConversation() async {
+    if (_geminiChatService == null) {
+      setState(() {
+        _botResponse =
+            'Hello! I\'m here to help you find suitable government schemes. Please tell me about yourself.';
+        _isLoading = false;
+      });
+      return;
+    }
+
     setState(() {
-      _currentState = ConversationState.sendToGemini;
       _isLoading = true;
     });
 
-    _speakMessage(ConversationState.sendToGemini.getMessage());
-
     try {
-      // Apply hybrid filtering
-      List<Scheme> filteredSchemes =
-          EligibilityFilter.filterSchemes(_allSchemes, _userProfile);
+      // Get initial greeting from Gemini with timeout
+      String response = await _geminiChatService!
+          .getChatResponse(
+        userMessage: 'Hello, I want to find government schemes.',
+        profile: _userProfile,
+        availableSchemes: _allSchemes,
+      )
+          .timeout(
+        const Duration(seconds: 30),
+        onTimeout: () {
+          return 'Hello! I\'m here to help you find suitable government schemes. Please tell me about yourself.';
+        },
+      );
 
-      // Get recommendations from Gemini
-      if (_geminiService != null) {
-        _recommendations = await _geminiService!
-            .getRecommendations(_userProfile, filteredSchemes);
-      } else {
-        // Fallback if Gemini not configured
-        _recommendations = _getFallbackRecommendations(filteredSchemes);
+      if (mounted) {
+        setState(() {
+          _botResponse = response;
+          _isLoading = false;
+        });
+
+        // Add to conversation history
+        _conversationHistory.add({
+          'role': 'user',
+          'message': 'Hello, I want to find government schemes.',
+        });
+        _conversationHistory.add({
+          'role': 'assistant',
+          'message': response,
+        });
+
+        // Speak the response
+        await _speakMessage(response);
       }
-
-      setState(() {
-        _currentState = ConversationState.result;
-        _isLoading = false;
-      });
-
-      _speakMessage(ConversationState.result.getMessage());
     } catch (e) {
-      print('Error getting recommendations: $e');
-      setState(() {
-        _currentState = ConversationState.error;
-        _isLoading = false;
-      });
-      _speakMessage(ConversationState.error.getMessage());
+      if (mounted) {
+        setState(() {
+          _botResponse =
+              'Hello! I\'m here to help you find suitable government schemes. Please tell me about yourself.';
+          _isLoading = false;
+        });
+        await _speakMessage(_botResponse);
+      }
     }
   }
 
-  List<SchemeRecommendation> _getFallbackRecommendations(
-      List<Scheme> schemes) {
-    return schemes.take(3).map((scheme) {
-      return SchemeRecommendation(
-        scheme: scheme,
-        reason:
-            'This scheme matches your profile. Please check eligibility criteria.',
-        keyBenefits: scheme.benefits,
+  Future<void> _processUserInput(String userMessage) async {
+    if (_geminiChatService == null || userMessage.trim().isEmpty) return;
+
+    // Add user message to history
+    _conversationHistory.add({
+      'role': 'user',
+      'message': userMessage,
+    });
+
+    // Try to extract profile information from the message
+    _extractProfileInfo(userMessage);
+
+    if (mounted) {
+      setState(() {
+        _isLoading = true;
+      });
+    }
+
+    try {
+      // Get response from Gemini with timeout
+      debugPrint('🔄 Starting Gemini API call...');
+      String response = await _geminiChatService!
+          .getChatResponse(
+        userMessage: userMessage,
+        profile: _userProfile,
+        availableSchemes: _allSchemes,
+      )
+          .timeout(
+        const Duration(seconds: 30),
+        onTimeout: () {
+          debugPrint('⏰ Gemini API call timed out');
+          return 'Sorry, the request took too long. Please try again.';
+        },
       );
-    }).toList();
+
+      debugPrint(
+          '✅ Gemini API call completed. Response length: ${response.length}');
+      debugPrint(
+          '📝 Response preview: ${response.substring(0, response.length > 100 ? 100 : response.length)}');
+
+      if (mounted) {
+        // Add bot response to history
+        _conversationHistory.add({
+          'role': 'assistant',
+          'message': response,
+        });
+
+        setState(() {
+          _botResponse = response;
+          _isLoading = false;
+        });
+
+        debugPrint('🔄 UI updated with response, _isLoading set to false');
+
+        // Speak the response
+        await _speakMessage(response);
+
+        // Check if profile is complete and get recommendations
+        if (_userProfile.isComplete() && _conversationHistory.length > 2) {
+          // Wait a bit before showing recommendations
+          Future.delayed(const Duration(seconds: 2), () {
+            if (mounted) {
+              _getRecommendations();
+            }
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint('❌ Error in _processUserInput: $e');
+      if (mounted) {
+        setState(() {
+          _botResponse = 'Sorry, I encountered an error. Please try again.';
+          _isLoading = false;
+        });
+        await _speakMessage(_botResponse);
+      }
+    }
+  }
+
+  void _extractProfileInfo(String text) {
+    // Try to extract all possible information from the text
+    int? age = ProfileExtractor.extractAge(text);
+    if (age != null) _userProfile.age = age;
+
+    String? district = ProfileExtractor.extractDistrict(text);
+    if (district != null) _userProfile.district = district;
+
+    String? state = ProfileExtractor.extractState(text);
+    if (state != null) _userProfile.state = state;
+
+    String? gender = ProfileExtractor.extractGender(text);
+    if (gender != null) _userProfile.gender = gender;
+
+    int? income = ProfileExtractor.extractIncome(text);
+    if (income != null) _userProfile.annualIncome = income;
+
+    String? category = ProfileExtractor.extractCategory(text);
+    if (category != null) _userProfile.category = category;
+
+    // Extract occupation using ProfileExtractor
+    String? occupation = ProfileExtractor.extractOccupation(text);
+    if (occupation != null) _userProfile.occupation = occupation;
+  }
+
+  Future<void> _getRecommendations() async {
+    if (_geminiChatService == null || _allSchemes.isEmpty) return;
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      List<Scheme> recommendations =
+          await _geminiChatService!.getRecommendations(
+        profile: _userProfile,
+        allSchemes: _allSchemes,
+      );
+
+      if (recommendations.isNotEmpty) {
+        _recommendations = recommendations;
+        // Show summary message - all schemes will be displayed in UI cards
+        String recommendationText =
+            'I found ${recommendations.length} suitable schemes for you. Please check the list below for details.';
+
+        setState(() {
+          _botResponse = recommendationText;
+          _isLoading = false;
+        });
+
+        await _speakMessage(recommendationText);
+      } else {
+        setState(() {
+          _botResponse =
+              'Sorry, I could not find any schemes matching your profile. Please check back later or try different criteria.';
+          _isLoading = false;
+        });
+        await _speakMessage(_botResponse);
+      }
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+    }
   }
 
   Future<void> _startListening() async {
@@ -183,41 +307,17 @@ class _HomeScreenState extends State<HomeScreen>
         setState(() {
           _transcript = text;
         });
-
-        // Extract profile information
-        ProfileExtractor.updateProfile(
-          _userProfile,
-          _currentState,
-          text,
-        );
-
-        // Check if we got the information we need
-        if (_userProfile.isComplete() ||
-            (_currentState == ConversationState.askAge &&
-                _userProfile.age != null) ||
-            (_currentState == ConversationState.askDistrict &&
-                _userProfile.district != null) ||
-            (_currentState == ConversationState.askIncome &&
-                _userProfile.annualIncome != null) ||
-            (_currentState == ConversationState.askCategory &&
-                _userProfile.category != null)) {
-          _speechService.stopListening();
-          setState(() {
-            _isListening = false;
-          });
-
-          // Move to next state after a short delay
-          Future.delayed(const Duration(milliseconds: 500), () {
-            _moveToNextState();
-          });
-          break;
-        }
       }
     }
 
     setState(() {
       _isListening = false;
     });
+
+    // Process the transcript after listening stops
+    if (_transcript.isNotEmpty) {
+      await _processUserInput(_transcript);
+    }
   }
 
   void _stopListening() {
@@ -228,7 +328,9 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   Future<void> _speakMessage(String message) async {
-    await _ttsService.speak(message);
+    if (_ttsService.isAvailable) {
+      await _ttsService.speak(message);
+    }
   }
 
   @override
@@ -253,8 +355,8 @@ class _HomeScreenState extends State<HomeScreen>
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Current state message
-              _buildStateCard(),
+              // Bot response card
+              if (_botResponse.isNotEmpty) _buildBotResponseCard(),
 
               const SizedBox(height: 24),
 
@@ -272,7 +374,9 @@ class _HomeScreenState extends State<HomeScreen>
               if (_userProfile.age != null ||
                   _userProfile.district != null ||
                   _userProfile.annualIncome != null ||
-                  _userProfile.category != null)
+                  _userProfile.category != null ||
+                  _userProfile.gender != null ||
+                  _userProfile.occupation != null)
                 _buildProfileCard(),
 
               const SizedBox(height: 24),
@@ -281,13 +385,10 @@ class _HomeScreenState extends State<HomeScreen>
               if (_isLoading) _buildLoadingIndicator(),
 
               // Recommendations
-              if (_currentState == ConversationState.result &&
-                  _recommendations.isNotEmpty)
-                ..._buildRecommendationCards(),
+              if (_recommendations.isNotEmpty) ..._buildRecommendationCards(),
 
-              // Error message
-              if (_currentState == ConversationState.error)
-                _buildErrorCard(),
+              // Conversation history
+              if (_conversationHistory.isNotEmpty) _buildConversationHistory(),
             ],
           ),
         ),
@@ -295,23 +396,31 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
-  Widget _buildStateCard() {
+  Widget _buildBotResponseCard() {
     return Card(
+      color: Colors.blue.shade50,
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Status',
-              style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    color: Colors.grey[600],
-                  ),
+            Row(
+              children: [
+                Icon(Icons.smart_toy, color: Colors.blue.shade700),
+                const SizedBox(width: 8),
+                Text(
+                  'Assistant',
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        color: Colors.blue.shade700,
+                        fontWeight: FontWeight.bold,
+                      ),
+                ),
+              ],
             ),
             const SizedBox(height: 8),
             Text(
-              _currentState.getMessage(),
-              style: Theme.of(context).textTheme.bodyLarge,
+              _botResponse,
+              style: Theme.of(context).textTheme.bodyMedium,
             ),
           ],
         ),
@@ -383,7 +492,7 @@ class _HomeScreenState extends State<HomeScreen>
 
   Widget _buildProfileCard() {
     return Card(
-      color: Colors.green.shade50,
+      color: Colors.orange.shade50,
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -392,12 +501,16 @@ class _HomeScreenState extends State<HomeScreen>
             Text(
               'Your Profile',
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: Colors.green.shade700,
+                    color: Colors.orange.shade700,
                   ),
             ),
             const SizedBox(height: 12),
             if (_userProfile.age != null)
               _buildProfileItem('Age', '${_userProfile.age} years'),
+            if (_userProfile.gender != null)
+              _buildProfileItem('Gender', _userProfile.gender!),
+            if (_userProfile.state != null)
+              _buildProfileItem('State', _userProfile.state!),
             if (_userProfile.district != null)
               _buildProfileItem('District', _userProfile.district!),
             if (_userProfile.annualIncome != null)
@@ -405,6 +518,8 @@ class _HomeScreenState extends State<HomeScreen>
                 'Annual Income',
                 '₹${_userProfile.annualIncome!.toStringAsFixed(0)}',
               ),
+            if (_userProfile.occupation != null)
+              _buildProfileItem('Occupation', _userProfile.occupation!),
             if (_userProfile.category != null)
               _buildProfileItem('Category', _userProfile.category!),
           ],
@@ -447,7 +562,7 @@ class _HomeScreenState extends State<HomeScreen>
   List<Widget> _buildRecommendationCards() {
     return _recommendations.asMap().entries.map((entry) {
       int index = entry.key;
-      SchemeRecommendation recommendation = entry.value;
+      Scheme scheme = entry.value;
       return Padding(
         padding: const EdgeInsets.only(bottom: 16.0),
         child: Card(
@@ -461,14 +576,27 @@ class _HomeScreenState extends State<HomeScreen>
               ),
             ),
             title: Text(
-              recommendation.scheme.schemeName,
+              scheme.schemeName,
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
             ),
-            subtitle: Text(
-              recommendation.scheme.department,
-              style: Theme.of(context).textTheme.bodySmall,
+            subtitle: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  scheme.department,
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+                if (scheme.schemeLevel.isNotEmpty)
+                  Text(
+                    '${scheme.schemeLevel} Scheme • ${scheme.state}',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          fontSize: 11,
+                          color: Colors.grey[600],
+                        ),
+                  ),
+              ],
             ),
             children: [
               Padding(
@@ -476,19 +604,11 @@ class _HomeScreenState extends State<HomeScreen>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Why this scheme
-                    _buildSectionTitle('Why this scheme?'),
+                    // Benefits
+                    _buildSectionTitle('Benefits'),
                     const SizedBox(height: 8),
                     Text(
-                      recommendation.reason,
-                      style: Theme.of(context).textTheme.bodyMedium,
-                    ),
-                    const SizedBox(height: 16),
-                    // Key benefits
-                    _buildSectionTitle('Key Benefits'),
-                    const SizedBox(height: 8),
-                    Text(
-                      recommendation.keyBenefits,
+                      scheme.benefits,
                       style: Theme.of(context).textTheme.bodyMedium,
                     ),
                     const SizedBox(height: 16),
@@ -496,15 +616,70 @@ class _HomeScreenState extends State<HomeScreen>
                     _buildSectionTitle('Eligibility'),
                     const SizedBox(height: 8),
                     Text(
-                      recommendation.scheme.eligibility,
+                      scheme.eligibility,
                       style: Theme.of(context).textTheme.bodyMedium,
                     ),
+                    if (scheme.otherEligibilityCriteria.isNotEmpty) ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        'Additional Criteria: ${scheme.otherEligibilityCriteria}',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              fontStyle: FontStyle.italic,
+                            ),
+                      ),
+                    ],
+                    const SizedBox(height: 16),
+                    // Benefits Details
+                    _buildSectionTitle('Benefit Details'),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Type: ${scheme.benefitType}',
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
+                    if (scheme.benefitAmount.isNotEmpty)
+                      Text(
+                        'Amount: ${scheme.benefitAmount}',
+                        style: Theme.of(context).textTheme.bodyMedium,
+                      ),
+                    if (scheme.benefitFrequency.isNotEmpty)
+                      Text(
+                        'Frequency: ${scheme.benefitFrequency}',
+                        style: Theme.of(context).textTheme.bodyMedium,
+                      ),
+                    const SizedBox(height: 16),
+                    // Application Details
+                    _buildSectionTitle('Application'),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Mode: ${scheme.applicationMode}',
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
+                    Text(
+                      'Deadline: ${scheme.applicationDeadline}',
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
+                    if (scheme.officialApplyLink.isNotEmpty) ...[
+                      const SizedBox(height: 8),
+                      InkWell(
+                        onTap: () {
+                          // Open link (you'll need url_launcher)
+                        },
+                        child: Text(
+                          'Apply Online: ${scheme.officialApplyLink}',
+                          style:
+                              Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                    color: Colors.blue,
+                                    decoration: TextDecoration.underline,
+                                  ),
+                        ),
+                      ),
+                    ],
                     const SizedBox(height: 16),
                     // Required documents
-                    if (recommendation.scheme.requiredDocuments.isNotEmpty) ...[
+                    if (scheme.requiredDocuments.isNotEmpty) ...[
                       _buildSectionTitle('Required Documents'),
                       const SizedBox(height: 8),
-                      ...recommendation.scheme.requiredDocuments.map(
+                      ...scheme.requiredDocuments.map(
                         (doc) => Padding(
                           padding: const EdgeInsets.only(bottom: 4.0),
                           child: Row(
@@ -533,6 +708,47 @@ class _HomeScreenState extends State<HomeScreen>
     }).toList();
   }
 
+  Widget _buildConversationHistory() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Conversation History',
+              style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+            ),
+            const SizedBox(height: 12),
+            ..._conversationHistory.map((msg) => Padding(
+                  padding: const EdgeInsets.only(bottom: 8.0),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(
+                        msg['role'] == 'user' ? Icons.person : Icons.smart_toy,
+                        size: 16,
+                        color:
+                            msg['role'] == 'user' ? Colors.blue : Colors.green,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          msg['message'] ?? '',
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
+                      ),
+                    ],
+                  ),
+                )),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildSectionTitle(String title) {
     return Text(
       title,
@@ -542,33 +758,4 @@ class _HomeScreenState extends State<HomeScreen>
           ),
     );
   }
-
-  Widget _buildErrorCard() {
-    return Card(
-      color: Colors.red.shade50,
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Row(
-          children: [
-            Icon(Icons.error_outline, color: Colors.red.shade700),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                'An error occurred. Please try again.',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Colors.red.shade700,
-                    ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 }
-
-
-
-
-
-

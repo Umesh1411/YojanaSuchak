@@ -4,10 +4,15 @@
 
 ### Gemini API Key
 
+**Location**: `lib/core/config/app_config.dart`
 
+**Steps**:
+1. Get your Gemini API key from: https://makersuite.google.com/app/apikey
+2. Open `lib/core/config/app_config.dart`
+3. Update the `geminiApiKey` constant:
 
 ```dart
-static const String geminiApiKey = 'AIzaSyA3gAiETNFx80ni7VUZVrOarNEABBAwQuw';
+static const String geminiApiKey = 'YOUR_GEMINI_API_KEY_HERE';
 ```
 
 ###Email SMTP Configuration
@@ -103,6 +108,10 @@ After configuration:
 - Verify collection name is "schemes"
 - Check internet connection
 - App will fallback to local JSON if Firestore fails
+
+
+
+
 
 
 

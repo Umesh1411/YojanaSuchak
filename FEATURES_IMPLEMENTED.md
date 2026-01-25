@@ -55,14 +55,14 @@
 ### 1. Gemini API Key
 **File**: `lib/core/config/app_config.dart`
 ```dart
-static const String geminiApiKey = 'YOUR_ACTUAL_API_KEY';
+static const String geminiApiKey = 'AIzaSyA3gAiETNFx80ni7VUZVrOarNEABBAwQuw';
 ```
 
 ### 2. Email SMTP Settings
 **File**: `lib/core/config/app_config.dart`
 ```dart
-static const String smtpUsername = 'your-email@gmail.com';
-static const String smtpPassword = 'your-app-password';
+static const String smtpUsername = 'yojanasuchak@gmail.com';
+static const String smtpPassword = 'izbx onzr gfvx rpmw';
 ```
 
 ### 3. Firestore Setup
@@ -104,6 +104,10 @@ All features are implemented and ready. Just configure:
 - Firestore schemes collection
 
 See `CONFIGURATION_GUIDE.md` for detailed setup instructions.
+
+
+
+
 
 
 

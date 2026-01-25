@@ -10,6 +10,7 @@ import '../../services/profile_extractor.dart';
 import '../../services/data_service.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/app_strings.dart';
+import '../../core/config/app_config.dart';
 
 /// Scheme Finder Screen with Voice Interaction
 class SchemeFinderScreen extends StatefulWidget {
@@ -65,9 +66,8 @@ class _SchemeFinderScreenState extends State<SchemeFinderScreen>
     await _ttsService.initialize();
     _allSchemes = await DataService.loadSchemes();
 
-    const String geminiApiKey = 'YOUR_GEMINI_API_KEY_HERE';
-    if (geminiApiKey != 'YOUR_GEMINI_API_KEY_HERE') {
-      _geminiService = GeminiService(apiKey: geminiApiKey);
+    if (AppConfig.isGeminiConfigured) {
+      _geminiService = GeminiService(apiKey: AppConfig.geminiApiKey);
     }
 
     _startConversation();

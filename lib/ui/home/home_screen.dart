@@ -12,6 +12,7 @@ import '../my_schemes/my_schemes_screen.dart';
 import '../contact/contact_us_screen.dart';
 import '../settings/settings_screen.dart';
 import '../rate_us/rate_us_screen.dart';
+import '../admin/admin_scheme_upload_screen.dart';
 
 /// Main Home Screen with Drawer Menu
 class HomeScreen extends StatefulWidget {
@@ -117,11 +118,11 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildDrawer(User? user) {
     final authService = AuthService();
     final demoUser = authService.demoUserData;
-    
+
     // Get user info from Firebase or demo mode
     final String displayName;
     final String email;
-    
+
     if (user != null) {
       displayName = user.displayName ?? 'User';
       email = user.email ?? '';
@@ -132,7 +133,7 @@ class _HomeScreenState extends State<HomeScreen> {
       displayName = 'User';
       email = '';
     }
-    
+
     return Drawer(
       child: ListView(
         padding: EdgeInsets.zero,
@@ -204,6 +205,20 @@ class _HomeScreenState extends State<HomeScreen> {
               );
             },
           ),
+          const Divider(),
+          // Admin Upload Scheme (for admins)
+          _buildDrawerItem(
+            icon: Icons.cloud_upload,
+            title: 'Upload Scheme (Admin)',
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const AdminSchemeUploadScreen()),
+              );
+            },
+          ),
+          const Divider(),
           _buildDrawerItem(
             icon: Icons.star_outline,
             title: AppStrings.rateUs,
@@ -269,19 +284,6 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             child: Stack(
               children: [
-                // Background pattern
-                Positioned.fill(
-                  child: Opacity(
-                    opacity: 0.1,
-                    child: Image.asset(
-                      'assets/images/pattern.png',
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
-                        return Container(); // Fallback if image doesn't exist
-                      },
-                    ),
-                  ),
-                ),
                 // Content
                 Center(
                   child: Column(
@@ -476,4 +478,3 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 }
-

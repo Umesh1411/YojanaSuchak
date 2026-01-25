@@ -217,12 +217,23 @@ class ProfileExtractor {
   }
 
   /// Extract category from text
-  /// Matches: student, farmer, woman, senior citizen, unemployed, general
+  /// Supports both social categories (SC/ST/OBC/General) and target groups (student, farmer, woman, etc.)
   static String? extractCategory(String text) {
     String cleaned = text.toLowerCase().trim();
 
-    // Category keywords
-    Map<String, String> categoryMap = {
+    // Social category keywords (SC/ST/OBC/General) - PRIORITY
+    if (cleaned.contains('sc') || cleaned.contains('scheduled caste')) {
+      return 'SC';
+    } else if (cleaned.contains('st') || cleaned.contains('scheduled tribe')) {
+      return 'ST';
+    } else if (cleaned.contains('obc') || cleaned.contains('other backward class')) {
+      return 'OBC';
+    } else if (cleaned.contains('general') && !cleaned.contains('category')) {
+      return 'General';
+    }
+
+    // Target group keywords (secondary)
+    Map<String, String> targetGroupMap = {
       'student': 'student',
       'studying': 'student',
       'college': 'student',
@@ -241,11 +252,51 @@ class ProfileExtractor {
       'unemployed': 'unemployed',
       'jobless': 'unemployed',
       'no job': 'unemployed',
-      'general': 'general',
-      'none': 'general',
     };
 
-    for (var entry in categoryMap.entries) {
+    for (var entry in targetGroupMap.entries) {
+      if (cleaned.contains(entry.key)) {
+        return entry.value;
+      }
+    }
+
+    return null;
+  }
+
+  /// Extract occupation from text
+  static String? extractOccupation(String text) {
+    String cleaned = text.toLowerCase().trim();
+
+    // Occupation keywords mapping
+    Map<String, String> occupationMap = {
+      'teacher': 'Teacher',
+      'teaching': 'Teacher',
+      'shikshak': 'Teacher',
+      'farmer': 'Farmer',
+      'farming': 'Farmer',
+      'kisan': 'Farmer',
+      'student': 'Student',
+      'studying': 'Student',
+      'vidyarthi': 'Student',
+      'engineer': 'Engineer',
+      'engineering': 'Engineer',
+      'abhiyanta': 'Engineer',
+      'doctor': 'Doctor',
+      'medical': 'Doctor',
+      'daktar': 'Doctor',
+      'business': 'Business',
+      'vyapari': 'Business',
+      'government employee': 'Government Employee',
+      'sarkari': 'Government Employee',
+      'nurse': 'Nurse',
+      'lawyer': 'Lawyer',
+      'advocate': 'Lawyer',
+      'driver': 'Driver',
+      'labour': 'Labour',
+      'mazdoor': 'Labour',
+    };
+
+    for (var entry in occupationMap.entries) {
       if (cleaned.contains(entry.key)) {
         return entry.value;
       }

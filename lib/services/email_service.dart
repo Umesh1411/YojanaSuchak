@@ -84,6 +84,124 @@ class EmailService {
     }
   }
 
+  /// Send email for eligible scheme with eligibility explanation
+  Future<bool> sendEligibleSchemeEmail({
+    required String recipientEmail,
+    required String recipientName,
+    required Scheme scheme,
+    required String eligibilityExplanation,
+  }) async {
+    try {
+      final smtpServer = SmtpServer(
+        smtpHost,
+        port: smtpPort,
+        username: username,
+        password: password,
+        ssl: false,
+        allowInsecure: false,
+        ignoreBadCertificate: false,
+      );
+
+      final message = Message()
+        ..from = Address(username, 'YojanaSuchak')
+        ..recipients.add(recipientEmail)
+        ..subject = 'New Scheme Available: ${scheme.schemeName}'
+        ..html = _buildEligibilityEmailHtml(
+          recipientName,
+          scheme,
+          eligibilityExplanation,
+        );
+
+      debugPrint('📧 Sending eligibility email to: $recipientEmail');
+      final sendReport = await send(message, smtpServer);
+      
+      debugPrint('✅ Eligibility email sent successfully!');
+      debugPrint('📧 Send report: $sendReport');
+      return true;
+    } catch (e, stackTrace) {
+      debugPrint('❌ Error sending eligibility email: $e');
+      debugPrint('❌ Stack trace: $stackTrace');
+      return false;
+    }
+  }
+
+  /// Build HTML email content for eligibility notification
+  String _buildEligibilityEmailHtml(
+    String recipientName,
+    Scheme scheme,
+    String eligibilityExplanation,
+  ) {
+    String documentsList = scheme.importantDocuments
+        .map((doc) => '<li>$doc</li>')
+        .join('');
+
+    return '''
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background-color: #1E88E5; color: white; padding: 20px; text-align: center; }
+        .content { padding: 20px; background-color: #f9f9f9; }
+        .scheme-name { font-size: 24px; font-weight: bold; color: #1E88E5; margin: 20px 0; }
+        .section { margin: 20px 0; }
+        .section-title { font-weight: bold; color: #1E88E5; margin-bottom: 10px; }
+        .eligibility-box { background-color: #e8f5e9; padding: 15px; border-left: 4px solid #4caf50; margin: 20px 0; }
+        ul { margin: 10px 0; padding-left: 20px; }
+        .apply-button { display: inline-block; background-color: #1E88E5; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; margin: 20px 0; }
+        .footer { text-align: center; padding: 20px; color: #666; font-size: 12px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>YojanaSuchak</h1>
+            <p>New Scheme Available for You!</p>
+        </div>
+        <div class="content">
+            <p>Dear $recipientName,</p>
+            <p>Great news! A new government scheme is now available that matches your profile:</p>
+            
+            <div class="scheme-name">${scheme.schemeName}</div>
+            
+            <div class="eligibility-box">
+                <div class="section-title">Why You're Eligible:</div>
+                <p>$eligibilityExplanation</p>
+            </div>
+            
+            <div class="section">
+                <div class="section-title">Department:</div>
+                <p>${scheme.department}</p>
+            </div>
+            
+            <div class="section">
+                <div class="section-title">Benefits:</div>
+                <p>${scheme.allBenefitsDescription.isNotEmpty ? scheme.allBenefitsDescription : scheme.benefits}</p>
+            </div>
+            
+            <div class="section">
+                <div class="section-title">Required Documents:</div>
+                <ul>
+                    $documentsList
+                </ul>
+            </div>
+            
+            ${scheme.officialApplyLink.isNotEmpty ? '<a href="${scheme.officialApplyLink}" class="apply-button">Apply Now</a>' : ''}
+            
+            <p style="margin-top: 30px;">For more information, please visit the official government website or contact the department directly.</p>
+            
+            <p>Best regards,<br>YojanaSuchak Team</p>
+        </div>
+        <div class="footer">
+            <p>This is an automated email from YojanaSuchak app.</p>
+        </div>
+    </div>
+</body>
+</html>
+''';
+  }
+
   /// Build HTML email content
   String _buildEmailHtml(String recipientName, Scheme scheme) {
     String documentsList = scheme.requiredDocuments

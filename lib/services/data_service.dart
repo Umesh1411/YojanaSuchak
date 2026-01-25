@@ -1,45 +1,31 @@
-import 'dart:convert';
-import 'package:flutter/services.dart';
 import '../models/scheme.dart';
 import 'firestore_service.dart';
 
 /// Service for loading scheme data
-/// Tries Firestore first, falls back to local JSON if Firestore fails
+/// Only loads from Firestore - no JSON fallback
 class DataService {
   static List<Scheme>? _cachedSchemes;
   static final FirestoreService _firestoreService = FirestoreService();
 
-  /// Load schemes - tries Firestore first, then local JSON
+  /// Load schemes - only from Firestore
   static Future<List<Scheme>> loadSchemes() async {
     if (_cachedSchemes != null) {
       return _cachedSchemes!;
     }
 
-    // Try Firestore first
+    // Only try Firestore
     try {
       final schemes = await _firestoreService.fetchSchemes();
       if (schemes.isNotEmpty) {
         _cachedSchemes = schemes;
         return schemes;
+      } else {
+        print('⚠️ No schemes found in Firestore. Please add schemes to Firestore collection.');
+        return [];
       }
     } catch (e) {
-      print('Firestore fetch failed, trying local JSON: $e');
-    }
-
-    // Fallback to local JSON
-    try {
-      final String jsonString =
-          await rootBundle.loadString('assets/data/maharashtra_schemes.json');
-
-      final List<dynamic> jsonList = jsonDecode(jsonString);
-
-      _cachedSchemes = jsonList
-          .map((json) => Scheme.fromJson(json as Map<String, dynamic>))
-          .toList();
-
-      return _cachedSchemes!;
-    } catch (e) {
-      print('Error loading schemes: $e');
+      print('❌ Firestore fetch failed: $e');
+      print('⚠️ Please ensure Firestore is properly configured and schemes collection exists.');
       return [];
     }
   }
