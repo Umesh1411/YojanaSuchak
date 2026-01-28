@@ -3,7 +3,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class AppConfig {
 
-  static const geminiApiKey = "AIzaSyCrPzWXOnonQS8bRoTwf1sGz0S9Luz7__E";
+  static const geminiApiKey = "";
 
 
 
