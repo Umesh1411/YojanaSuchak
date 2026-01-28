@@ -7,6 +7,8 @@ import '../../services/tts_service.dart';
 import '../../services/data_service.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/config/app_config.dart';
+import 'package:flutter/foundation.dart';
+
 
 /// ===============================================================
 /// ENHANCED SCHEME FINDER – GEMINI DRIVEN (SINGLE FILE VERSION)
@@ -24,7 +26,11 @@ class _EnhancedSchemeFinderScreenState extends State<EnhancedSchemeFinderScreen>
   // ------------------ Services ------------------
   final SpeechService _speechService = SpeechService();
   final TTSService _ttsService = TTSService();
-  late final GenerativeModel _gemini;
+  GenerativeModel? _gemini;
+  bool _geminiReady = false;
+  String? _pendingUserMessage;
+
+
 
   // ------------------ State ------------------
   final UserProfile _profile = UserProfile();
@@ -40,7 +46,8 @@ class _EnhancedSchemeFinderScreenState extends State<EnhancedSchemeFinderScreen>
   final ScrollController _scrollController = ScrollController();
 
   // ------------------ Animation ------------------
-  late AnimationController _animationController;
+  AnimationController? _animationController;
+
   // Animation pulse available for future UI animations
   // late Animation<double> _pulse;
 
@@ -52,14 +59,47 @@ class _EnhancedSchemeFinderScreenState extends State<EnhancedSchemeFinderScreen>
   }
 
   Future<void> _init() async {
+    debugPrint("🚀 _init() starting...");
+    
     await _speechService.initialize();
     await _ttsService.initialize();
     _allSchemes = await DataService.loadSchemes();
 
-    _gemini = GenerativeModel(
-      model: 'gemini-1.5-pro', // Updated to stable Gemini model
-      apiKey: AppConfig.geminiApiKey,
-    );
+    if (!kIsWeb) {
+      final key = AppConfig.geminiApiKey;
+      debugPrint("📍 Gemini API key length: ${key.length}");
+      
+      if (key.isEmpty) {
+        // FATAL: Empty API key
+        debugPrint("❌ FATAL: Gemini API key is EMPTY at runtime. Cannot initialize.");
+        _geminiReady = false;
+        _gemini = null;
+      } else {
+        try {
+          debugPrint("🔧 Initializing Gemini with model: models/gemini-1.5-flash");
+          _gemini = GenerativeModel(
+            model: 'models/gemini-flash-lite-latest',
+            apiKey: key,
+          );
+          _geminiReady = true;
+          debugPrint("✅ Gemini initialized successfully");
+          
+          // If there's a pending user message, resume it now
+          if (_pendingUserMessage != null) {
+            final msg = _pendingUserMessage!;
+            _pendingUserMessage = null;
+            debugPrint("📨 Resuming pending message: $msg");
+            Future.microtask(() => _handleUser(msg));
+          }
+        } catch (e) {
+          debugPrint("❌ Failed to initialize Gemini: $e");
+          _geminiReady = false;
+          _gemini = null;
+        }
+      }
+    } else {
+      debugPrint("🌐 Web platform detected, skipping Gemini initialization");
+    }
 
     _animationController = AnimationController(
       vsync: this,
@@ -81,9 +121,24 @@ class _EnhancedSchemeFinderScreenState extends State<EnhancedSchemeFinderScreen>
   // ===============================================================
   Future<void> _handleUser(String message) async {
     if (message.trim().isEmpty) return;
+    
+    debugPrint("👤 User message: $message");
+    debugPrint("🔍 Gemini ready: $_geminiReady");
 
+    // If Gemini not ready yet, queue the message and return early
+    if (!_geminiReady) {
+      debugPrint("⏳ Gemini not ready, queueing message");
+      _pendingUserMessage = message;
+      _addUser(message);
+      _textController.clear();
+      _addBot("Please wait a moment, AI is initializing…");
+      return;
+    }
+
+    // Gemini is ready: add user message and process
     _addUser(message);
     _textController.clear();
+
     setState(() => _isLoading = true);
 
     // Step 1: Parse profile
@@ -118,29 +173,64 @@ class _EnhancedSchemeFinderScreenState extends State<EnhancedSchemeFinderScreen>
   // GEMINI – NEXT QUESTION DECIDER
   // ===============================================================
   Future<String> _askGeminiNext(String userMessage) async {
-    final prompt = '''
-You are a polite Indian government scheme assistant.
+    debugPrint("🤖 _askGeminiNext() called with: $userMessage");
+    
+    if (kIsWeb) {
+      debugPrint("🌐 Web platform, returning fallback");
+      return "AI assistance is available on mobile app only.";
+    }
 
-User message:
-"$userMessage"
+    // Fail fast if _gemini is null
+    if (_gemini == null) {
+      debugPrint("❌ _gemini is null, cannot call Gemini");
+      return "Please wait a moment, AI is getting ready...";
+    }
 
-Collected profile:
-Age: ${_profile.age ?? "unknown"}
-Income: ${_profile.annualIncome ?? "unknown"}
-Occupation: ${_profile.occupation ?? "unknown"}
-Category: ${_profile.category ?? "unknown"}
-State: ${_profile.state ?? "unknown"}
+    if (!_geminiReady) {
+      debugPrint("⏳ Gemini not ready");
+      return "Please wait a moment, AI is getting ready...";
+    }
 
-Rules:
-- Ask ONLY ONE missing question.
-- If input format is wrong, explain correct format.
-- If all details are present, reply exactly: PROFILE_COMPLETE
-- Use simple Indian English.
-''';
+    try {
+      final prompt = '''
+  You are a polite Indian government scheme assistant.
 
-    final response = await _gemini.generateContent([Content.text(prompt)]);
-    return response.text?.trim() ?? '';
+  User message:
+  "$userMessage"
+
+  Collected profile:
+  Age: ${_profile.age ?? "unknown"}
+  Income: ${_profile.annualIncome ?? "unknown"}
+  Occupation: ${_profile.occupation ?? "unknown"}
+  Category: ${_profile.category ?? "unknown"}
+  State: ${_profile.state ?? "unknown"}
+
+  Rules:
+  - Ask ONLY ONE missing question.
+  - If input format is wrong, explain correct format.
+  - If all details are present, reply exactly: PROFILE_COMPLETE
+  - Use simple Indian English.
+  ''';
+
+      debugPrint("🔄 Calling Gemini API...");
+      final response = await _gemini!.generateContent([Content.text(prompt)]);
+      debugPrint("✅ Gemini API response received");
+
+      final text = response.text;
+
+      if (text == null || text.trim().isEmpty) {
+        debugPrint("⚠️ Gemini returned empty text");
+        return "Please tell me your age, income, occupation, category, and state.";
+      }
+
+      debugPrint("📝 Gemini reply: $text");
+      return text.trim();
+    } catch (e) {
+      debugPrint("❌ Gemini API error: $e");
+      return "I am facing a technical issue. Please try again.";
+    }
   }
+
 
   // ===============================================================
   // PROFILE PARSER (SAFE & NON-DESTRUCTIVE)
@@ -234,28 +324,48 @@ Rules:
   // ===============================================================
   // GEMINI – SCHEME EXPLAINER
   // ===============================================================
+  
   Future<String> _explainScheme(Scheme scheme) async {
-    final prompt = '''
-Explain politely why this government scheme matches the user.
+    debugPrint("💡 _explainScheme() called for: ${scheme.schemeName}");
+    
+    if (_gemini == null) {
+      debugPrint("❌ _gemini is null, returning fallback");
+      return "This scheme matches your profile based on the details you provided.";
+    }
 
-User:
-Occupation: ${_profile.occupation}
-Age: ${_profile.age}
-Income: ${_profile.annualIncome}
-Category: ${_profile.category}
-State: ${_profile.state}
+    try {
+      final prompt = '''
+  Explain politely why this government scheme matches the user.
 
-Scheme:
-Name: ${scheme.schemeName}
-Eligibility: ${scheme.eligibility}
-Benefits: ${scheme.benefits}
+  User:
+  Occupation: ${_profile.occupation}
+  Age: ${_profile.age}
+  Income: ${_profile.annualIncome}
+  Category: ${_profile.category}
+  State: ${_profile.state}
 
-Explain in simple Indian English.
-''';
+  Scheme:
+  Name: ${scheme.schemeName}
+  Eligibility: ${scheme.eligibility}
+  Benefits: ${scheme.benefits}
 
-    final response = await _gemini.generateContent([Content.text(prompt)]);
-    return response.text ?? '';
+  Explain in simple Indian English.
+  ''';
+
+      debugPrint("🔄 Calling Gemini API for scheme explanation...");
+      final response = await _gemini!.generateContent([Content.text(prompt)]);
+      debugPrint("✅ Gemini scheme explanation received");
+
+      final result = response.text ??
+          "This scheme matches your profile based on the details you provided.";
+      debugPrint("📝 Scheme explanation: $result");
+      return result;
+    } catch (e) {
+      debugPrint("❌ Gemini error (scheme explain): $e");
+      return "This scheme matches your profile.";
+    }
   }
+
 
   // ===============================================================
   // UI HELPERS
@@ -306,27 +416,34 @@ Explain in simple Indian English.
       _isListening = true;
     });
 
+    String lastText = '';
+
     try {
-      await for (String text in _speechService.startListening()) {
-        if (text.isNotEmpty && mounted) {
-          setState(() {
-            _isListening = false;
-          });
-          _handleUser(text);
+      await for (final text in _speechService.startListening()) {
+        if (text.isNotEmpty) {
+          lastText = text;
+        }
+
+        // stop pressed → exit loop cleanly
+        if (!_isListening) {
           break;
         }
       }
     } catch (e) {
+      debugPrint("Speech error: $e");
+    } finally {
       if (mounted) {
         setState(() {
           _isListening = false;
         });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
-        );
+      }
+
+      if (lastText.isNotEmpty) {
+        _handleUser(lastText);
       }
     }
   }
+
 
   void _stopListening() {
     _speechService.stopListening();
@@ -430,7 +547,7 @@ Explain in simple Indian English.
 
   @override
   void dispose() {
-    _animationController.dispose();
+    _animationController?.dispose();
     _textController.dispose();
     _scrollController.dispose();
     _speechService.stopListening();

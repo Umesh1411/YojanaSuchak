@@ -1,7 +1,11 @@
 /// App Configuration - Store API keys and settings here
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+
 class AppConfig {
-  // Gemini API Key - Replace with your actual key
-  static const String geminiApiKey = 'AIzaSyDqZJ3zsYDTR7Gvr_X3bNWefidrc1pA8Q8';
+
+  static const geminiApiKey = "AIzaSyCrPzWXOnonQS8bRoTwf1sGz0S9Luz7__E";
+
+
 
   // Email SMTP Configuration - Replace with your SMTP details
   static const String smtpHost = 'smtp.gmail.com';
