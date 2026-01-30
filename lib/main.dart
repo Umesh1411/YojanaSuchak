@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
@@ -7,9 +8,21 @@ import 'core/services/language_service.dart';
 import 'core/services/localization_service.dart';
 import 'core/utils/app_strings.dart';
 import 'ui/screens/splash_screen.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Load runtime .env if present. This makes local dev easier (you can set GEMINI_API_KEY in a .env file).
+  // Note: compile-time `--dart-define` still takes priority in EnvConfig.
+  try {
+    // For local non-web development, load a .env file if present. For web builds, prefer --dart-define and avoid fetching an asset.
+    if (!bool.fromEnvironment('dart.vm.product') && !kIsWeb) {
+      await DotEnv().load(fileName: '.env');
+    }
+  } catch (e) {
+    // silent: if no .env file present, that's okay
+  }
 
   // Initialize Firebase
   await Firebase.initializeApp(

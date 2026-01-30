@@ -63,6 +63,7 @@ class SchemeRecommender {
       final reason = _buildReason(scheme, profile, score, locale);
 
       return {
+        'schemeId': scheme['id'] ?? schemeName,
         'schemeName': schemeName,
         'reason': reason,
         'keyBenefits': benefits,
@@ -132,6 +133,20 @@ class SchemeRecommender {
     final disReq = eligibility['disabilityRequired'] == true;
     if (disReq && userDis) score += 25;
 
+    // Sector match (high priority)
+    final userSector = (profile['sector'] ?? '').toString().toLowerCase();
+    final schemeSector = (scheme['sector'] ?? '').toString().toLowerCase();
+    final schemeSectors = <String>[];
+    if (scheme['sectors'] is List) {
+      schemeSectors.addAll(
+          (scheme['sectors'] as List).map((e) => e.toString().toLowerCase()));
+    }
+    if (schemeSector.isNotEmpty) schemeSectors.add(schemeSector);
+
+    if (userSector.isNotEmpty && schemeSectors.contains(userSector)) {
+      score += 30; // big boost for sector match
+    }
+
     // Flags: farmer/student/woman/senior
     final flagKeys = ['farmer', 'student', 'woman', 'seniorCitizen'];
     for (final k in flagKeys) {
@@ -188,6 +203,16 @@ class SchemeRecommender {
           args: {'limit': incomeLimit.toString()}));
     }
 
+    // Sector reason
+    final userSector = (profile['sector'] ?? '').toString();
+    final schemeSector = (scheme['sector'] ?? '')..toString();
+    if (userSector.isNotEmpty &&
+        schemeSector.toString().isNotEmpty &&
+        userSector.toLowerCase() == schemeSector.toString().toLowerCase()) {
+      reasons.add(
+          _localizedText(lang, 'sector_match', args: {'sector': userSector}));
+    }
+
     // If none of the above, give a generic reason based on score
     if (reasons.isEmpty) {
       reasons.add(_localizedText(lang, 'general_match'));
@@ -210,7 +235,9 @@ class SchemeRecommender {
         'income_match':
             'Your income falls within the eligible limit (<= ₹${args?['limit']}).',
         'general_match':
-            'This scheme is suitable based on your profile and provides relevant benefits.'
+            'This scheme is suitable based on your profile and provides relevant benefits.',
+        'sector_match':
+            'This scheme matches your sector: ${args?['sector']}, so it is highly relevant.'
       },
       'hi': {
         'age_match':
@@ -220,7 +247,9 @@ class SchemeRecommender {
         'income_match':
             'आपकी आय पात्रता सीमा (<= ₹${args?['limit']}) के भीतर है।',
         'general_match':
-            'आपकी प्रोफ़ाइल के आधार पर यह योजना उपयुक्त है और उपयोगी लाभ प्रदान करती है।'
+            'आपकी प्रोफ़ाइल के आधार पर यह योजना उपयुक्त है और उपयोगी लाभ प्रदान करती है।',
+        'sector_match':
+            'यह योजना आपके क्षेत्र के अनुरूप है: ${args?['sector']}, इसलिए यह बहुत प्रासंगिक है।'
       },
       'mr': {
         'age_match':
@@ -230,7 +259,9 @@ class SchemeRecommender {
         'income_match':
             'आपली उत्पन्न पात्र मर्यादेत (<= ₹${args?['limit']}) आहे.',
         'general_match':
-            'आपल्या प्रोफाइलच्या आधारावर ही योजना उपयुक्त आहे आणि संबंधित लाभ देते.'
+            'आपल्या प्रोफाइलच्या आधारावर ही योजना उपयुक्त आहे आणि संबंधित लाभ देते.',
+        'sector_match':
+            'ही योजना आपल्या क्षेत्राशी जुळते: ${args?['sector']}, म्हणून ही अत्यंत संबंधित आहे.'
       }
     };
 
@@ -259,5 +290,36 @@ class SchemeRecommender {
     if (map.containsKey(baseKey) && map[baseKey] is String)
       return [map[baseKey]];
     return [];
+  }
+
+  /// Generate a short chat-like summary message for the recommended schemes in the user's language.
+  String generateChatMessage(List<Map<String, dynamic>> recommendations,
+      Map<String, dynamic> profile, Locale locale) {
+    final lang = locale.languageCode;
+
+    if (recommendations.isEmpty) {
+      switch (lang) {
+        case 'hi':
+          return 'क्षमा करें, आपके लिए कोई उपयुक्त योजना नहीं मिली।';
+        case 'mr':
+          return 'क्षमस्व, आपल्यासाठी काही योजना सापडल्या नाहीत.';
+        default:
+          return 'Sorry, no suitable schemes were found for you.';
+      }
+    }
+
+    final schemeNames = recommendations
+        .map((r) => r['schemeName'] as String? ?? '')
+        .where((s) => s.isNotEmpty)
+        .toList();
+
+    switch (lang) {
+      case 'hi':
+        return 'मैंने शीर्ष योजनाएँ सुझायी हैं: ${schemeNames.join(', ')}. क्या आप इनमें से किसी को सेव करना चाहेंगे? अगर हाँ, तो ईमेल पता दें ताकि हम विवरण भेज सकें।';
+      case 'mr':
+        return 'मी शीर्ष योजना सुचवल्या आहेत: ${schemeNames.join(', ')}. आपण यापैकी कोणतीही जतन करू इच्छिता? होय असल्यास, विवरण पाठविण्यासाठी ईमेल द्या.';
+      default:
+        return 'I have suggested the top schemes: ${schemeNames.join(', ')}. Would you like to save any of these? If yes, provide an email address to send details.';
+    }
   }
 }

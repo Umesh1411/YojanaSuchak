@@ -5,13 +5,15 @@ class UserProfile {
   String? phoneNumber;
   int? age;
   String? gender; // Male, Female, Other
-  String? occupation; // e.g., Teacher, Engineer, Farmer, Student, Business, Government Employee
+  String?
+      occupation; // e.g., Teacher, Engineer, Farmer, Student, Business, Government Employee
   String? caste; // SC, ST, OBC, General (social category/caste)
-  String? category; // SC, ST, OBC, General (social category) OR student, farmer, woman, senior_citizen, unemployed (target group) - legacy support
+  String?
+      category; // SC, ST, OBC, General (social category) OR student, farmer, woman, senior_citizen, unemployed (target group) - legacy support
   int? annualIncome;
   String? state;
   String? district;
-  
+
   // Additional fields
   String? specialCondition;
   String? selectedSchemeForDetails; // Scheme user wants more info about
@@ -58,6 +60,20 @@ class UserProfile {
     if (occupation == null) missing.add('occupation');
     if (caste == null && category == null) missing.add('category');
     return missing;
+  }
+
+  /// Single source-of-truth: get the NEXT missing field in the exact priority required
+  /// Priority order (MANDATORY): occupation → age → gender → state → district → annualIncome → category
+  /// Returns the field key (e.g., 'occupation', 'age', ...) or null if profile is complete
+  String? nextMissingField() {
+    if (occupation == null) return 'occupation';
+    if (age == null) return 'age';
+    if (gender == null) return 'gender';
+    if (state == null) return 'state';
+    if (district == null) return 'district';
+    if (annualIncome == null) return 'annual income';
+    if (caste == null && category == null) return 'category';
+    return null;
   }
 
   /// Convert to string for Gemini prompt

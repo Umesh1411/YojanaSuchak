@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../core/theme/app_theme.dart';
-import '../../core/config/app_config.dart';
 import '../../core/services/auth_service.dart';
 
 /// Admin-only scheme upload screen with password protection
@@ -21,6 +20,7 @@ class _AdminSchemeUploadScreenState extends State<AdminSchemeUploadScreen> {
   bool _isLoading = false;
 
   // Form controllers
+  final TextEditingController _schemeIdController = TextEditingController();
   final TextEditingController _schemeNameController = TextEditingController();
   final TextEditingController _categoryController = TextEditingController();
   final TextEditingController _minAgeController = TextEditingController();
@@ -74,6 +74,7 @@ class _AdminSchemeUploadScreenState extends State<AdminSchemeUploadScreen> {
   @override
   void dispose() {
     _passwordController.dispose();
+    _schemeIdController.dispose();
     _schemeNameController.dispose();
     _categoryController.dispose();
     _minAgeController.dispose();
@@ -92,19 +93,21 @@ class _AdminSchemeUploadScreenState extends State<AdminSchemeUploadScreen> {
   }
 
   Future<void> _verifyPassword() async {
-    if (_passwordController.text.trim() == AppConfig.adminPassword) {
-      setState(() {
-        _isAuthenticated = true;
-        _passwordController.clear();
-      });
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Incorrect password. Access denied.'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
+    // PRODUCTION: Admin password removed from AppConfig for security
+    // TODO: Implement admin authentication via backend
+    // if (_passwordController.text.trim() == AppConfig.adminPassword) {
+    // setState(() {
+    //   _isAuthenticated = true;
+    //   _passwordController.clear();
+    // });
+    // } else {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Admin access disabled'),
+        backgroundColor: Colors.red,
+      ),
+    );
+    // }
   }
 
   Future<void> _submitScheme() async {
@@ -152,15 +155,20 @@ class _AdminSchemeUploadScreenState extends State<AdminSchemeUploadScreen> {
 
     try {
       final firestore = FirebaseFirestore.instance;
-      final schemeId = _schemeNameController.text
-          .toLowerCase()
-          .replaceAll(RegExp(r'[^a-z0-9\s-]'), '')
-          .replaceAll(RegExp(r'\s+'), '_')
-          .substring(
-              0,
-              _schemeNameController.text.length > 50
-                  ? 50
-                  : _schemeNameController.text.length);
+
+      // Use manual scheme ID if provided, otherwise auto-generate
+      String schemeId = _schemeIdController.text.trim();
+      if (schemeId.isEmpty) {
+        schemeId = _schemeNameController.text
+            .toLowerCase()
+            .replaceAll(RegExp(r'[^a-z0-9\s-]'), '')
+            .replaceAll(RegExp(r'\s+'), '_')
+            .substring(
+                0,
+                _schemeNameController.text.length > 50
+                    ? 50
+                    : _schemeNameController.text.length);
+      }
 
       // Extract documents list
       final documents = _documentsControllers
@@ -224,6 +232,7 @@ class _AdminSchemeUploadScreenState extends State<AdminSchemeUploadScreen> {
 
         // Clear form
         _formKey.currentState!.reset();
+        _schemeIdController.clear();
         _schemeNameController.clear();
         _categoryController.clear();
         _minAgeController.clear();
@@ -425,8 +434,44 @@ class _AdminSchemeUploadScreenState extends State<AdminSchemeUploadScreen> {
                             ),
                           ],
                         ),
+                      ), // Scheme ID (Optional - auto-generated if not provided)
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      margin: const EdgeInsets.only(bottom: 16),
+                      decoration: BoxDecoration(
+                        color: Colors.blue.shade50,
+                        border: Border.all(color: Colors.blue.shade300),
+                        borderRadius: BorderRadius.circular(8),
                       ),
-                    // Scheme Name
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Scheme ID (Optional)',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                              color: Colors.blue.shade900,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Enter a custom Scheme ID like CHD_01, PMS_02, etc. If left empty, it will be auto-generated from the scheme name.',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.blue.shade700,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          _buildTextField(
+                            controller: _schemeIdController,
+                            label: 'Scheme ID (e.g., CHD_01, PMS_02)',
+                            icon: Icons.fingerprint,
+                            hint: 'Leave empty for auto-generation',
+                          ),
+                        ],
+                      ),
+                    ), // Scheme Name
                     _buildTextField(
                       controller: _schemeNameController,
                       label: 'Scheme Name *',
@@ -666,6 +711,7 @@ class _AdminSchemeUploadScreenState extends State<AdminSchemeUploadScreen> {
     TextInputType? keyboardType,
     int? maxLines,
     String? Function(String?)? validator,
+    String? hint,
   }) {
     return TextFormField(
       controller: controller,
@@ -673,6 +719,7 @@ class _AdminSchemeUploadScreenState extends State<AdminSchemeUploadScreen> {
       maxLines: maxLines ?? 1,
       decoration: InputDecoration(
         labelText: label,
+        hintText: hint,
         prefixIcon: Icon(icon, color: AppTheme.primaryColor),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),

@@ -1,8 +1,65 @@
 import '../models/user_profile.dart';
-import '../models/conversation_state.dart';
 
 /// Service for extracting user profile information from voice transcript
+/// NOTE: This utility no longer depends on a conversation state enum.
+/// Use `updateProfileFromText` to non-destructively add parsed fields to a UserProfile.
 class ProfileExtractor {
+  // ----------------------
+  // Normalization helpers
+  // ----------------------
+  static String _titleCase(String input) {
+    final s = input.trim();
+    if (s.isEmpty) return s;
+    return s
+        .split(RegExp(r'\s+'))
+        .map((w) =>
+            w.isEmpty ? w : (w[0].toUpperCase() + w.substring(1).toLowerCase()))
+        .join(' ');
+  }
+
+  static String? _normalizeGender(String? input) {
+    if (input == null) return null;
+    final lower = input.toLowerCase();
+    if (lower.contains('female') || lower.contains('woman')) return 'Female';
+    if (lower.contains('male') || lower.contains('man')) return 'Male';
+    if (lower.contains('other') || lower.contains('trans')) return 'Other';
+    return _titleCase(input);
+  }
+
+  static String? _normalizeState(String? input) {
+    if (input == null) return null;
+    return _titleCase(input);
+  }
+
+  static String? _normalizeDistrict(String? input) {
+    if (input == null) return null;
+    return _titleCase(input);
+  }
+
+  static String? _normalizeOccupation(String? input) {
+    if (input == null) return null;
+    return _titleCase(input);
+  }
+
+  static String? _normalizeCategory(String? input) {
+    if (input == null) return null;
+    final lower = input.toLowerCase().trim();
+    if (lower.contains('sc') || lower.contains('scheduled caste')) {
+      return 'SC';
+    }
+    if (lower.contains('st') || lower.contains('scheduled tribe')) {
+      return 'ST';
+    }
+    if (lower.contains('obc') || lower.contains('other backward class')) {
+      return 'OBC';
+    }
+    if (lower.contains('general')) {
+      return 'General';
+    }
+    // target groups like 'student','farmer' keep as lower-case for matching
+    return lower;
+  }
+
   /// Extract age from text
   /// Handles both numeric (e.g., "25", "thirty five") and word forms
   static int? extractAge(String text) {
@@ -65,11 +122,11 @@ class ProfileExtractor {
   /// Extract state from text
   static String? extractState(String text) {
     String cleaned = text.toLowerCase().trim();
-    
+
     if (cleaned.contains('maharashtra')) {
       return 'Maharashtra';
     }
-    
+
     // Add other states if needed
     List<String> states = ['maharashtra', 'gujarat', 'karnataka', 'goa'];
     for (var state in states) {
@@ -77,14 +134,14 @@ class ProfileExtractor {
         return state[0].toUpperCase() + state.substring(1);
       }
     }
-    
+
     return null;
   }
 
   /// Extract gender from text
   static String? extractGender(String text) {
     String cleaned = text.toLowerCase().trim();
-    
+
     if (cleaned.contains('male') && !cleaned.contains('fe')) {
       return 'Male';
     } else if (cleaned.contains('female') || cleaned.contains('woman')) {
@@ -92,16 +149,16 @@ class ProfileExtractor {
     } else if (cleaned.contains('other') || cleaned.contains('trans')) {
       return 'Other';
     }
-    
+
     return null;
   }
 
   /// Extract district from text
-  /// Matches against common Maharashtra district names
+  /// Matches against common Maharashtra district names and returns title-case district
   static String? extractDistrict(String text) {
     String cleaned = text.toLowerCase().trim();
 
-    // List of Maharashtra districts
+    // List of Maharashtra districts (lowercased)
     List<String> districts = [
       'mumbai',
       'pune',
@@ -142,19 +199,16 @@ class ProfileExtractor {
 
     for (var district in districts) {
       if (cleaned.contains(district)) {
-        // Capitalize first letter of each word
-        return district
-            .split(' ')
-            .map((word) => word[0].toUpperCase() + word.substring(1))
-            .join(' ');
+        return _titleCase(district);
       }
     }
 
-    // If no match, try to extract any capitalized word (might be district name)
-    RegExp capitalized = RegExp(r'\b([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)\b');
-    Match? match = capitalized.firstMatch(text);
+    // Fallback: try to grab any multi-word token of letters (len>=3)
+    RegExp fallback =
+        RegExp(r'\b([a-z]{3,}(?:\s+[a-z]{3,})*)\b', caseSensitive: false);
+    Match? match = fallback.firstMatch(cleaned);
     if (match != null) {
-      return match.group(1);
+      return _titleCase(match.group(1)!);
     }
 
     return null;
@@ -226,7 +280,8 @@ class ProfileExtractor {
       return 'SC';
     } else if (cleaned.contains('st') || cleaned.contains('scheduled tribe')) {
       return 'ST';
-    } else if (cleaned.contains('obc') || cleaned.contains('other backward class')) {
+    } else if (cleaned.contains('obc') ||
+        cleaned.contains('other backward class')) {
       return 'OBC';
     } else if (cleaned.contains('general') && !cleaned.contains('category')) {
       return 'General';
@@ -305,59 +360,49 @@ class ProfileExtractor {
     return null;
   }
 
-  /// Update user profile based on current state and transcript
-  static void updateProfile(
-    UserProfile profile,
-    ConversationState state,
-    String transcript,
-  ) {
-    switch (state) {
-      case ConversationState.askAge:
-        int? age = extractAge(transcript);
-        if (age != null) {
-          profile.age = age;
-        }
-        break;
+  /// Update user profile by extracting ALL possible fields from `transcript`.
+  /// Non-destructive: existing values in `profile` are NEVER overwritten by this method.
+  static void updateProfileFromText(UserProfile profile, String transcript) {
+    // Occupation
+    if (profile.occupation == null) {
+      final occ = extractOccupation(transcript);
+      if (occ != null) profile.occupation = _normalizeOccupation(occ);
+    }
 
-      case ConversationState.askState:
-        String? state = extractState(transcript);
-        if (state != null) {
-          profile.state = state;
-        }
-        break;
+    // Age
+    if (profile.age == null) {
+      final a = extractAge(transcript);
+      if (a != null) profile.age = a;
+    }
 
-      case ConversationState.askGender:
-        String? gender = extractGender(transcript);
-        if (gender != null) {
-          profile.gender = gender;
-        }
-        break;
+    // Gender
+    if (profile.gender == null) {
+      final g = extractGender(transcript);
+      if (g != null) profile.gender = _normalizeGender(g);
+    }
 
-      case ConversationState.askDistrict:
-        String? district = extractDistrict(transcript);
-        if (district != null) {
-          profile.district = district;
-        }
-        break;
+    // State
+    if (profile.state == null) {
+      final s = extractState(transcript);
+      if (s != null) profile.state = _normalizeState(s);
+    }
 
-      case ConversationState.askIncome:
-        int? income = extractIncome(transcript);
-        if (income != null) {
-          profile.annualIncome = income;
-        }
-        break;
+    // District
+    if (profile.district == null) {
+      final d = extractDistrict(transcript);
+      if (d != null) profile.district = _normalizeDistrict(d);
+    }
 
-      case ConversationState.askCategory:
-      case ConversationState.askSpecialCondition:
-        String? category = extractCategory(transcript);
-        if (category != null) {
-          profile.category = category;
-        }
-        break;
+    // Income
+    if (profile.annualIncome == null) {
+      final inc = extractIncome(transcript);
+      if (inc != null) profile.annualIncome = inc;
+    }
 
-      default:
-        break;
+    // Category / Caste
+    if (profile.caste == null && profile.category == null) {
+      final c = extractCategory(transcript);
+      if (c != null) profile.category = _normalizeCategory(c);
     }
   }
 }
-

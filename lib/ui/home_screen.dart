@@ -7,7 +7,6 @@ import '../services/tts_service.dart';
 import '../services/gemini_chat_service.dart';
 import '../services/profile_extractor.dart';
 import '../services/data_service.dart';
-import '../core/config/app_config.dart';
 
 /// Main screen with voice interaction and scheme recommendations
 class HomeScreen extends StatefulWidget {
@@ -76,17 +75,12 @@ class _HomeScreenState extends State<HomeScreen>
     }
 
     // Initialize Gemini Chat Service
-    if (AppConfig.isGeminiConfigured) {
-      _geminiChatService = GeminiChatService(apiKey: AppConfig.geminiApiKey);
+    // PRODUCTION: Inject API key from backend or secure storage
+    _geminiChatService =
+        GeminiChatService(); // Reads API key from EnvConfig.geminiApiKey; no manual apiKey param
 
-      // Start conversation with greeting
-      _startConversation();
-    } else {
-      setState(() {
-        _botResponse =
-            'Gemini API key not configured. Please set your API key in app_config.dart';
-      });
-    }
+    // Start conversation with greeting
+    _startConversation();
   }
 
   Future<void> _startConversation() async {
@@ -229,28 +223,8 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   void _extractProfileInfo(String text) {
-    // Try to extract all possible information from the text
-    int? age = ProfileExtractor.extractAge(text);
-    if (age != null) _userProfile.age = age;
-
-    String? district = ProfileExtractor.extractDistrict(text);
-    if (district != null) _userProfile.district = district;
-
-    String? state = ProfileExtractor.extractState(text);
-    if (state != null) _userProfile.state = state;
-
-    String? gender = ProfileExtractor.extractGender(text);
-    if (gender != null) _userProfile.gender = gender;
-
-    int? income = ProfileExtractor.extractIncome(text);
-    if (income != null) _userProfile.annualIncome = income;
-
-    String? category = ProfileExtractor.extractCategory(text);
-    if (category != null) _userProfile.category = category;
-
-    // Extract occupation using ProfileExtractor
-    String? occupation = ProfileExtractor.extractOccupation(text);
-    if (occupation != null) _userProfile.occupation = occupation;
+    // Use the consolidated, non-destructive extractor which also normalizes casing
+    ProfileExtractor.updateProfileFromText(_userProfile, text);
   }
 
   Future<void> _getRecommendations() async {

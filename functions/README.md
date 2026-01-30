@@ -27,16 +27,31 @@ firebase init functions
 ```
 
 ### 3. Configure SMTP Email
+You can provide SMTP credentials either via Firebase functions config (recommended for production) or via environment variables for local testing.
+
+Production (Firebase):
 ```bash
-# Set SMTP credentials
-firebase functions:config:set smtp.user="your-email@gmail.com"
-firebase functions:config:set smtp.pass="your-app-password"
+# Set SMTP credentials in Firebase Functions config
+firebase functions:config:set smtp.user="your-email@gmail.com" smtp.pass="your-app-password" smtp.host="smtp.gmail.com" smtp.port=587 smtp.secure=false
 ```
 
-**Note**: For Gmail, you need to:
-1. Enable 2-factor authentication
-2. Generate an "App Password" (not your regular password)
-3. Use that app password in the config
+Local testing (emulator):
+- Create a `.env` file inside the `functions/` folder (this file **must not** be committed to version control).
+- Add the following keys to `functions/.env`:
+```
+SMTP_USER=your-email@gmail.com
+SMTP_PASS=your-app-password
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_SECURE=false
+```
+- Start the emulator: `firebase emulators:start --only functions`
+
+**Important:**
+- Do **not** commit `.env` or actual secrets to the repository. The project `.gitignore` already excludes `.env`.
+- For Gmail, generate an App Password (requires 2FA) and use that as `SMTP_PASS`.
+
+The functions code will prefer `functions.config().smtp` when present, and will fall back to `process.env` values (useful when running locally).
 
 ### 4. Deploy Functions
 ```bash
@@ -56,15 +71,9 @@ Users in Firestore should have this structure:
 
 ## Testing
 
-### Test via HTTP Endpoint
-```bash
-curl -X POST https://YOUR-REGION-YOUR-PROJECT.cloudfunctions.net/sendTestNotification
-```
-
-### Test via Firebase Console
-1. Go to Firestore Console
-2. Add a new document to `schemes` collection
-3. Function will automatically trigger
+### Testing the functions
+- Use the Firebase Emulators for local testing: `firebase emulators:start --only functions`.
+- To test notifications or email sending, create or update real `schemes` documents (preferably in a test project) and observe the functions' behavior. Do not use open test endpoints; tests should be done via emulator or secure calls.
 
 ## Monitoring
 

@@ -1,26 +1,26 @@
-/// App Configuration - Store API keys and settings here
+/// App Configuration - Feature flags and settings only
+/// IMPORTANT: No secrets or API keys should be stored here.
+/// In production, API keys must be injected via backend or secure runtime configuration.
+/// For development, use environment variables or secure storage.
 class AppConfig {
-  // Gemini API Key - Replace with your actual key
-  static const String geminiApiKey = 'AIzaSyDqZJ3zsYDTR7Gvr_X3bNWefidrc1pA8Q8';
+  // Feature flags
+  static const bool enableVoiceMode = true;
+  static const bool enableOfflineMode = false;
 
-  // Email SMTP Configuration - Replace with your SMTP details
-  static const String smtpHost = 'smtp.gmail.com';
-  static const int smtpPort = 587;
-  static const String smtpUsername = 'yojanasuchak@gmail.com';
-  static const String smtpPassword = 'khon jioy lole cuwz';
-  static const bool useTls = true;
+  // Placeholder for Gemini API key - MUST be injected at runtime
+  // In production: Obtain from backend service or secure storage
+  // static String? geminiApiKey; // Set at app startup from secure source
 
-  // Check if Gemini is configured
+  // Placeholder for email configuration - MUST be injected at runtime
+  // static String? smtpHost;
+  // static String? smtpUsername;
+  // static String? smtpPassword;
+
+  // Check if Gemini is configured (runtime check)
   static bool get isGeminiConfigured =>
-      geminiApiKey.isNotEmpty && !geminiApiKey.contains('YOUR_GEMINI');
+      false; // Always false in this config, check runtime
 
-  // Check if Email is configured
+  // Check if Email is configured (runtime check)
   static bool get isEmailConfigured =>
-      smtpUsername != 'yojanasuchak@gmail.com' &&
-      smtpPassword != 'khon jioy lole cuwz';
-
-  // Admin Password for scheme upload access
-  // IMPORTANT: In production, use environment variables or secure storage
-  // This is stored here for simplicity but should be moved to secure storage
-  static const String adminPassword = 'yojanasuchak@791317';
+      false; // Always false in this config, check runtime
 }

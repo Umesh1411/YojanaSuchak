@@ -2,9 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import '../models/scheme.dart';
 import '../models/user_profile.dart';
-import 'email_service.dart';
 import 'eligibility_filter.dart';
-import '../core/config/app_config.dart';
 
 /// Service for auto-notifying users when new eligible schemes are launched
 class NotificationService {
@@ -65,7 +63,8 @@ class NotificationService {
         }
       }
 
-      debugPrint('✅ Notified $notifiedCount eligible users about ${scheme.schemeName}');
+      debugPrint(
+          '✅ Notified $notifiedCount eligible users about ${scheme.schemeName}');
     } catch (e, stackTrace) {
       debugPrint('❌ Error notifying eligible users: $e');
       debugPrint('❌ Stack trace: $stackTrace');
@@ -136,23 +135,26 @@ class NotificationService {
         userProfile,
       );
 
-      // Send email via EmailService with custom content
-      final emailService = EmailService(
-        smtpHost: AppConfig.smtpHost,
-        smtpPort: AppConfig.smtpPort,
-        username: AppConfig.smtpUsername,
-        password: AppConfig.smtpPassword,
-        useTls: AppConfig.useTls,
-      );
+      // PRODUCTION: Email sending disabled - no SMTP config in AppConfig
+      // TODO: Implement email via backend service
+      debugPrint(
+          'Email sending disabled - SMTP not configured in AppConfig. Eligibility: \n$eligibilityExplanation');
+      // final emailService = EmailService(
+      //   smtpHost: AppConfig.smtpHost,
+      //   smtpPort: AppConfig.smtpPort,
+      //   username: AppConfig.smtpUsername,
+      //   password: AppConfig.smtpPassword,
+      //   useTls: AppConfig.useTls,
+      // );
 
-      await emailService.sendEligibleSchemeEmail(
-        recipientEmail: userEmail,
-        recipientName: userName,
-        scheme: scheme,
-        eligibilityExplanation: eligibilityExplanation,
-      );
+      // await emailService.sendEligibleSchemeEmail(
+      //   recipientEmail: userEmail,
+      //   recipientName: userName,
+      //   scheme: scheme,
+      //   eligibilityExplanation: eligibilityExplanation,
+      // );
 
-      debugPrint('✅ Eligibility email sent to: $userEmail');
+      debugPrint('✅ Eligibility flow finished for: $userEmail');
     } catch (e) {
       debugPrint('❌ Error sending eligibility email: $e');
     }
@@ -166,37 +168,46 @@ class NotificationService {
     if (profile.age != null) {
       if (scheme.minAge != null && scheme.maxAge != null) {
         if (profile.age! >= scheme.minAge! && profile.age! <= scheme.maxAge!) {
-          reasons.add('Your age (${profile.age} years) falls within the required range (${scheme.minAge}-${scheme.maxAge} years).');
+          reasons.add(
+              'Your age (${profile.age} years) falls within the required range (${scheme.minAge}-${scheme.maxAge} years).');
         }
       } else if (scheme.minAge != null && profile.age! >= scheme.minAge!) {
-        reasons.add('Your age (${profile.age} years) meets the minimum requirement (${scheme.minAge} years).');
+        reasons.add(
+            'Your age (${profile.age} years) meets the minimum requirement (${scheme.minAge} years).');
       }
     }
 
     // Income eligibility
     if (profile.annualIncome != null && scheme.maxIncomeINR != null) {
       if (profile.annualIncome! <= scheme.maxIncomeINR!) {
-        reasons.add('Your annual income (₹${profile.annualIncome}) is within the eligible limit (₹${scheme.maxIncomeINR}).');
+        reasons.add(
+            'Your annual income (₹${profile.annualIncome}) is within the eligible limit (₹${scheme.maxIncomeINR}).');
       }
     }
 
     // Occupation eligibility
     if (profile.occupation != null &&
         scheme.occupationEligible != 'Any' &&
-        scheme.occupationEligible.toLowerCase().contains(profile.occupation!.toLowerCase())) {
-      reasons.add('Your occupation (${profile.occupation}) matches the target group for this scheme.');
+        scheme.occupationEligible
+            .toLowerCase()
+            .contains(profile.occupation!.toLowerCase())) {
+      reasons.add(
+          'Your occupation (${profile.occupation}) matches the target group for this scheme.');
     }
 
     // Category eligibility
     if (profile.casteOrCategory != null &&
         scheme.casteEligible != 'All' &&
-        scheme.casteEligible.toUpperCase() == profile.casteOrCategory!.toUpperCase()) {
-      reasons.add('Your category (${profile.casteOrCategory}) is eligible for this scheme.');
+        scheme.casteEligible.toUpperCase() ==
+            profile.casteOrCategory!.toUpperCase()) {
+      reasons.add(
+          'Your category (${profile.casteOrCategory}) is eligible for this scheme.');
     }
 
     // State eligibility
     if (profile.state != null && scheme.state == profile.state) {
-      reasons.add('You are a resident of ${profile.state}, which qualifies you for this scheme.');
+      reasons.add(
+          'You are a resident of ${profile.state}, which qualifies you for this scheme.');
     }
 
     if (reasons.isEmpty) {

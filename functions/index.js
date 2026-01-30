@@ -18,15 +18,30 @@ const nodemailer = require('nodemailer');
 // Initialize Firebase Admin
 admin.initializeApp();
 
-// Email configuration - UPDATE WITH YOUR SMTP DETAILS
+// Email configuration - SMTP credentials can be set via Firebase functions config or environment variables
+// For local testing you can create a .env file in the functions folder with SMTP_USER and SMTP_PASS (do NOT commit .env)
+try {
+  // Load local .env when present (safe to require, will be no-op in production)
+  require('dotenv').config();
+} catch (e) {
+  // ignore
+}
+
+const smtpHost = functions.config().smtp?.host || process.env.SMTP_HOST || 'smtp.gmail.com';
+const smtpPort = functions.config().smtp?.port || process.env.SMTP_PORT || 587;
+const smtpSecure = (functions.config().smtp?.secure === true) || (process.env.SMTP_SECURE === 'true') || false;
+const smtpUser = functions.config().smtp?.user || process.env.SMTP_USER;
+const smtpPass = functions.config().smtp?.pass || process.env.SMTP_PASS;
+
+if (!smtpUser || !smtpPass) {
+  console.warn('⚠️ SMTP credentials not configured. Email sending may fail. Set via `firebase functions:config:set smtp.user="..." smtp.pass="..."` or set SMTP_USER/SMTP_PASS in environment variables.');
+}
+
 const emailTransporter = nodemailer.createTransport({
-  host: 'smtp.gmail.com', // Update if using different SMTP
-  port: 587,
-  secure: false,
-  auth: {
-    user: functions.config().smtp?.user || 'yojanasuchak@gmail.com',
-    pass: functions.config().smtp?.pass || 'your-app-password',
-  },
+  host: smtpHost,
+  port: Number(smtpPort),
+  secure: smtpSecure,
+  auth: smtpUser && smtpPass ? { user: smtpUser, pass: smtpPass } : undefined,
 });
 
 /**
@@ -168,34 +183,7 @@ exports.onNewSchemeAdded = functions.firestore
     }
   });
 
-/**
- * HTTP endpoint to manually trigger notifications (for testing)
- * Usage: POST /sendTestNotification
- */
-exports.sendTestNotification = functions.https.onRequest(async (req, res) => {
-  // Only allow POST requests
-  if (req.method !== 'POST') {
-    return res.status(405).send('Method Not Allowed');
-  }
 
-  // In production, add authentication here
-  const testScheme = {
-    schemeName: 'Test Scheme',
-    department: 'Test Department',
-    targetGroup: 'All Citizens',
-    benefits: 'Test benefits',
-    eligibility: 'Test eligibility',
-  };
-
-  try {
-    // Create a test document to trigger the function
-    await admin.firestore().collection('schemes').add(testScheme);
-    res.status(200).send('Test notification triggered');
-  } catch (error) {
-    console.error('Error:', error);
-    res.status(500).send('Error triggering notification');
-  }
-});
 
 /**
  * Triggered when a scheme is created or updated.
@@ -378,4 +366,130 @@ function userEligibleForScheme(user, scheme) {
     return false;
   }
 }
+
+/**
+ * HTTPS endpoint to send scheme details to specified email addresses
+ * Expects JSON body: { schemeId: string, emails: [string], lang: 'en'|'hi'|'mr' }
+ */
+exports.sendSchemeDetails = functions.https.onRequest(async (req, res) => {
+  if (req.method !== 'POST') {
+    return res.status(405).send('Method Not Allowed');
+  }
+
+  const body = req.body || {};
+  const schemeId = body.schemeId;
+  const emails = Array.isArray(body.emails) ? body.emails : [];
+  const lang = (body.lang || 'en').toString().slice(0, 2);
+
+  if (!schemeId || !emails.length) {
+    return res.status(400).json({ error: 'schemeId and emails are required' });
+  }
+
+  try {
+    let schemeSnap = await admin.firestore().collection('schemes').doc(schemeId).get();
+    let scheme = schemeSnap.exists ? schemeSnap.data() : null;
+
+    // Fallback: treat schemeId as schemeName and query
+    if (!scheme) {
+      const q = await admin.firestore().collection('schemes').where('schemeName', '==', schemeId).limit(1).get();
+      if (!q.empty) {
+        scheme = q.docs[0].data();
+      }
+    }
+
+    if (!scheme) return res.status(404).json({ error: 'Scheme not found' });
+
+    // Localize subject and body
+    const subjects = {
+      en: `Details: ${scheme.schemeName}`,
+      hi: `विवरण: ${scheme.schemeName}`,
+      mr: `तपशील: ${scheme.schemeName}`
+    };
+
+    const bodies = {
+      en: `<p>Dear user,</p><p>Here are details for <strong>${scheme.schemeName}</strong>.</p><p><strong>Benefits:</strong> ${scheme.benefits || ''}</p><p><strong>Eligibility:</strong> ${JSON.stringify(scheme.eligibility || {})}</p><p>Please open the app for next steps.</p>`,
+      hi: `<p>प्रिय उपयोगकर्ता,</p><p>यहाँ <strong>${scheme.schemeName}</strong> के लिए विवरण दिए गए हैं।</p><p><strong>लाभ:</strong> ${scheme.benefits || ''}</p><p><strong>पात्रता:</strong> ${JSON.stringify(scheme.eligibility || {})}</p><p>आगे की जानकारी के लिए ऐप खोलें।</p>`,
+      mr: `<p>प्रिय वापरकर्ता,</p><p>ये <strong>${scheme.schemeName}</strong> साठी तपशील आहेत.</p><p><strong>लाभ:</strong> ${scheme.benefits || ''}</p><p><strong>पात्रता:</strong> ${JSON.stringify(scheme.eligibility || {})}</p><p>अधिक माहितीसाठी अॅप उघडा.</p>`
+    };
+
+    const subject = subjects[lang] || subjects['en'];
+    const html = bodies[lang] || bodies['en'];
+
+    // Send emails
+    const promises = [];
+    emails.forEach((to) => {
+      const p = emailTransporter.sendMail({
+        from: '"YojanaSuchak" <yojanasuchak@gmail.com>',
+        to,
+        subject,
+        html,
+      }).then(() => console.log(`✅ Email sent to ${to}`)).catch((err) => console.error(`❌ Failed to send to ${to}:`, err));
+      promises.push(p);
+    });
+
+    await Promise.all(promises);
+    return res.status(200).json({ success: true });
+  } catch (error) {
+    console.error('Error in sendSchemeDetails:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Callable version for in-app calls
+exports.sendSchemeDetailsCallable = functions.https.onCall(async (data, context) => {
+  const schemeId = data.schemeId;
+  const emails = Array.isArray(data.emails) ? data.emails : [];
+  const lang = (data.lang || 'en').toString().slice(0, 2);
+
+  if (!schemeId || !emails.length) {
+    throw new functions.https.HttpsError('invalid-argument', 'schemeId and emails are required');
+  }
+
+  try {
+    let schemeSnap = await admin.firestore().collection('schemes').doc(schemeId).get();
+    let scheme = schemeSnap.exists ? schemeSnap.data() : null;
+
+    // Fallback: treat schemeId as schemeName and query
+    if (!scheme) {
+      const q = await admin.firestore().collection('schemes').where('schemeName', '==', schemeId).limit(1).get();
+      if (!q.empty) {
+        scheme = q.docs[0].data();
+      }
+    }
+
+    if (!scheme) throw new functions.https.HttpsError('not-found', 'Scheme not found');
+
+    const subjects = {
+      en: `Details: ${scheme.schemeName}`,
+      hi: `विवरण: ${scheme.schemeName}`,
+      mr: `तपशील: ${scheme.schemeName}`
+    };
+
+    const bodies = {
+      en: `<p>Dear user,</p><p>Here are details for <strong>${scheme.schemeName}</strong>.</p><p><strong>Benefits:</strong> ${scheme.benefits || ''}</p><p><strong>Eligibility:</strong> ${JSON.stringify(scheme.eligibility || {})}</p><p>Please open the app for next steps.</p>`,
+      hi: `<p>प्रिय उपयोगकर्ता,</p><p>यहाँ <strong>${scheme.schemeName}</strong> के लिए विवरण दिए गए हैं।</p><p><strong>लाभ:</strong> ${scheme.benefits || ''}</p><p><strong>पात्रता:</strong> ${JSON.stringify(scheme.eligibility || {})}</p><p>आगे की जानकारी के लिए ऐप खोलें।</p>`,
+      mr: `<p>प्रिय वापरकर्ता,</p><p>ये <strong>${scheme.schemeName}</strong> साठी तपशील आहेत.</p><p><strong>लाभ:</strong> ${scheme.benefits || ''}</p><p><strong>पात्रता:</strong> ${JSON.stringify(scheme.eligibility || {})}</p><p>अधिक माहितीसाठी अॅप उघडा.</p>`
+    };
+
+    const subject = subjects[lang] || subjects['en'];
+    const html = bodies[lang] || bodies['en'];
+
+    const promises = [];
+    emails.forEach((to) => {
+      const p = emailTransporter.sendMail({
+        from: '"YojanaSuchak" <yojanasuchak@gmail.com>',
+        to,
+        subject,
+        html,
+      }).then(() => console.log(`✅ Email sent to ${to}`)).catch((err) => console.error(`❌ Failed to send to ${to}:`, err));
+      promises.push(p);
+    });
+
+    await Promise.all(promises);
+    return { success: true };
+  } catch (error) {
+    console.error('Error in sendSchemeDetailsCallable:', error);
+    throw new functions.https.HttpsError('internal', 'Internal server error');
+  }
+});
 

@@ -3,19 +3,41 @@ import 'package:flutter/foundation.dart';
 import 'package:google_generative_ai/google_generative_ai.dart';
 import '../models/scheme.dart';
 import '../models/user_profile.dart';
+import '../core/config/env_config.dart';
+
+/// IMPORTANT: GeminiChatService is the SINGLE chatbot brain and MUST read its API key from EnvConfig.
+/// It will NOT silently fall back to asking questions if the API key is missing. Instead, it returns
+/// a clear, actionable message to the user and logs the condition for diagnostics.
 
 /// Service for Gemini-powered chat conversations
+/// IMPORTANT: In production, Gemini API calls must be made via backend service.
+/// This Flutter implementation is for development/testing only.
+/// API key must be injected at runtime from secure storage.
 class GeminiChatService {
-  final String apiKey;
-  late final GenerativeModel _model;
+  GenerativeModel? _model;
   final List<Map<String, String>> _chatHistory = [];
 
-  GeminiChatService({required this.apiKey}) {
-    _model = GenerativeModel(
-      model: 'gemini-1.0-pro', // Changed to more stable model
-      apiKey: apiKey,
-    );
+  GeminiChatService() {
+    final key = EnvConfig.geminiApiKey;
+    if (key != null && key.isNotEmpty) {
+      final modelName = EnvConfig.geminiModel;
+      _model = GenerativeModel(
+        model: modelName,
+        apiKey: key,
+      );
+      // configured successfully
+    } else {
+      _model = null;
+    }
   }
+
+  /// Whether the Gemini model is configured and available for calls.
+  bool get isAvailable => _model != null;
+
+  /// Fallback response when Gemini is not available
+  // Legacy fallback prompt generator intentionally removed.
+  // GeminiChatService returns a clear, actionable message when the API key is missing
+  // and delegates question-asking to Gemini when available.
 
   /// Detect language from user input
   /// Returns: 'hi' for Hindi, 'mr' for Marathi, 'en' for English
@@ -45,6 +67,12 @@ class GeminiChatService {
     required UserProfile profile,
     required List<Scheme> availableSchemes,
   }) async {
+    // PRODUCTION SAFETY: If no API key, do NOT silently fallback. Return a clear message.
+    if (_model == null) {
+      // Gemini not configured: callers should fallback to a local question generator.
+      throw StateError('Gemini not configured');
+    }
+
     try {
       // Add user message to history
       _chatHistory.add({
@@ -62,15 +90,17 @@ class GeminiChatService {
 
       debugPrint('📤 Sending prompt to Gemini...');
       debugPrint('📤 Prompt length: ${prompt.length} characters');
-      debugPrint('📤 API Key (first 10 chars): ${apiKey.substring(0, 10)}...');
+      debugPrint(
+          '📤 API Key (first 10 chars): ${EnvConfig.geminiApiKey != null && EnvConfig.geminiApiKey!.length >= 10 ? EnvConfig.geminiApiKey!.substring(0, 10) : (EnvConfig.geminiApiKey ?? 'null')}...');
       debugPrint('📤 Model: gemini-1.0-pro');
       debugPrint(
           '📤 Prompt preview: ${prompt.substring(0, prompt.length > 300 ? 300 : prompt.length)}...');
 
       // Get response with timeout
       debugPrint('📡 Calling Gemini API...');
+      assert(_model != null, 'Model should not be null here');
       final response =
-          await _model.generateContent([Content.text(prompt)]).timeout(
+          await _model!.generateContent([Content.text(prompt)]).timeout(
         const Duration(seconds: 30),
         onTimeout: () {
           debugPrint('⏱️ Request timed out after 30 seconds');
@@ -265,16 +295,25 @@ CRITICAL RULES FOR SCHEMES:
           break;
       }
 
+      // Guidance: ask only when necessary for accurate recommendations
       missingFieldsInstruction = '''
 ⚠️ MISSING PROFILE INFORMATION:
 The following fields are still missing: ${missingFields.join(', ')}
 
-ACTION REQUIRED:
-- Ask ONLY ONE question for the next missing field: "$nextField"
-- Use this question: "$questionTemplate"
-- Keep your response to maximum 3 sentences
-- Acknowledge what user said (if anything) before asking
-- STOP asking questions once all fields are filled''';
+PRIORITY INSTRUCTION:
+- Your primary objective is to recommend the best-matching schemes using the information available.
+- Ask a follow-up question ONLY IF the missing field is LIKELY to change eligibility or the ranking of recommended schemes.
+- If you decide to ask, ask ONLY ONE question — choose the single most impactful missing field and use the language-specific question shown below.
+- If you decide NOT to ask, proceed to provide provisional recommendations (up to top 3) using current data, and clearly state which missing fields could alter these recommendations and why.
+
+QUESTION (use only if needed):
+"$questionTemplate"
+
+ACTION WHEN RECOMMENDING:
+- Provide up to 3 recommended schemes with a one-line reason for each (e.g., why it fits).
+- Add a short 'Why it fits' bullet and a confidence tag (High/Medium/Low).
+- Keep recommendation responses concise (≤6 sentences) and user-friendly.
+- Do NOT repeatedly ask the same question; after one follow-up, re-evaluate and prioritize recommending.''';
     } else {
       missingFieldsInstruction = '''
 ✅ ALL PROFILE FIELDS COMPLETE:
@@ -311,6 +350,8 @@ STRICT SYSTEM RULES (MUST FOLLOW):
 2. SCHEME RULES (CRITICAL):
    - NEVER invent, create, or suggest schemes that are NOT in the Firestore list
    - Use ONLY schemes passed from Firestore database
+   - When recommending, prioritize giving the best-matching schemes (up to top 3) with a 1-line reason each and a confidence tag (High/Medium/Low)
+   - Ask follow-up questions ONLY when missing information would likely change eligibility or change the ranking of recommended schemes
    - If user asks about a scheme not in the list → politely say it's not available
    - All schemes come from Firestore - you have no other source
 
