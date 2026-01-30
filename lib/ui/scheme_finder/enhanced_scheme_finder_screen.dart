@@ -6,6 +6,7 @@ import '../../services/tts_service.dart';
 import '../../services/data_service.dart';
 import '../../services/gemini_chat_service.dart';
 import '../../services/profile_extractor.dart';
+import '../../services/eligibility_filter.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/config/app_config.dart';
 import 'package:flutter/foundation.dart';
@@ -34,13 +35,20 @@ class _EnhancedSchemeFinderScreenState extends State<EnhancedSchemeFinderScreen>
   final UserProfile _profile = UserProfile();
   List<Scheme> _allSchemes = [];
   List<Scheme> _matchedSchemes = [];
+  Map<String, int> _schemeScores = {};
   final List<_ChatMessage> _messages = [];
 
   bool _isLoading = false;
   bool _voiceMode = true;
   bool _isListening = false;
   bool _initialProblemCaptured = false; // True after first user message
-  int _followUpCount = 0; // Track follow-up questions (max 5)
+  String? _initialProblemText; // Store first user message for context
+  int _followUpCount = 0; // Track follow-up questions (soft limit at 5)
+  
+  // NEW: Session-level state for intelligent questioning
+  String? _sessionLanguage; // Lock language to first message (en/hi/mr)
+  final Set<String> _askedQuestions = {}; // Track which questions were asked
+  Set<String> _requiredFields = {}; // Fields required by current matching schemes
 
   final TextEditingController _textController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
@@ -114,116 +122,223 @@ class _EnhancedSchemeFinderScreenState extends State<EnhancedSchemeFinderScreen>
 
     setState(() => _isLoading = true);
 
-    // Step 1: Always extract profile fields (non-destructive)
-    final parsed = ProfileExtractor.extractAll(message);
+    // Step 0: Detect user's language and LOCK it for the session
+    final detectedLanguage = ProfileExtractor.detectLanguage(message);
+    if (_sessionLanguage == null) {
+      _sessionLanguage = detectedLanguage;
+      debugPrint('🔒 Session language LOCKED: $_sessionLanguage');
+    } else {
+      debugPrint('🌐 Using session language: $_sessionLanguage (detected: $detectedLanguage)');
+    }
+
+    // Step 1: Extract profile fields intelligently (handles multi-field in single message)
+    final parsed = ProfileExtractor.extractMultipleFields(message);
     ProfileExtractor.applyParsedToProfile(_profile, parsed);
+    
+    if (parsed.isNotEmpty) {
+      debugPrint('✅ Extracted fields: ${parsed.keys.join(", ")}');
+      // Mark these fields as "answered" so we don't ask about them again
+      for (final field in parsed.keys) {
+        _askedQuestions.add(field.toString());
+      }
+    }
 
     // Step 2: First message is ALWAYS treated as problem description (no Gemini decision)
     if (!_initialProblemCaptured) {
       _initialProblemCaptured = true;
+      _initialProblemText = message;
       debugPrint('📝 First message captured as problem description');
-      
+
       // If Gemini is disabled, go straight to filtering
       if (!_geminiReady) {
         debugPrint('🚫 Gemini unavailable; filtering schemes directly');
-        _matchedSchemes = _filterSchemes();
+        _matchedSchemes = _rankSchemes(_filterSchemes());
         await _showSchemeResults();
       }
-      // If Gemini is enabled, it will be called in next step (below)
-      // Continue to Step 3 for follow-up decision
+      // If Gemini is enabled, continue to Step 3 for follow-up decision
     }
 
     // Step 3: Only call Gemini AFTER first message AND only if Gemini is ready
     if (_initialProblemCaptured && _geminiReady) {
-      if (_followUpCount >= 5) {
-        // Hard limit reached: show results
-        debugPrint('🛑 Follow-up limit reached (5/5); showing schemes');
-        _matchedSchemes = _filterSchemes();
+      final filteredSchemes = _filterSchemes();
+      final profileMissing = _getProfileMissingFields();
+      
+      // CRITICAL: Distinguish "no schemes matched" from "profile incomplete"
+      final hasSchemes = filteredSchemes.isNotEmpty;
+      final profileComplete = profileMissing.isEmpty;
+      
+      debugPrint('📊 State: hasSchemes=$hasSchemes, profileComplete=$profileComplete, followUp=$_followUpCount/5');
+
+      // Compute which fields are required by schemes that DID match
+      _requiredFields = hasSchemes ? _computeRequiredFields(filteredSchemes) : <String>{};
+      debugPrint('📋 Required from schemes: $_requiredFields');
+      debugPrint('📋 Missing from profile: $profileMissing');
+      
+      // MERGED required fields: from schemes + profile missing
+      // If schemes matched, prioritize their requirements
+      // If no schemes matched, fall back to general profile missing fields
+      final mergedMissingFields = hasSchemes
+          ? _requiredFields.union(profileMissing)
+          : profileMissing;
+      
+      // Compute which fields we haven't asked about yet
+      final missingToAsk = mergedMissingFields
+          .where((field) => !_askedQuestions.contains(field) && !_isFieldFilled(field))
+          .toSet();
+      
+      debugPrint('❓ To ask: $missingToAsk (total asked: $_askedQuestions)');
+
+      // DECISION LOGIC:
+      // 1. If profile complete AND schemes matched → show results
+      // 2. If profile complete BUT no schemes → ask 1-2 last-resort clarifying Qs (soft limit +2)
+      // 3. If profile incomplete → ask missing fields (soft limit at 5, hard limit at 7)
+      // 4. Never ask if missingToAsk is empty
+      
+      final shouldShowResults = (profileComplete && hasSchemes) || 
+                                (_followUpCount >= 7);
+      final allowEmergencyQuestions = !hasSchemes && profileComplete && _followUpCount < 7;
+      final normalQuestioning = !profileComplete && _followUpCount < 5;
+      final softLimitReached = _followUpCount >= 5 && missingToAsk.length <= 1;
+      
+      if (missingToAsk.isEmpty) {
+        // No more fields to ask about
+        debugPrint('🛑 No missing fields to ask');
+        _matchedSchemes = _rankSchemes(filteredSchemes);
         await _showSchemeResults();
-      } else {
-        // Ask Gemini whether to ask follow-up or show schemes
-        final geminiDecision = await _askGeminiForNextStep();
+      } else if (shouldShowResults) {
+        // Hard stop at 7 questions or profile complete + schemes found
+        debugPrint('🛑 Showing results (profile complete or hard limit)');
+        _matchedSchemes = _rankSchemes(filteredSchemes);
+        await _showSchemeResults();
+      } else if (softLimitReached && !allowEmergencyQuestions) {
+        // Soft limit: stop unless we have emergency questions to ask
+        debugPrint('⚠️ Soft limit reached; showing results');
+        _matchedSchemes = _rankSchemes(filteredSchemes);
+        await _showSchemeResults();
+      } else if (normalQuestioning || allowEmergencyQuestions) {
+        // Continue asking (normal mode or emergency mode)
+        debugPrint('❓ Asking follow-up (normal=$normalQuestioning, emergency=$allowEmergencyQuestions)');
+        
+        final geminiDecision = await _askGeminiForNextStep(
+          _sessionLanguage!,
+          missingToAsk,
+          filteredSchemes,
+          noSchemeContext: !hasSchemes,
+        );
 
         if (geminiDecision == null) {
-          // Gemini call failed: fallback to filtering
+          // Gemini call failed: fallback
           debugPrint('⚠️ Gemini call failed; filtering schemes');
-          _matchedSchemes = _filterSchemes();
+          _matchedSchemes = _rankSchemes(filteredSchemes);
           await _showSchemeResults();
         } else if (geminiDecision == 'DONE') {
           // Gemini says: enough info, show schemes
           debugPrint('✅ Gemini returned DONE; showing schemes');
-          _matchedSchemes = _filterSchemes();
+          _matchedSchemes = _rankSchemes(filteredSchemes);
           await _showSchemeResults();
         } else if (geminiDecision.startsWith('ASK:')) {
-          // Gemini wants to ask one more question
+          // Gemini generated a question
           _followUpCount++;
           final question = geminiDecision.substring(4).trim();
+
+          // Mark up to 2 missing fields as "asked" to prevent repeats
+          final toMark = missingToAsk.take(2).toList();
+          for (final f in toMark) {
+            _askedQuestions.add(f);
+          }
+
           _addBot(question);
-          debugPrint('❓ Follow-up $_followUpCount/5: $question');
+          debugPrint('❓ Follow-up $_followUpCount: $question (mode: ${allowEmergencyQuestions ? 'emergency' : 'normal'})');
         } else {
           // Unexpected format: treat as DONE
-          debugPrint('⚠️ Unexpected Gemini response: $geminiDecision');
-          _matchedSchemes = _filterSchemes();
+          debugPrint('⚠️ Unexpected Gemini response: "$geminiDecision" — treating as DONE');
+          _matchedSchemes = _rankSchemes(filteredSchemes);
           await _showSchemeResults();
         }
+      } else {
+        // Fallback: should not reach here, but show results
+        debugPrint('⚠️ Unexpected state; showing results');
+        _matchedSchemes = _rankSchemes(filteredSchemes);
+        await _showSchemeResults();
       }
     }
 
     setState(() => _isLoading = false);
   }
 
-  /// Ask Gemini whether to ask another question or finish
+  /// Ask Gemini to generate questions about missing required fields
   /// Returns "ASK: <question>", "DONE", or null if Gemini unavailable
-  Future<String?> _askGeminiForNextStep() async {
+  /// Respects session language and prevents asking already-asked questions
+  Future<String?> _askGeminiForNextStep(
+    String sessionLanguage,
+    Set<String> missingFields,
+    List<Scheme> candidateSchemes, {
+    bool noSchemeContext = false,
+  }) async {
     if (!_geminiReady || _geminiChatService == null) {
       return null; // Graceful degradation
     }
 
     try {
-      // Compute filtered candidate schemes BEFORE Gemini context
-      final candidateSchemes = _filterSchemes();
+      // Map field names to user-friendly labels
+      final fieldLabels = {
+        'age': 'age',
+        'gender': 'gender',
+        'occupation': 'occupation',
+        'state': 'state',
+        'district': 'district',
+        'annualIncome': 'annual income',
+        'category': 'caste/category',
+      };
+
+      final missingFieldsList = missingFields
+          .map((f) => fieldLabels[f] ?? f)
+          .join(', ');
+
+      final languageName = sessionLanguage == 'hi' ? 'Hindi' : 
+                           sessionLanguage == 'mr' ? 'Marathi' : 'English';
+
+      // Build context based on whether we have schemes or not
+      String schemeSummary = '';
+      String contextLine = '';
       
-      if (candidateSchemes.isEmpty) {
-        // No schemes match current profile — stop asking
-        return 'DONE';
+      if (noSchemeContext || candidateSchemes.isEmpty) {
+        // No schemes matched yet: general profile-building context
+        contextLine = 'No schemes matched your profile yet. Let\'s gather more information.';
+      } else {
+        // Schemes exist: provide context
+        schemeSummary = candidateSchemes
+            .take(5)
+            .map((s) => 
+                '${s.schemeName} (occupation: ${s.occupationEligible}, minAge: ${s.minAge}, maxAge: ${s.maxAge}, maxIncome: ${s.maxIncomeINR}, category: ${s.categoryEligible})')
+            .join('\n');
+        contextLine = 'Candidate Schemes (${candidateSchemes.length}):\n$schemeSummary\n';
       }
 
-      // Build concise context with only relevant candidate schemes
-      final schemeSummary = candidateSchemes
-          .take(5)
-          .map((s) => 
-              '${s.schemeName} (occupation: ${s.occupationEligible}, minAge: ${s.minAge}, maxIncome: ${s.maxIncomeINR}, category: ${s.categoryEligible})')
-          .join('\n');
+      // IMPORTANT: Gemini is told EXACTLY which fields are missing and required
+      // It MUST NOT invent eligibility rules or decide which schemes to recommend
+      final decisionPrompt = '''You are an eligibility assistant helping Indian citizens. Your role is ONLY to generate natural questions, NOT decide eligibility.
 
-      // Build decision-making prompt (this is the CONTEXT, not the user message)
-      final decisionPrompt = '''You are an eligibility assistant deciding what information is needed to confirm scheme eligibility.
+Language: Respond ONLY in $languageName.
 
-User Profile So Far:
-- Occupation: ${_profile.occupation ?? 'unknown'}
-- Age: ${_profile.age ?? 'unknown'}
-- Gender: ${_profile.gender ?? 'unknown'}
-- State: ${_profile.state ?? 'unknown'}
-- District: ${_profile.district ?? 'unknown'}
-- Annual Income: ${_profile.annualIncome ?? 'unknown'}
-- Category (caste): ${_profile.category ?? 'unknown'}
+$contextLine
 
-Candidate Schemes ($candidateSchemes.length match so far):
-$schemeSummary
-
-Questions asked so far: $_followUpCount / 5
+Required Information MISSING from profile: $missingFieldsList
 
 Your job:
-1. Look at what information is MISSING but REQUIRED for eligibility.
-2. Ask ONLY ONE question that matters for these schemes.
-3. Do NOT repeat questions already answered.
-4. Do NOT ask irrelevant questions (e.g., occupation if all schemes don't care).
-5. Respond with EXACTLY:
-   - ASK: <your single question>
-   - DONE (if you have enough info)
+1. Ask about the SPECIFIC missing fields above ONLY
+2. Combine 1–2 fields into a natural question if possible (e.g., "What is your age and income?")
+3. Do NOT ask any other questions
+4. Do NOT decide eligibility or scheme relevance
+5. Do NOT repeat these fields: ${_askedQuestions.join(", ")}
 
-Do NOT include any other text. Just one of those two responses.''';
+Respond with EXACTLY:
+- ASK: <your natural question asking for: $missingFieldsList>
+- DONE (if somehow all required info is present)
 
-      // Call Gemini with decision prompt (as a regular user message, not system role)
+Do NOT include any other text.''';
+
+      // Call Gemini
       final response = await _geminiChatService!.getChatResponse(
         userMessage: decisionPrompt,
         profile: _profile,
@@ -251,10 +366,26 @@ Do NOT include any other text. Just one of those two responses.''';
       _addBot("I couldn't find schemes matching your criteria. Try adjusting your details.");
       return;
     }
-    
+    _matchedSchemes = _rankSchemes(_matchedSchemes);
+
     _addBot("Great! I found ${_matchedSchemes.length} scheme(s) for you:");
-    
+
     for (final scheme in _matchedSchemes.take(3)) {
+      final score = _schemeScores[scheme.schemeId] ?? 0;
+
+      // If scheme is a low-scoring partial match, warn the user before explaining
+      if (score < 20) {
+        String note;
+        if (_sessionLanguage == 'hi') {
+          note = 'नोट: यह योजना आंशिक रूप से मेल खाती है; कृपया पात्रता जाँचें।';
+        } else if (_sessionLanguage == 'mr') {
+          note = 'टीप: ही योजना आंशिक जुळणारी आहे; कृपया पात्रता तपासा.';
+        } else {
+          note = 'Note: This scheme is a partial match; please verify eligibility.';
+        }
+        _addBot('${scheme.schemeName}: $note');
+      }
+
       if (_geminiReady && _geminiChatService != null) {
         try {
           final explanation = await _geminiChatService!.explainScheme(
@@ -275,34 +406,198 @@ Do NOT include any other text. Just one of those two responses.''';
   // (Removed local Gemini caller and local parser; profile parsing is handled
   // by `ProfileExtractor` and Gemini calls are delegated to `GeminiChatService`.)
   // ===============================================================
-  // ELIGIBILITY FILTER (NO AI)
+  // ELIGIBILITY FILTER (NO AI) - STRICT DATABASE-DRIVEN FILTERING
   // ===============================================================
   List<Scheme> _filterSchemes() {
-    return _allSchemes.where((s) {
-      if (s.minAge != null && _profile.age != null && _profile.age! < s.minAge!)
+    // Use the EligibilityFilter service which performs:
+    // 1. Hard elimination (7 strict rules: age, income, occupation, caste, gender, state, beneficiaryType)
+    // 2. Weighted scoring + ranking (returns top 10)
+    try {
+      final filtered = EligibilityFilter.filterSchemes(
+        _allSchemes,
+        _profile,
+        initialProblemText: _initialProblemText,
+      );
+      debugPrint('🔍 Filtered ${_allSchemes.length} → ${filtered.length} schemes');
+      return filtered;
+    } catch (e) {
+      debugPrint('⚠️ EligibilityFilter error: $e — returning all schemes');
+      return _allSchemes;
+    }
+  }
+
+  /// Compute which profile fields are REQUIRED by the given list of schemes
+  /// Returns a Set<String> of field names (age, gender, occupation, etc.)
+  /// that are needed to finalize eligibility for ANY of the schemes
+  Set<String> _computeRequiredFields(List<Scheme> schemes) {
+    final required = <String>{};
+
+    for (final scheme in schemes) {
+      // If scheme has age constraints, age is required
+      if (scheme.minAge != null || scheme.maxAge != null) {
+        required.add('age');
+      }
+
+      // If scheme has occupation constraints, occupation is required
+      if (scheme.occupationEligible != 'Any' &&
+          scheme.occupationEligible != 'Not Applicable') {
+        required.add('occupation');
+      }
+
+      // If scheme has income constraints, income is required
+      if (scheme.maxIncomeINR != null) {
+        required.add('annualIncome');
+      }
+
+      // If scheme has gender constraints, gender is required
+      if (scheme.genderEligible != 'All') {
+        required.add('gender');
+      }
+
+      // If scheme has caste or category constraints, category is required
+      if (scheme.categoryEligible != 'All' || scheme.casteEligible != 'All') {
+        required.add('category');
+      }
+
+      // If scheme is state-specific, state is required
+      if (scheme.state.isNotEmpty && scheme.state.toLowerCase() != 'india') {
+        required.add('state');
+      }
+      // If scheme explicitly mentions district-level eligibility in otherEligibilityCriteria or remarks, require district
+      final otherLower = scheme.otherEligibilityCriteria.toLowerCase() + ' ' + scheme.remarks.toLowerCase();
+      if (otherLower.contains('district')) {
+        required.add('district');
+      }
+    }
+
+    return required;
+  }
+
+  /// Check if a profile field is already filled
+  bool _isFieldFilled(String field) {
+    switch (field) {
+      case 'age':
+        return _profile.age != null;
+      case 'gender':
+        return _profile.gender != null;
+      case 'occupation':
+        return _profile.occupation != null && _profile.occupation!.isNotEmpty;
+      case 'state':
+        return _profile.state != null;
+      case 'district':
+        return _profile.district != null;
+      case 'annualIncome':
+        return _profile.annualIncome != null;
+      case 'category':
+        return _profile.category != null;
+      default:
         return false;
-      if (s.maxIncomeINR != null &&
-          _profile.annualIncome != null &&
-          _profile.annualIncome! > s.maxIncomeINR!) return false;
-      if (_profile.category != null) {
-        if (s.categoryEligible != 'All' &&
-            !s.categoryEligible.contains(_profile.category!)) return false;
-      }
-      if (_profile.state != null && s.state.isNotEmpty) {
-        if (s.state.toLowerCase() != _profile.state!.toLowerCase())
-          return false;
-      }
-      if (_profile.occupation != null) {
-        if (s.occupationEligible != 'Any' &&
-            s.occupationEligible != 'Not Applicable' &&
-            !s.occupationEligible.contains(_profile.occupation!)) return false;
-      }
-      return true;
-    }).toList();
+    }
+  }
+
+  /// Get missing fields from the profile (wrapper around profile.getMissingFields())
+  /// Maps profile missing fields to field names used in _requiredFields
+  Set<String> _getProfileMissingFields() {
+    final missing = _profile.getMissingFields();
+    final mapped = <String>{};
+    
+    for (final field in missing) {
+      if (field == 'age') mapped.add('age');
+      else if (field == 'gender') mapped.add('gender');
+      else if (field == 'occupation') mapped.add('occupation');
+      else if (field == 'state') mapped.add('state');
+      else if (field == 'district') mapped.add('district');
+      else if (field == 'annualIncome') mapped.add('annualIncome');
+      else if (field == 'category') mapped.add('category');
+    }
+    
+    return mapped;
   }
 
   // ===============================================================
-  // Scheme explanations are now provided by `GeminiChatService.explainScheme`
+  // RANKING
+  // ===============================================================
+  List<Scheme> _rankSchemes(List<Scheme> schemes) {
+    final problem = (_initialProblemText ?? '').toLowerCase();
+    final List<MapEntry<Scheme, int>> scored = [];
+
+    for (final s in schemes) {
+      int score = 0;
+
+      // +30 Occupation match (HIGHEST PRIORITY)
+      if (_profile.occupation != null && _profile.occupation!.isNotEmpty) {
+        if (s.occupationEligible.toLowerCase().contains(_profile.occupation!.toLowerCase())) {
+          score += 30;
+        }
+      }
+
+      // +20 BeneficiaryType / targetGroup match
+      if (_profile.occupation != null && _profile.occupation!.isNotEmpty) {
+        if (s.beneficiaryType.toLowerCase().contains(_profile.occupation!.toLowerCase())) {
+          score += 20;
+        }
+      }
+      if (_profile.category != null && _profile.category!.isNotEmpty) {
+        if (s.beneficiaryType.toLowerCase().contains(_profile.category!.toLowerCase())) {
+          score += 20;
+        }
+      }
+
+      // +15 BenefitType matches problem intent
+      final intentKeywords = {
+        'education': ['education', 'scholarship', 'fees', 'school', 'college', 'study'],
+        'agriculture': ['farmer', 'agriculture', 'crop', 'seeds', 'farming'],
+        'pension': ['pension', 'elderly', 'senior', 'old'],
+        'housing': ['house', 'housing', 'home'],
+        'health': ['hospital', 'illness', 'treatment', 'doctor', 'medical']
+      };
+      for (final entry in intentKeywords.entries) {
+        final hasIntent = entry.value.any((k) => problem.contains(k));
+        if (hasIntent && s.benefitType.toLowerCase().contains(entry.key)) {
+          score += 15;
+        }
+      }
+
+      // +10 Category/caste match
+      if (_profile.category != null) {
+        if (s.casteEligible.toLowerCase().contains(_profile.category!.toLowerCase()) ||
+            s.categoryEligible.toLowerCase().contains(_profile.category!.toLowerCase())) {
+          score += 10;
+        }
+      }
+
+      // +5 Age match
+      if (_profile.age != null && (s.minAge != null || s.maxAge != null)) {
+        if ((s.minAge == null || _profile.age! >= s.minAge!) && (s.maxAge == null || _profile.age! <= s.maxAge!)) {
+          score += 5;
+        }
+      }
+
+      // +5 Income match
+      if (_profile.annualIncome != null && s.maxIncomeINR != null) {
+        if (_profile.annualIncome! <= s.maxIncomeINR!) score += 5;
+      }
+
+      // -30 Penalty: health schemes when intent is NOT health
+      final benefitLower = s.benefitType.toLowerCase();
+      if (!problem.contains('health') && !problem.contains('illness') && benefitLower.contains('health')) {
+        score -= 30;
+      }
+      if (problem.contains('education') && benefitLower.contains('health')) {
+        score -= 30;
+      }
+      if (problem.contains('farmer') && benefitLower.contains('health') && !problem.contains('health')) {
+        score -= 30;
+      }
+
+      scored.add(MapEntry(s, score));
+      debugPrint('   🔎 ${s.schemeName}: score=$score');
+    }
+
+    scored.sort((a, b) => b.value.compareTo(a.value));
+    _schemeScores = { for (final e in scored) e.key.schemeId : e.value };
+    return scored.map((e) => e.key).toList();
+  }
 
 
   // ===============================================================
