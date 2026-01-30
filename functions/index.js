@@ -196,3 +196,186 @@ exports.sendTestNotification = functions.https.onRequest(async (req, res) => {
     res.status(500).send('Error triggering notification');
   }
 });
+
+/**
+ * Triggered when a scheme is created or updated.
+ * Re-evaluates users and notifies only those who are newly eligible.
+ */
+exports.onSchemeCreatedOrUpdated = functions.firestore
+  .document('schemes/{schemeId}')
+  .onWrite(async (change, context) => {
+    const newScheme = change.after.exists ? change.after.data() : null;
+    const oldScheme = change.before.exists ? change.before.data() : null;
+    const schemeId = context.params.schemeId;
+
+    if (!newScheme) {
+      console.log('⚠️ Scheme deleted, skipping re-evaluation');
+      return null;
+    }
+
+    // Only handle active Maharashtra schemes
+    if (newScheme.state !== 'Maharashtra' || newScheme.isActive !== true) {
+      console.log('ℹ️ Scheme not active or not Maharashtra; skipping');
+      return null;
+    }
+
+    // If eligibility is not structured, skip (safe-fail)
+    const newEligibility = newScheme.eligibility || null;
+    if (!newEligibility) {
+      console.log('⚠️ Scheme eligibility not structured; skipping re-evaluation for scheme', schemeId);
+      return null;
+    }
+
+    try {
+      const usersSnapshot = await admin.firestore().collection('users').get();
+      if (usersSnapshot.empty) {
+        console.log('⚠️ No users to evaluate');
+        return null;
+      }
+
+      const notifyPromises = [];
+
+      usersSnapshot.forEach((userDoc) => {
+        const userData = userDoc.data();
+        const userId = userDoc.id;
+
+        const wasEligible = oldScheme ? userEligibleForScheme(userData, oldScheme) : false;
+        const nowEligible = userEligibleForScheme(userData, newScheme);
+
+        if (!wasEligible && nowEligible) {
+          // Build localized notification content
+          const userLang = (userData.language || 'en').toString().slice(0,2);
+
+          const titleMap = {
+            en: 'New scheme you are eligible for',
+            hi: 'आप पात्र आहात अशा नवीन योजनेची माहिती',
+            mr: 'आपण पात्र असलेली नवीन योजना उपलब्ध'
+          };
+
+          const bodyMap = {
+            en: `${newScheme.schemeName} - Suitable for you based on your profile.`,
+            hi: `${newScheme.schemeName} - आपकी प्रोफ़ाइल के आधार पर यह योजना आपके लिए उपयुक्त है।`,
+            mr: `${newScheme.schemeName} - आपल्या प्रोफाइलच्या आधारावर ही योजना आपल्यासाठी उपयुक्त आहे.`
+          };
+
+          const emailSubjects = {
+            en: `You are eligible: ${newScheme.schemeName}`,
+            hi: `आप पात्र हैं: ${newScheme.schemeName}`,
+            mr: `आपण पात्र आहात: ${newScheme.schemeName}`
+          };
+
+          const emailHtmls = {
+            en: `<p>Dear user,</p><p>You are newly eligible for <strong>${newScheme.schemeName}</strong>.</p><p>Benefits: ${newScheme.benefits || ''}</p><p>Please open the app for next steps.</p>`,
+            hi: `<p>प्रिय उपयोगकर्ता,</p><p>आप अब <strong>${newScheme.schemeName}</strong> के लिए पात्र हैं।</p><p>लाभ: ${newScheme.benefits || ''}</p><p>आगे की जानकारी के लिए ऐप खोलें।</p>`,
+            mr: `<p>प्रिय वापरकर्ता,</p><p>आप आता <strong>${newScheme.schemeName}</strong> साठी पात्र आहात.</p><p>लाभ: ${newScheme.benefits || ''}</p><p>अधिक माहितीसाठी अॅप उघडा.</p>`
+          };
+
+          // Push notification
+          if (userData.notificationsEnabled && userData.fcmToken) {
+            const message = {
+              notification: {
+                title: titleMap[userLang] || titleMap['en'],
+                body: bodyMap[userLang] || bodyMap['en'],
+              },
+              data: {
+                type: 'new_scheme_eligibility',
+                schemeId: schemeId,
+              },
+              token: userData.fcmToken,
+            };
+
+            const pushPromise = admin.messaging().send(message)
+              .then((resp) => console.log(`✅ Push sent to ${userId}`))
+              .catch((err) => {
+                console.error(`❌ Push failed for ${userId}:`, err);
+                if (err.code === 'messaging/invalid-registration-token' || err.code === 'messaging/registration-token-not-registered') {
+                  return admin.firestore().collection('users').doc(userId).update({ fcmToken: admin.firestore.FieldValue.delete() });
+                }
+              });
+
+            notifyPromises.push(pushPromise);
+          }
+
+          // Email notification
+          if (userData.email) {
+            const emailPromise = emailTransporter.sendMail({
+              from: '"YojanaSuchak" <yojanasuchak@gmail.com>',
+              to: userData.email,
+              subject: emailSubjects[userLang] || emailSubjects['en'],
+              html: emailHtmls[userLang] || emailHtmls['en'],
+            }).then(() => console.log(`✅ Email sent to ${userData.email}`))
+              .catch((error) => console.error(`❌ Failed to send email to ${userData.email}:`, error));
+
+            notifyPromises.push(emailPromise);
+          }
+
+        }
+      });
+
+      await Promise.all(notifyPromises);
+      console.log('✅ Completed re-evaluation notifications for scheme', schemeId);
+      return null;
+    } catch (error) {
+      console.error('❌ Error in onSchemeCreatedOrUpdated:', error);
+      return null;
+    }
+  });
+
+/**
+ * Simple eligibility check - expects structured eligibility in scheme. Returns boolean.
+ */
+function userEligibleForScheme(user, scheme) {
+  try {
+    const eligibility = scheme.eligibility || {};
+
+    // Age
+    if (eligibility.minAge && eligibility.maxAge) {
+      if (!user.age) return false;
+      if (user.age < eligibility.minAge || user.age > eligibility.maxAge) return false;
+    } else if (eligibility.minAge) {
+      if (!user.age || user.age < eligibility.minAge) return false;
+    } else if (eligibility.maxAge) {
+      if (!user.age || user.age > eligibility.maxAge) return false;
+    }
+
+    // Gender
+    if (eligibility.gender) {
+      if (!user.gender || user.gender.toLowerCase() !== eligibility.gender.toLowerCase()) return false;
+    }
+
+    // Income
+    if (eligibility.incomeLimit) {
+      if (user.income == null) return false;
+      if (Number(user.income) > Number(eligibility.incomeLimit)) return false;
+    }
+
+    // Occupation
+    if (eligibility.occupation) {
+      if (!user.occupation || user.occupation.toLowerCase() !== eligibility.occupation.toLowerCase()) return false;
+    }
+
+    // Category
+    if (eligibility.category) {
+      if (!user.category || user.category.toLowerCase() !== eligibility.category.toLowerCase()) return false;
+    }
+
+    // Disability
+    if (eligibility.disabilityRequired) {
+      if (!user.disability) return false;
+    }
+
+    // Flags
+    const flags = ['farmer', 'student', 'woman', 'seniorCitizen'];
+    for (const f of flags) {
+      if (eligibility[f] === true) {
+        if (!user[f]) return false;
+      }
+    }
+
+    return true;
+  } catch (e) {
+    console.error('Error in eligibility check', e);
+    return false;
+  }
+}
+

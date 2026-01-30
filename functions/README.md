@@ -76,6 +76,11 @@ firebase functions:log
 Or in Firebase Console:
 - Go to Functions → Logs
 
+## New: Admin re-evaluation on scheme updates
+
+- **Function**: `onSchemeCreatedOrUpdated`
+- **Behavior**: When a scheme is added or updated, the function re-evaluates all users and sends localized notifications/emails only to users who become newly eligible. This avoids notifying users who were already eligible.
+
 ## Troubleshooting
 
 ### Email not sending
