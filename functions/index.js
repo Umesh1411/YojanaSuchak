@@ -493,3 +493,87 @@ exports.sendSchemeDetailsCallable = functions.https.onCall(async (data, context)
   }
 });
 
+
+// Callable to provide a SINGLE short follow-up question using server-side Gemini (or local fallback)
+exports.getGeminiResponse = functions.https.onCall(async (data, context) => {
+  const userProblem = (data.userProblem || '').toString();
+  const missingFields = Array.isArray(data.missingFields) ? data.missingFields : [];
+  const lang = (data.lang || 'en').toString().slice(0,2);
+  const sector = data.sector || null;
+
+  // If Gemini key is not set, use a deterministic local fallback question generator
+  const hasGeminiKey = !!(functions.config().gemini?.key || process.env.GEMINI_API_KEY);
+
+  // Local fallback generator (keeps questions short and sector-aware)
+  function localFallback() {
+    const p = userProblem.toLowerCase();
+
+    // Education-focused
+    if ((p.includes('student') || p.includes('education') || p.includes('fees')) ) {
+      if (missingFields.includes('student')) {
+        return { question: (lang === 'hi' ? 'क्या आप वर्तमान में छात्र/छात्रा हैं?' : (lang === 'mr' ? 'आप सध्या विद्यार्थी आहात का?' : 'Are you currently a student?')) };
+      }
+      if (missingFields.includes('age')) {
+        return { question: (lang === 'hi' ? 'आपकी आयु क्या है?' : (lang === 'mr' ? 'आपची वय किती आहे?' : 'What is your age?')) };
+      }
+    }
+
+    // Health-focused
+    if (p.includes('health') || p.includes('medical')) {
+      if (missingFields.includes('seniorCitizen')) {
+        return { question: (lang === 'hi' ? 'क्या आप 60+ वरिष्ठ नागरिक हैं? (हाँ/नहीं)' : (lang === 'mr' ? 'आप 60+ वरिष्ठ नागरिक आहात का? (होय/नाही)' : 'Are you a senior citizen (60+)? (yes/no)')) };
+      }
+      if (missingFields.includes('disability')) {
+        return { question: (lang === 'hi' ? 'क्या आपको कोई विकलांगता है? (हाँ/नहीं)' : (lang === 'mr' ? 'आपला काही अपंगत्व आहे का? (होय/नाही)' : 'Do you have any disability? (yes/no)')) };
+      }
+    }
+
+    // General priority order
+    const order = ['sector','occupation','age','income','category','gender','student','farmer','woman','seniorCitizen','disability'];
+    for (const f of order) {
+      if (missingFields.includes(f)) {
+        switch (f) {
+          case 'occupation':
+            return { question: (lang === 'hi' ? 'आपका पेशा क्या है?' : (lang === 'mr' ? 'आपले व्यवसाय काय आहे?' : 'What is your occupation?')) };
+          case 'age':
+            return { question: (lang === 'hi' ? 'आपकी आयु क्या है?' : (lang === 'mr' ? 'आपची वय किती आहे?' : 'What is your age?')) };
+          case 'income':
+            return { question: (lang === 'hi' ? 'आपकी मासिक/वार्षिक आय क्या है? (लगभग)' : (lang === 'mr' ? 'आपले मासिक/वार्षिक उत्पन्न किती आहे? (सुमारे)' : 'What is your monthly/annual income? (approx.)')) };
+          case 'category':
+            return { question: (lang === 'hi' ? 'आप किस श्रेणी से हैं? (General/SC/ST/OBC)' : (lang === 'mr' ? 'आप कोणत्या वर्गात आहात? (General/SC/ST/OBC)' : 'Which category do you belong to? (General/SC/ST/OBC)')) };
+          case 'gender':
+            return { question: (lang === 'hi' ? 'आपका लिंग क्या है?' : (lang === 'mr' ? 'आपले लिंग काय आहे?' : 'What is your gender?')) };
+          case 'student':
+            return { question: (lang === 'hi' ? 'क्या आप छात्र/छात्रा हैं? (हाँ/नहीं)' : (lang === 'mr' ? 'आप विद्यार्थी आहात का? (होय/नाही)' : 'Are you a student? (yes/no)')) };
+          case 'farmer':
+            return { question: (lang === 'hi' ? 'क्या आप किसान हैं? (हाँ/नहीं)' : (lang === 'mr' ? 'आप शेतकरी आहात का? (होय/नाही)' : 'Are you a farmer? (yes/no)')) };
+          case 'woman':
+            return { question: (lang === 'hi' ? 'क्या आप महिला हैं? (हाँ/नहीं)' : (lang === 'mr' ? 'आप स्त्री आहात का? (होय/नाही)' : 'Are you a woman? (yes/no)')) };
+          case 'seniorCitizen':
+            return { question: (lang === 'hi' ? 'क्या आप 60+ वरिष्ठ नागरिक हैं? (हाँ/नहीं)' : (lang === 'mr' ? 'आप 60+ वरिष्ठ नागरिक आहात का? (होय/नाही)' : 'Are you a senior citizen (60+)? (yes/no)')) };
+          case 'disability':
+            return { question: (lang === 'hi' ? 'क्या आपको कोई विकलांगता है? (हाँ/नहीं)' : (lang === 'mr' ? 'आपला काही अपंगत्व आहे का? (होय/नाही)' : 'Do you have any disability? (yes/no)')) };
+          default:
+            return { question: (lang === 'hi' ? 'कृपया अपनी समस्या के बारे में और जानकारी दें।' : (lang === 'mr' ? 'कृपया आपल्या समस्येबद्दल अधिक माहिती द्या.' : 'Please provide more details about your problem.')) };
+        }
+      }
+    }
+
+    return { question: (lang === 'hi' ? 'कृपया अपनी समस्या के बारे में और जानकारी दें।' : (lang === 'mr' ? 'कृपया आपल्या समस्येबद्दल अधिक माहिती द्या.' : 'Please provide more details about your problem.')) };
+  }
+
+  // If Gemini key exists we currently still use the fallback generator until server-side Gemini is configured
+  try {
+    if (!hasGeminiKey) {
+      return localFallback();
+    }
+
+    // TODO: Implement real Gemini call here using server-side key
+    // For now, fallback is returned even if key exists to keep behavior deterministic
+    return localFallback();
+  } catch (err) {
+    console.error('Error in getGeminiResponse:', err);
+    return localFallback();
+  }
+});
+

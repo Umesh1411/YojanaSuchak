@@ -5,7 +5,7 @@ import '../../models/scheme.dart';
 import '../../services/speech_service.dart';
 import '../../services/tts_service.dart';
 import '../../services/data_service.dart';
-import '../../services/gemini_chat_service.dart';
+import '../../core/services/chat_service.dart';
 import '../../services/profile_extractor.dart';
 import '../../core/theme/app_theme.dart';
 
@@ -22,7 +22,7 @@ class _EnhancedSchemeFinderScreenState extends State<EnhancedSchemeFinderScreen>
   // Services
   final SpeechService _speechService = SpeechService();
   final TTSService _ttsService = TTSService();
-  late final GeminiChatService _chatService;
+  late final ChatService _chatService;
 
   // State
   final UserProfile _profile = UserProfile();
@@ -51,8 +51,9 @@ class _EnhancedSchemeFinderScreenState extends State<EnhancedSchemeFinderScreen>
     await _ttsService.initialize();
     _allSchemes = await DataService.loadSchemes();
 
-    // Initialize Gemini Chat Service - reads API key from env/config
-    _chatService = GeminiChatService();
+    // Initialize Chat Service - uses server-side callable
+    _chatService = ChatService();
+    await _chatService.initialize();
 
     _animationController = AnimationController(
       vsync: this,
@@ -95,10 +96,10 @@ class _EnhancedSchemeFinderScreenState extends State<EnhancedSchemeFinderScreen>
         if (_chatService.isAvailable) {
           final reply = await _chatService.getChatResponse(
             userMessage: message,
-            profile: _profile,
-            availableSchemes: _allSchemes,
+            profile: _profile.toJson(),
+            availableSchemes: _allSchemes.map((s) => s.toJson()).toList(),
           );
-          _addBot(reply);
+          _addBot(reply ?? 'Sorry, I could not get a response.');
           return;
         } else {
           // Local fallback: ask one concise question for the next missing field

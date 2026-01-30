@@ -4,7 +4,8 @@ import '../models/user_profile.dart';
 import '../models/scheme.dart';
 import '../services/speech_service.dart';
 import '../services/tts_service.dart';
-import '../services/gemini_chat_service.dart';
+import 'package:yojana_suchak/core/services/chat_service.dart';
+import 'package:yojana_suchak/core/services/scheme_recommender.dart';
 import '../services/profile_extractor.dart';
 import '../services/data_service.dart';
 
@@ -21,7 +22,7 @@ class _HomeScreenState extends State<HomeScreen>
   // Services
   final SpeechService _speechService = SpeechService();
   final TTSService _ttsService = TTSService();
-  GeminiChatService? _geminiChatService;
+  ChatService? _chatService;
 
   // State
   final UserProfile _userProfile = UserProfile();
@@ -74,17 +75,16 @@ class _HomeScreenState extends State<HomeScreen>
       return;
     }
 
-    // Initialize Gemini Chat Service
-    // PRODUCTION: Inject API key from backend or secure storage
-    _geminiChatService =
-        GeminiChatService(); // Reads API key from EnvConfig.geminiApiKey; no manual apiKey param
+    // Initialize Chat Service (server-side Gemini via callable)
+    _chatService = ChatService();
+    await _chatService?.initialize();
 
     // Start conversation with greeting
     _startConversation();
   }
 
   Future<void> _startConversation() async {
-    if (_geminiChatService == null) {
+    if (_chatService == null || !_chatService!.isAvailable) {
       setState(() {
         _botResponse =
             'Hello! I\'m here to help you find suitable government schemes. Please tell me about yourself.';
@@ -99,11 +99,11 @@ class _HomeScreenState extends State<HomeScreen>
 
     try {
       // Get initial greeting from Gemini with timeout
-      String response = await _geminiChatService!
+      String response = await _chatService!
           .getChatResponse(
         userMessage: 'Hello, I want to find government schemes.',
-        profile: _userProfile,
-        availableSchemes: _allSchemes,
+        profile: _userProfile.toMap(),
+        availableSchemes: _allSchemes.map((s) => s.toMap()).toList(),
       )
           .timeout(
         const Duration(seconds: 30),
@@ -144,7 +144,7 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   Future<void> _processUserInput(String userMessage) async {
-    if (_geminiChatService == null || userMessage.trim().isEmpty) return;
+    if (_chatService == null || userMessage.trim().isEmpty) return;
 
     // Add user message to history
     _conversationHistory.add({
@@ -164,11 +164,11 @@ class _HomeScreenState extends State<HomeScreen>
     try {
       // Get response from Gemini with timeout
       debugPrint('🔄 Starting Gemini API call...');
-      String response = await _geminiChatService!
+      String response = await _chatService!
           .getChatResponse(
         userMessage: userMessage,
-        profile: _userProfile,
-        availableSchemes: _allSchemes,
+        profile: _userProfile.toMap(),
+        availableSchemes: _allSchemes.map((s) => s.toMap()).toList(),
       )
           .timeout(
         const Duration(seconds: 30),
@@ -228,18 +228,20 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   Future<void> _getRecommendations() async {
-    if (_geminiChatService == null || _allSchemes.isEmpty) return;
+    if (_chatService == null || _allSchemes.isEmpty) return;
 
     setState(() {
       _isLoading = true;
     });
 
     try {
+      // Use SchemeRecommender to obtain recommendations (server-side behavior).
+      final rec = await SchemeRecommender()
+          .recommend(_userProfile.toMap(), locale: Locale('en'));
+      final recList =
+          (rec['recommendations'] as List).cast<Map<String, dynamic>>();
       List<Scheme> recommendations =
-          await _geminiChatService!.getRecommendations(
-        profile: _userProfile,
-        allSchemes: _allSchemes,
-      );
+          recList.map((m) => Scheme.fromJson(m)).toList();
 
       if (recommendations.isNotEmpty) {
         _recommendations = recommendations;

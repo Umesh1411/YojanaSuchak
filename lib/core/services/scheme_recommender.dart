@@ -145,6 +145,36 @@ class SchemeRecommender {
 
     if (userSector.isNotEmpty && schemeSectors.contains(userSector)) {
       score += 30; // big boost for sector match
+    } else if (userSector.isNotEmpty && schemeSectors.isEmpty) {
+      // Try to infer scheme sector from its name, benefits or description if not provided
+      final name = (scheme['schemeName'] ?? '').toString().toLowerCase();
+      final benefitsText = (scheme['benefits'] ?? '').toString().toLowerCase();
+      final desc = (scheme['description'] ?? '').toString().toLowerCase();
+      final combined = '$name $benefitsText $desc';
+      final mapping = {
+        'education': [
+          'student',
+          'education',
+          'scholarship',
+          'fees',
+          'school',
+          'college'
+        ],
+        'health': ['health', 'hospital', 'medical', 'treatment', 'medicine'],
+        'employment': ['job', 'employment', 'skill', 'training', 'salary'],
+        'agriculture': ['farmer', 'crop', 'agriculture', 'kisan', 'soil'],
+        'women': ['woman', 'female', 'women', 'ladki']
+      };
+
+      for (final entry in mapping.entries) {
+        for (final kw in entry.value) {
+          if (combined.contains(kw)) {
+            if (entry.key == userSector)
+              score += 25; // slightly lower boost for inferred match
+            break;
+          }
+        }
+      }
     }
 
     // Flags: farmer/student/woman/senior

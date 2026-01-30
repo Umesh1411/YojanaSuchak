@@ -5,17 +5,9 @@ import '../models/scheme.dart';
 import '../models/user_profile.dart';
 import '../core/config/env_config.dart';
 
-/// IMPORTANT: GeminiChatService is the SINGLE chatbot brain and MUST read its API key from EnvConfig.
-/// It will NOT silently fall back to asking questions if the API key is missing. Instead, it returns
-/// a clear, actionable message to the user and logs the condition for diagnostics.
-
-/// Service for Gemini-powered chat conversations
-/// IMPORTANT: In production, Gemini API calls must be made via backend service.
-/// This Flutter implementation is for development/testing only.
-/// API key must be injected at runtime from secure storage.
-class GeminiChatService {
-  GenerativeModel? _model;
-  final List<Map<String, String>> _chatHistory = [];
+// DELETED: Merged into `lib/core/services/chat_service.dart` and `lib/core/services/gemini_service.dart`.
+// This file is intentionally left in place as a marker for the refactor; please remove it from the repo
+// when you are ready to commit the permanent deletion.
 
   GeminiChatService() {
     final key = EnvConfig.geminiApiKey;
