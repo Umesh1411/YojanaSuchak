@@ -4,6 +4,7 @@ import 'package:google_generative_ai/google_generative_ai.dart';
 import '../models/scheme.dart';
 import '../models/user_profile.dart';
 
+
 /// Service for Gemini-powered chat conversations
 class GeminiChatService {
   final String apiKey;

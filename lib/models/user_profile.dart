@@ -35,28 +35,26 @@ class UserProfile {
   String? get casteOrCategory => caste ?? category;
 
   /// Check if profile is complete enough for scheme recommendation
-  /// REQUIRED FIELDS: age, gender, state, district, annualIncome, occupation, caste/category
+  /// Note: completeness is now dynamic per-scheme. Keep a lightweight
+  /// helper for legacy checks but do NOT require caste/category by default.
   bool isComplete() {
     return age != null &&
         gender != null &&
-        state != null &&
-        district != null &&
-        annualIncome != null &&
         occupation != null &&
-        (caste != null || category != null);
+        state != null; // district/caste/income may be optional depending on scheme
   }
 
-  /// Get missing fields for conversation flow
-  /// Returns list of missing REQUIRED fields in priority order
+  /// Get missing fields for conversation flow (dynamic, location combined)
+  /// Priority: occupation -> age -> gender -> location -> annualIncome
   List<String> getMissingFields() {
     List<String> missing = [];
+    if (occupation == null) missing.add('occupation');
     if (age == null) missing.add('age');
     if (gender == null) missing.add('gender');
-    if (state == null) missing.add('state');
-    if (district == null) missing.add('district');
-    if (annualIncome == null) missing.add('income');
-    if (occupation == null) missing.add('occupation');
-    if (caste == null && category == null) missing.add('category');
+    // Combine state+district into single `location` item
+    if (state == null || district == null) missing.add('location');
+    if (annualIncome == null) missing.add('annualIncome');
+    // caste/category left intentionally OPTIONAL — do not require by default
     return missing;
   }
 

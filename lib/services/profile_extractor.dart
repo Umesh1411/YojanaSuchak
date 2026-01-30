@@ -204,22 +204,12 @@ class ProfileExtractor {
   }
 
   static String? extractCategory(String text) {
+    // ONLY detect caste/category (SC/ST/OBC/General). Do NOT map occupation/target groups here.
     final cleaned = text.toLowerCase();
     if (cleaned.contains('sc') || cleaned.contains('scheduled caste')) return 'SC';
     if (cleaned.contains('st') || cleaned.contains('scheduled tribe')) return 'ST';
     if (cleaned.contains('obc') || cleaned.contains('other backward class')) return 'OBC';
     if (cleaned.contains('general')) return 'General';
-
-    final targetMap = {
-      'student': 'student',
-      'farmer': 'farmer',
-      'woman': 'woman',
-      'senior': 'senior_citizen',
-      'unemployed': 'unemployed'
-    };
-    for (final e in targetMap.entries) {
-      if (cleaned.contains(e.key)) return e.value;
-    }
     return null;
   }
 
@@ -239,6 +229,15 @@ class ProfileExtractor {
     for (final e in map.entries) {
       if (cleaned.contains(e.key)) return e.value;
     }
+    return null;
+  }
+
+  /// Extract special conditions like widow, disabled, elderly
+  static String? extractSpecialCondition(String text) {
+    final cleaned = text.toLowerCase();
+    if (cleaned.contains('widow') || cleaned.contains('widowed')) return 'widow';
+    if (cleaned.contains('disabled') || cleaned.contains('disability') || cleaned.contains('divyang')) return 'disabled';
+    if (cleaned.contains('senior') || cleaned.contains('elderly') || cleaned.contains('aged')) return 'elderly';
     return null;
   }
 
@@ -322,6 +321,7 @@ class ProfileExtractor {
       'annualIncome': extractIncome(text),
       'category': extractCategory(text),
       'occupation': extractOccupation(text),
+      'specialCondition': extractSpecialCondition(text),
     };
   }
 
@@ -345,8 +345,12 @@ class ProfileExtractor {
     if (profile.annualIncome == null && parsed['annualIncome'] != null) {
       profile.annualIncome = parsed['annualIncome'] as int?;
     }
-    if ((profile.caste == null && profile.category == null) && parsed['category'] != null) {
-      profile.category = parsed['category'] as String?;
+    // If parser detected caste (SC/ST/OBC/General), store in `caste` only.
+    if (profile.caste == null && parsed['category'] != null) {
+      profile.caste = parsed['category'] as String?;
+    }
+    if (profile.specialCondition == null && parsed['specialCondition'] != null) {
+      profile.specialCondition = parsed['specialCondition'] as String?;
     }
   }
 
@@ -356,11 +360,10 @@ class ProfileExtractor {
     if (profile.occupation == null || (profile.occupation?.trim().isEmpty ?? true)) return 'occupation';
     if (profile.age == null) return 'age';
     if (profile.gender == null) return 'gender';
-    if (profile.state == null) return 'state';
-    if (profile.district == null) return 'district';
+    // Combine state/district into single 'location' question
+    if (profile.state == null || profile.district == null) return 'location';
     if (profile.annualIncome == null) return 'annualIncome';
-    if ((profile.caste == null && profile.category == null)) return 'category';
-    return null; // Profile complete
+    return null; // Profile sufficiently complete for many schemes
   }
 }
 

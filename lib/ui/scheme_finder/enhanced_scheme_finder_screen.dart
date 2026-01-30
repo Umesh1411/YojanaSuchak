@@ -285,6 +285,7 @@ class _EnhancedSchemeFinderScreenState extends State<EnhancedSchemeFinderScreen>
         'age': 'age',
         'gender': 'gender',
         'occupation': 'occupation',
+        'location': 'state and district',
         'state': 'state',
         'district': 'district',
         'annualIncome': 'annual income',
@@ -363,7 +364,7 @@ Do NOT include any other text.''';
   /// Display filtered schemes with explanations
   Future<void> _showSchemeResults() async {
     if (_matchedSchemes.isEmpty) {
-      _addBot("I couldn't find schemes matching your criteria. Try adjusting your details.");
+      _addBot("I found some schemes that may help you. I may need one or two more details to confirm eligibility.");
       return;
     }
     _matchedSchemes = _rankSchemes(_matchedSchemes);
@@ -388,10 +389,14 @@ Do NOT include any other text.''';
 
       if (_geminiReady && _geminiChatService != null) {
         try {
-          final explanation = await _geminiChatService!.explainScheme(
+          var explanation = await _geminiChatService!.explainScheme(
             profile: _profile,
             scheme: scheme,
           );
+          // Ensure explanation starts with scheme name for consistent formatting
+          if (!explanation.trim().toLowerCase().startsWith(scheme.schemeName.toLowerCase())) {
+            explanation = '${scheme.schemeName}: ' + explanation.trim();
+          }
           _addBot(explanation);
         } catch (e) {
           debugPrint('❌ Gemini explain error: $e');
@@ -459,14 +464,14 @@ Do NOT include any other text.''';
         required.add('category');
       }
 
-      // If scheme is state-specific, state is required
+      // If scheme is state-specific, location is required (state/district combined)
       if (scheme.state.isNotEmpty && scheme.state.toLowerCase() != 'india') {
-        required.add('state');
+        required.add('location');
       }
-      // If scheme explicitly mentions district-level eligibility in otherEligibilityCriteria or remarks, require district
+      // If scheme explicitly mentions district-level eligibility in otherEligibilityCriteria or remarks, require location
       final otherLower = scheme.otherEligibilityCriteria.toLowerCase() + ' ' + scheme.remarks.toLowerCase();
       if (otherLower.contains('district')) {
-        required.add('district');
+        required.add('location');
       }
     }
 
@@ -486,6 +491,8 @@ Do NOT include any other text.''';
         return _profile.state != null;
       case 'district':
         return _profile.district != null;
+      case 'location':
+        return _profile.state != null && _profile.district != null;
       case 'annualIncome':
         return _profile.annualIncome != null;
       case 'category':
@@ -500,17 +507,22 @@ Do NOT include any other text.''';
   Set<String> _getProfileMissingFields() {
     final missing = _profile.getMissingFields();
     final mapped = <String>{};
-    
     for (final field in missing) {
       if (field == 'age') mapped.add('age');
       else if (field == 'gender') mapped.add('gender');
       else if (field == 'occupation') mapped.add('occupation');
-      else if (field == 'state') mapped.add('state');
-      else if (field == 'district') mapped.add('district');
-      else if (field == 'annualIncome') mapped.add('annualIncome');
-      else if (field == 'category') mapped.add('category');
+      else if (field == 'location') mapped.add('location');
+      else if (field == 'annualIncome') {
+        // Avoid asking income initially for students/unemployed
+        final occ = (_profile.occupation ?? '').toLowerCase();
+        if (occ.contains('student') || occ.contains('unemployed')) {
+          // skip unless schemes explicitly require income (handled elsewhere)
+        } else {
+          mapped.add('annualIncome');
+        }
+      }
     }
-    
+
     return mapped;
   }
 
