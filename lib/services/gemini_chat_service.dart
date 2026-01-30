@@ -7,14 +7,25 @@ import '../models/user_profile.dart';
 /// Service for Gemini-powered chat conversations
 class GeminiChatService {
   final String apiKey;
-  late final GenerativeModel _model;
+  GenerativeModel? _model;
+  bool _enabled = false;
   final List<Map<String, String>> _chatHistory = [];
 
   GeminiChatService({required this.apiKey}) {
-    _model = GenerativeModel(
-      model: 'gemini-1.0-pro', // Changed to more stable model
-      apiKey: apiKey,
-    );
+    // Some platforms (notably Flutter Web) may not support the native
+    // `google_generative_ai` model construction. Guard against that so the
+    // app does not crash — service will report unavailable instead.
+    if (kIsWeb) {
+      debugPrint('GeminiChatService: running on Web, disabling direct model initialization');
+      _model = null;
+      _enabled = false;
+    } else {
+      _model = GenerativeModel(
+        model: 'gemini-flash-lite-latest', // Changed to more stable model
+        apiKey: apiKey,
+      );
+      _enabled = true;
+    }
   }
 
   /// Detect language from user input
@@ -46,6 +57,10 @@ class GeminiChatService {
     required List<Scheme> availableSchemes,
   }) async {
     try {
+      if (!_enabled || _model == null) {
+        debugPrint('GeminiChatService: model not enabled or unavailable on this platform');
+        return 'AI assistance is not available on this platform. Please provide the missing information via text.';
+      }
       // Add user message to history
       _chatHistory.add({
         'role': 'user',
@@ -62,15 +77,15 @@ class GeminiChatService {
 
       debugPrint('📤 Sending prompt to Gemini...');
       debugPrint('📤 Prompt length: ${prompt.length} characters');
-      debugPrint('📤 API Key (first 10 chars): ${apiKey.substring(0, 10)}...');
-      debugPrint('📤 Model: gemini-1.0-pro');
+      
+      debugPrint('📤 Model: gemini-flash-lite-latest');
       debugPrint(
           '📤 Prompt preview: ${prompt.substring(0, prompt.length > 300 ? 300 : prompt.length)}...');
 
       // Get response with timeout
       debugPrint('📡 Calling Gemini API...');
-      final response =
-          await _model.generateContent([Content.text(prompt)]).timeout(
+        final response =
+          await _model!.generateContent([Content.text(prompt)]).timeout(
         const Duration(seconds: 30),
         onTimeout: () {
           debugPrint('⏱️ Request timed out after 30 seconds');
@@ -474,6 +489,44 @@ YOUR RESPONSE (FOLLOW ALL RULES ABOVE):
       debugPrint('Stack trace: $stackTrace');
       // Fail gracefully - return empty list
       return [];
+    }
+  }
+
+  /// Explain why a given scheme matches the user profile in simple language.
+  Future<String> explainScheme({
+    required UserProfile profile,
+    required Scheme scheme,
+  }) async {
+    if (!_enabled || _model == null) {
+      debugPrint('GeminiChatService: explainScheme unavailable on this platform');
+      return 'This scheme matches your profile based on the details you provided.';
+    }
+
+    try {
+      final prompt = '''Explain politely in simple Indian English why this government scheme matches the user's profile.
+
+User Profile:
+Occupation: ${profile.occupation}
+Age: ${profile.age}
+Income: ${profile.annualIncome}
+Category: ${profile.category}
+State: ${profile.state}
+
+Scheme:
+Name: ${scheme.schemeName}
+Eligibility: ${scheme.eligibility}
+Benefits: ${scheme.benefits}
+
+Keep the explanation to 2-3 short sentences.''';
+
+      final response = await _model!.generateContent([Content.text(prompt)]).timeout(
+        const Duration(seconds: 20),
+      );
+
+      return response.text ?? 'This scheme matches your profile.';
+    } catch (e) {
+      debugPrint('GeminiChatService explainScheme error: $e');
+      return 'This scheme matches your profile based on the details you provided.';
     }
   }
 

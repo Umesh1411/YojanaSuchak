@@ -22,7 +22,7 @@ class GeminiService {
   late final GenerativeModel _model;
 
   GeminiService({required this.apiKey}) {
-    _model = GenerativeModel(model: 'gemini-1.5-flash', apiKey: apiKey); // Updated to current Gemini model
+    _model = GenerativeModel(model: 'gemini-flash-lite-latest', apiKey: apiKey); // Updated to current Gemini model
   }
 
   /// Get top 3 scheme recommendations from Gemini

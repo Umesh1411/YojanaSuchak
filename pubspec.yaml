@@ -37,6 +37,7 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   assets:
+    - .env
     - assets/data/maharashtra_schemes.json
     - assets/data/scheme.csv
     - assets/images/

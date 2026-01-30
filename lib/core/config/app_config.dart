@@ -1,30 +1,35 @@
 /// App Configuration - Store API keys and settings here
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 
+/// Centralized application configuration that reads from environment variables.
+///
+/// IMPORTANT: API keys are loaded ONCE in main.dart and stored here.
+/// This class does NOT access dotenv directly.
 class AppConfig {
+  /// Gemini API key - loaded from .env in main.dart
+  static String? _geminiApiKey;
 
-  static const geminiApiKey = "";
+  /// Set Gemini API key (called from main.dart during app initialization)
+  static void setGeminiApiKey(String key) {
+    _geminiApiKey = key;
+  }
 
+  /// Get Gemini API key safely
+  /// Returns empty string if not set
+  static String get geminiApiKey => _geminiApiKey ?? '';
 
+  /// Check if Gemini is configured
+  static bool get isGeminiConfigured => _geminiApiKey != null && _geminiApiKey!.isNotEmpty;
 
-  // Email SMTP Configuration - Replace with your SMTP details
-  static const String smtpHost = 'smtp.gmail.com';
-  static const int smtpPort = 587;
-  static const String smtpUsername = 'yojanasuchak@gmail.com';
-  static const String smtpPassword = 'khon jioy lole cuwz';
-  static const bool useTls = true;
-
-  // Check if Gemini is configured
-  static bool get isGeminiConfigured =>
-      geminiApiKey.isNotEmpty && !geminiApiKey.contains('YOUR_GEMINI');
+  // Email SMTP Configuration - can be extended if needed
+  static String get smtpHost => 'smtp.gmail.com';
+  static int get smtpPort => 587;
+  static String get smtpUsername => '';
+  static String get smtpPassword => '';
+  static bool get useTls => true;
 
   // Check if Email is configured
-  static bool get isEmailConfigured =>
-      smtpUsername != 'yojanasuchak@gmail.com' &&
-      smtpPassword != 'khon jioy lole cuwz';
+  static bool get isEmailConfigured => smtpUsername.isNotEmpty && smtpPassword.isNotEmpty;
 
-  // Admin Password for scheme upload access
-  // IMPORTANT: In production, use environment variables or secure storage
-  // This is stored here for simplicity but should be moved to secure storage
-  static const String adminPassword = 'yojanasuchak@791317';
+  // Admin password
+  static String get adminPassword => '';
 }

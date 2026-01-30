@@ -6,12 +6,28 @@ import 'core/theme/app_theme.dart';
 import 'core/services/language_service.dart';
 import 'core/services/localization_service.dart';
 import 'core/utils/app_strings.dart';
+import 'core/config/app_config.dart';
 import 'ui/screens/splash_screen.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Load environment variables BEFORE anything else
+  try {
+    await dotenv.load(fileName: ".env");
+    final geminiKey = dotenv.env['GEMINI_API_KEY'] ?? '';
+    AppConfig.setGeminiApiKey(geminiKey);
+    if (geminiKey.isNotEmpty) {
+      debugPrint('✅ Gemini API key loaded (length: ${geminiKey.length})');
+    } else {
+      debugPrint('⚠️ Gemini API key not found in .env');
+    }
+  } catch (e) {
+    debugPrint('⚠️ Could not load .env file: $e');
+    AppConfig.setGeminiApiKey('');
+  }
 
   // Initialize Firebase
   try {
@@ -22,15 +38,8 @@ void main() async {
     debugPrint("Firebase init failed: $e");
   }
 
-
   // Initialize localization
   await LocalizationService.initialize();
-
-  try {
-    await dotenv.load(fileName: ".env");
-  } catch (e) {
-    debugPrint("dotenv not loaded (web?): $e");
-  }
 
   runApp(const YojanaSuchakApp());
 }

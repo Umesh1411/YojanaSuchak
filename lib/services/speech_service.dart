@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 
 /// Service for handling speech-to-text functionality
@@ -10,6 +11,13 @@ class SpeechService {
 
   /// Initialize speech recognition
   Future<bool> initialize() async {
+    // On web, speech_to_text is not supported. Disable gracefully.
+    if (kIsWeb) {
+      _isAvailable = false;
+      print('Speech recognition disabled on Web (kIsWeb=true)');
+      return false;
+    }
+
     _isAvailable = await _speech.initialize(
       onError: (error) {
         print('Speech recognition error: $error');
@@ -37,6 +45,12 @@ class SpeechService {
   /// Start listening for speech input
   /// Returns a stream of recognized text
   Stream<String> startListening({String? localeId}) async* {
+    // If running on web, produce an immediate empty result stream (no-op)
+    if (kIsWeb) {
+      yield '';
+      return;
+    }
+
     if (!_isAvailable) {
       await initialize();
     }

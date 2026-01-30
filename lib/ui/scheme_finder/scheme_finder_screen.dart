@@ -174,11 +174,9 @@ class _SchemeFinderScreenState extends State<SchemeFinderScreen>
           _transcript = text;
         });
 
-        ProfileExtractor.updateProfile(
-          _userProfile,
-          _currentState,
-          text,
-        );
+        // Use new non-destructive extractor: parse all possible fields then apply
+        final parsed = ProfileExtractor.extractAll(text);
+        ProfileExtractor.applyParsedToProfile(_userProfile, parsed);
 
         if (_userProfile.isComplete() ||
             (_currentState == ConversationState.askAge &&
