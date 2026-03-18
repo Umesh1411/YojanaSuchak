@@ -17,6 +17,9 @@ class UserProfile {
   // Additional fields
   String? specialCondition;
   String? selectedSchemeForDetails; // Scheme user wants more info about
+  // Additional attributes
+  String? maritalStatus; // e.g., Widow, Married, Single
+  bool? disability; // true if user explicitly says they have a disability
 
   UserProfile({
     this.fullName,
@@ -31,6 +34,8 @@ class UserProfile {
     this.district,
     this.specialCondition,
     this.selectedSchemeForDetails,
+    this.maritalStatus,
+    this.disability,
   });
 
   /// Get caste/category for eligibility checking (prefers caste, falls back to category)
@@ -107,6 +112,8 @@ User Profile:
       'district': district,
       'specialCondition': specialCondition,
       'selectedSchemeForDetails': selectedSchemeForDetails,
+      'maritalStatus': maritalStatus,
+      'disability': disability,
       'updatedAt': DateTime.now().toIso8601String(),
     };
   }
@@ -126,6 +133,8 @@ User Profile:
       district: json['district'] as String?,
       specialCondition: json['specialCondition'] as String?,
       selectedSchemeForDetails: json['selectedSchemeForDetails'] as String?,
+      maritalStatus: json['maritalStatus'] as String?,
+      disability: json['disability'] as bool?,
     );
   }
 }

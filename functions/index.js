@@ -562,18 +562,231 @@ exports.getGeminiResponse = functions.https.onCall(async (data, context) => {
     return { question: (lang === 'hi' ? 'कृपया अपनी समस्या के बारे में और जानकारी दें।' : (lang === 'mr' ? 'कृपया आपल्या समस्येबद्दल अधिक माहिती द्या.' : 'Please provide more details about your problem.')) };
   }
 
-  // If Gemini key exists we currently still use the fallback generator until server-side Gemini is configured
+  // If Gemini key exists, call configured provider (Google Generative / PaLM or OpenAI). Falls back to local generator on any error.
   try {
     if (!hasGeminiKey) {
       return localFallback();
     }
 
-    // TODO: Implement real Gemini call here using server-side key
-    // For now, fallback is returned even if key exists to keep behavior deterministic
-    return localFallback();
+    const gConfig = functions.config().gemini || {};
+    const provider = gConfig.provider || process.env.GEMINI_PROVIDER || 'google'; // 'google' or 'openai'
+    const key = gConfig.key || process.env.GEMINI_API_KEY;
+    const model = gConfig.model || process.env.GEMINI_MODEL || (provider === 'google' ? 'text-bison-001' : 'gpt-4o-mini');
+
+    async function callGenerator(prompt) {
+      if (provider === 'google') {
+        // Generative Language API (HTTP). Requires an API key with the Generative API enabled.
+        // Example URL: https://generativelanguage.googleapis.com/v1beta2/models/text-bison-001:generateText?key=API_KEY
+        const url = `https://generativelanguage.googleapis.com/v1beta2/models/${encodeURIComponent(model)}:generateText?key=${encodeURIComponent(key)}`;
+        const body = { prompt: { text: prompt }, temperature: 0.2, maxOutputTokens: 40 };
+        const resp = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+        if (!resp.ok) throw new Error(`Generative API error: ${resp.status}`);
+        const json = await resp.json();
+        const text = json?.candidates?.[0]?.content || json?.output?.[0]?.content || null;
+        return text;
+      } else if (provider === 'openai') {
+        // OpenAI-compatible call (if using OpenAI keys/models)
+        const url = 'https://api.openai.com/v1/chat/completions';
+        const body = {
+          model,
+          messages: [{ role: 'user', content: prompt }],
+          max_tokens: 60,
+          temperature: 0.2,
+        };
+        const resp = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` }, body: JSON.stringify(body) });
+        if (!resp.ok) throw new Error(`OpenAI API error: ${resp.status}`);
+        const json = await resp.json();
+        const text = json?.choices?.[0]?.message?.content || json?.choices?.[0]?.text || null;
+        return text;
+      } else {
+        throw new Error('Unsupported gemini.provider: ' + provider);
+      }
+    }
+
+    // Build a concise prompt requesting ONE short follow-up question in the user's language
+    const prompt = `You are an assistant that asks ONE concise follow-up question (max 12 words) to clarify a user's problem in Marathi/Hindi/English. User problem: "${userProblem}". Missing fields: ${missingFields.join(', ') || 'none'}. Sector: ${sector || 'general'}. Language: ${lang}. Ask only the question (no extra text).`;
+
+    console.log('LLM provider:', provider, 'model:', model ? model : 'default');
+    const generated = await callGenerator(prompt);
+    if (generated && typeof generated === 'string') {
+      const q = generated.split('\n').map(s => s.trim()).find(Boolean) || generated.trim();
+      let question = q;
+      if (question.length > 120) question = question.slice(0, 120) + '...';
+      return { question };
+    } else {
+      return localFallback();
+    }
   } catch (err) {
     console.error('Error in getGeminiResponse:', err);
     return localFallback();
+  }
+});
+
+
+/**
+ * Helper: extract JSON object from raw model text (first { ... } block)
+ */
+function safeJsonExtract(raw) {
+  const start = raw.indexOf('{');
+  const end = raw.lastIndexOf('}');
+  if (start === -1 || end === -1 || end <= start) {
+    throw new Error('Model returned invalid JSON');
+  }
+  const js = raw.slice(start, end + 1);
+  return JSON.parse(js);
+}
+
+/**
+ * Generic provider call helper used by the Gemini callables
+ */
+async function providerGenerate(prompt, maxTokens = 600) {
+  const gConfig = functions.config().gemini || {};
+  const provider = gConfig.provider || process.env.GEMINI_PROVIDER || 'google';
+  const key = gConfig.key || process.env.GEMINI_API_KEY;
+  const model = gConfig.model || process.env.GEMINI_MODEL || (provider === 'google' ? 'text-bison-001' : 'gpt-4o-mini');
+
+  if (!key) throw new Error('No gemini key configured');
+
+  if (provider === 'google') {
+    const url = `https://generativelanguage.googleapis.com/v1beta2/models/${encodeURIComponent(model)}:generateText?key=${encodeURIComponent(key)}`;
+    const body = { prompt: { text: prompt }, temperature: 0.1, maxOutputTokens: maxTokens };
+    const resp = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    if (!resp.ok) throw new Error(`Generative API error: ${resp.status}`);
+    const json = await resp.json();
+    return json?.candidates?.[0]?.content || json?.output?.[0]?.content || '';
+  }
+
+  if (provider === 'openai') {
+    const url = 'https://api.openai.com/v1/chat/completions';
+    const body = {
+      model,
+      messages: [{ role: 'user', content: prompt }],
+      max_tokens: maxTokens,
+      temperature: 0.1,
+    };
+    const resp = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` }, body: JSON.stringify(body) });
+    if (!resp.ok) throw new Error(`OpenAI API error: ${resp.status}`);
+    const json = await resp.json();
+    return json?.choices?.[0]?.message?.content || json?.choices?.[0]?.text || '';
+  }
+
+  throw new Error('Unsupported gemini.provider: ' + provider);
+}
+
+
+/**
+ * Callable: Run initial profile extraction + eligibility check
+ * Returns the strict JSON object as specified in the Python prompt
+ */
+exports.geminiInitialProfile = functions.https.onCall(async (data, context) => {
+  const callSid = String(data.callSid || '').trim();
+  const userText = String(data.userText || '').trim();
+  const language = String((data.language || 'en')).slice(0,2);
+  const schemes = Array.isArray(data.schemes) ? data.schemes : [];
+
+  if (!userText) throw new functions.https.HttpsError('invalid-argument', 'userText is required');
+
+  // Build a prompt similar to the Python implementation (concise but strict about JSON)
+  const prompt = `You are Yojana Suchak.\n\nYou are running inside a phone-call system. Your output is parsed by a machine.\n\nAbsolute output rule: Output MUST be a SINGLE valid JSON object and nothing else.\n\nUser statement: ${userText}\n\nAvailable schemes: ${JSON.stringify(schemes)}\n\nReturn this exact JSON shape:\n{ "profile": { "age": null, "gender": null, "state": null, "residence_type": null, "annual_income": null, "occupation": null, "land_holding": null, "caste_category": null }, "additional_attributes": {}, "eligible_schemes": [], "schemes_needing_more_info": [], "followup_question": "" }`;
+
+  try {
+    const raw = await providerGenerate(prompt, 800);
+    let dataObj;
+    try {
+      dataObj = safeJsonExtract(raw);
+    } catch (e) {
+      console.error('Invalid JSON from provider:', raw);
+      // Fallback: return minimal parsed structure
+      return {
+        profile: { age: null, gender: null, state: null, residence_type: null, annual_income: null, occupation: null, land_holding: null, caste_category: null },
+        additional_attributes: {},
+        eligible_schemes: [],
+        schemes_needing_more_info: [],
+        followup_question: ''
+      };
+    }
+
+    // Ensure shape and types
+    dataObj.profile = dataObj.profile || { age: null, gender: null, state: null, residence_type: null, annual_income: null, occupation: null, land_holding: null, caste_category: null };
+    dataObj.additional_attributes = dataObj.additional_attributes || {};
+    dataObj.eligible_schemes = Array.isArray(dataObj.eligible_schemes) ? dataObj.eligible_schemes : [];
+    dataObj.schemes_needing_more_info = Array.isArray(dataObj.schemes_needing_more_info) ? dataObj.schemes_needing_more_info : [];
+    dataObj.followup_question = dataObj.followup_question || '';
+
+    // Limit eligible schemes to first 3 to keep payload small
+    dataObj.eligible_schemes = dataObj.eligible_schemes.slice(0, 3);
+
+    return dataObj;
+  } catch (err) {
+    console.error('Error in geminiInitialProfile:', err);
+    // Fallback minimal response
+    return {
+      profile: { age: null, gender: null, state: null, residence_type: null, annual_income: null, occupation: null, land_holding: null, caste_category: null },
+      additional_attributes: {},
+      eligible_schemes: [],
+      schemes_needing_more_info: [],
+      followup_question: ''
+    };
+  }
+});
+
+
+/**
+ * Callable: Run a follow-up update and finalize eligibility
+ */
+exports.geminiUpdateProfile = functions.https.onCall(async (data, context) => {
+  const callSid = String(data.callSid || '').trim();
+  const followupText = String(data.followupText || '').trim();
+  const language = String((data.language || 'en')).slice(0,2);
+  const schemes = Array.isArray(data.schemes) ? data.schemes : [];
+
+  if (!callSid || !followupText) throw new functions.https.HttpsError('invalid-argument', 'callSid and followupText are required');
+
+  const prompt = `You are Yojana Suchak.\n\nExisting profile: ${JSON.stringify(data.existing_profile || {})}\nExisting additional_attributes: ${JSON.stringify(data.existing_additional_attributes || {})}\nUser follow-up answer: ${followupText}\nAvailable schemes: ${JSON.stringify(schemes)}\n\nRules: Update only null fields in profile, do not invent new fields. Return EXACTLY this JSON: { "updated_profile": { "age": null, "gender": null, "state": null, "residence_type": null, "annual_income": null, "occupation": null, "land_holding": null, "caste_category": null }, "updated_additional_attributes": {}, "final_eligible_schemes": [], "still_missing_fields": [], "followup_question": "" }`;
+
+  try {
+    const raw = await providerGenerate(prompt, 800);
+    let dataObj;
+    try {
+      dataObj = safeJsonExtract(raw);
+    } catch (e) {
+      console.error('Invalid JSON from provider (followup):', raw);
+      // fallback: return minimal structure with followup cleared
+      return { updated_profile: data.existing_profile || {}, updated_additional_attributes: data.existing_additional_attributes || {}, final_eligible_schemes: [], still_missing_fields: [], followup_question: '' };
+    }
+
+    // Normalize similar to Python helpers
+    dataObj.updated_profile = dataObj.updated_profile || { age: null, gender: null, state: null, residence_type: null, annual_income: null, occupation: null, land_holding: null, caste_category: null };
+    dataObj.updated_additional_attributes = dataObj.updated_additional_attributes || {};
+    dataObj.final_eligible_schemes = Array.isArray(dataObj.final_eligible_schemes) ? dataObj.final_eligible_schemes : [];
+    dataObj.still_missing_fields = Array.isArray(dataObj.still_missing_fields) ? dataObj.still_missing_fields : [];
+    dataObj.followup_question = dataObj.followup_question || '';
+
+    return dataObj;
+  } catch (err) {
+    console.error('Error in geminiUpdateProfile:', err);
+    return { updated_profile: data.existing_profile || {}, updated_additional_attributes: data.existing_additional_attributes || {}, final_eligible_schemes: [], still_missing_fields: [], followup_question: '' };
+  }
+});
+
+
+/**
+ * Callable: Generate a concise spoken explanation for a scheme
+ */
+exports.geminiGenerateSchemeDetails = functions.https.onCall(async (data, context) => {
+  const scheme = data.scheme || null;
+  const language = String((data.language || 'en')).slice(0,2);
+  if (!scheme) throw new functions.https.HttpsError('invalid-argument', 'scheme is required');
+
+  const prompt = `Explain the following government scheme clearly in ${language}. Use simple spoken language. Keep it under 30 seconds of speech. Include: 1) Who can apply (brief), 2) Key benefits, 3) Required documents, 4) Where to apply. Scheme: ${JSON.stringify(scheme)}. Return plain text only.`;
+
+  try {
+    const raw = await providerGenerate(prompt, 500);
+    const clean = (raw || '').replace(/\*|`|__|\*\*/g, '').replace(/\s+/g, ' ').trim();
+    return { text: clean };
+  } catch (err) {
+    console.error('Error in geminiGenerateSchemeDetails:', err);
+    return { text: `${scheme.schemeName || scheme.scheme_title || 'This scheme'} - details not available at the moment.` };
   }
 });
 

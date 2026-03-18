@@ -1,3 +1,4 @@
+# Note: Analyzer excludes for generated files are set in analysis_options.yaml
 name: yojana_suchak
 description: YojanaSuchak - Voice-powered AI assistant for finding the best Maharashtra government schemes.
 publish_to: 'none'
@@ -40,6 +41,7 @@ flutter:
   assets:
     - assets/data/maharashtra_schemes.json
     - assets/data/scheme.csv
+    - assets/data/environment_schemes.json
     - assets/images/
 
 flutter_launcher_icons:

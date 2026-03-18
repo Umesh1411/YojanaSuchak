@@ -106,3 +106,61 @@ Or in Firebase Console:
 - Verify Firestore rules allow function to read `users` collection
 - Check function deployment status
 - Verify scheme document structure matches expected format
+
+---
+
+## LLM / Gemini configuration (optional, server-side)
+
+The function `getGeminiResponse` supports calling a server-side LLM to generate a single short follow-up question. You can enable this with either Google Generative API (Gemini) or OpenAI.
+
+Set config via `firebase functions:config:set` (do not commit secrets):
+
+- Google Generative (Gemini/PaLM):
+```bash
+firebase functions:config:set gemini.key="YOUR_GOOGLE_API_KEY" gemini.provider="google" gemini.model="text-bison-001"
+```
+- OpenAI (if you prefer OpenAI models):
+```bash
+firebase functions:config:set gemini.key="sk-..." gemini.provider="openai" gemini.model="gpt-4o-mini"
+```
+
+Notes:
+- When `gemini.key` is not set, `getGeminiResponse` uses a deterministic local fallback to keep behavior stable for development/testing.
+- For Google Generative API, ensure the API key has access to the Generative Language API (or use service account credentials if deploying within a GCP project with appropriate IAM roles).
+- To test locally use the Firebase Emulator and a `.env` file with `GEMINI_API_KEY` (for local key) and `GEMINI_PROVIDER` if desired.
+
+---
+
+## New: Gemini callables for structured chat flow
+
+We added three new callables to support the structured initial/follow-up flow (mirrors the Python scripts in the repo):
+
+1. `geminiInitialProfile` (callable)
+- Purpose: Extract a structured profile from a free-form user statement, evaluate eligibility for provided schemes, and return a single short follow-up question if needed.
+- Input (callable data): `{ callSid, userText, language, schemes }`
+- Returns: `{ profile, additional_attributes, eligible_schemes, schemes_needing_more_info, followup_question }` (strict JSON shape)
+
+2. `geminiUpdateProfile` (callable)
+- Purpose: Given an existing profile + a follow-up answer, update the profile, finalize eligibility when possible, and return any new follow-up or final eligible schemes.
+- Input (callable data): `{ callSid, followupText, language, schemes, existing_profile, existing_additional_attributes }`
+- Returns: `{ updated_profile, updated_additional_attributes, final_eligible_schemes, still_missing_fields, followup_question }`
+
+3. `geminiGenerateSchemeDetails` (callable)
+- Purpose: Produce a concise, spoken-friendly explanation of a scheme (Who can apply, key benefits, required documents, where to apply).
+- Input (callable data): `{ scheme, language }`
+- Returns: `{ text }` (plain text)
+
+Usage example (client-side callable):
+```js
+const initial = await firebase.app().functions('your-region').httpsCallable('geminiInitialProfile')({ callSid: 'abc', userText: 'I am a 45 year old farmer', language: 'en', schemes: [...] });
+console.log(initial.data.followup_question);
+```
+
+Notes:
+- If no `gemini.key` is set, these callables will return a conservative fallback (minimally useful JSON / deterministic followups) so the client can continue working offline or in dev mode.
+- Be careful: model output is parsed as JSON; if the model fails to emit valid JSON we fall back to a minimal safe response.
+- For production, set `gemini.key` in functions config and deploy.
+
+---
+
+

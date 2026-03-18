@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import 'package:flutter/foundation.dart';
 import '../../models/user_profile.dart';
 import '../../models/scheme.dart';
@@ -7,6 +8,8 @@ import '../../services/tts_service.dart';
 import '../../services/data_service.dart';
 import '../../core/services/chat_service.dart';
 import '../../services/profile_extractor.dart';
+import '../../services/firestore_service.dart';
+import '../../services/email_service.dart';
 import '../../core/theme/app_theme.dart';
 
 class EnhancedSchemeFinderScreen extends StatefulWidget {
@@ -22,7 +25,8 @@ class _EnhancedSchemeFinderScreenState extends State<EnhancedSchemeFinderScreen>
   // Services
   final SpeechService _speechService = SpeechService();
   final TTSService _ttsService = TTSService();
-  late final ChatService _chatService;
+  ChatService? _chatService;
+  final FirestoreService _firestoreService = FirestoreService();
 
   // State
   final UserProfile _profile = UserProfile();
@@ -33,12 +37,18 @@ class _EnhancedSchemeFinderScreenState extends State<EnhancedSchemeFinderScreen>
   bool _isLoading = false;
   bool _voiceMode = true;
   bool _isListening = false;
+  bool _showSchemeSelection = false;
+  bool _showEmailPrompt = false;
+  bool _emailSending = false;
+  String? _emailResultMessage;
+  List<bool> _selectedSchemes = [];
 
   final TextEditingController _textController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   // Animation
-  late AnimationController _animationController;
+  AnimationController? _animationController;
 
   @override
   void initState() {
@@ -51,28 +61,32 @@ class _EnhancedSchemeFinderScreenState extends State<EnhancedSchemeFinderScreen>
     await _ttsService.initialize();
     _allSchemes = await DataService.loadSchemes();
 
-    // Initialize Chat Service - uses server-side callable
-    _chatService = ChatService();
-    await _chatService.initialize();
+    // Initialize ChatService (uses GeminiService internally)
+    try {
+      _chatService = ChatService();
+      await _chatService!.initialize();
+    } catch (e) {
+      debugPrint('❌ Failed to initialize ChatService: $e');
+      _chatService = null;
+    }
 
     _animationController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 900),
     )..repeat(reverse: true);
 
-    // Disable voice on Web gracefully (no mic support on web)
     if (kIsWeb) {
       setState(() => _voiceMode = false);
     }
 
-    // 🔥 FORCE FIRST QUESTION - let Gemini decide next question; we seed with occupation prompt to keep behavior stable
     Future.microtask(() {
-      _addBot("What is your occupation?");
+      _addBot(
+          "Tell me about your situation or problem. I'll find schemes for you.");
     });
   }
 
   // ===============================================================
-  // CORE CHAT HANDLER (FIXED)
+  // CHAT HANDLING (GEMINI-DRIVEN, SCHEME-AWARE, POST-RECOMMENDATION FLOW)
   // ===============================================================
   Future<void> _handleUser(String message) async {
     if (message.trim().isEmpty) return;
@@ -81,49 +95,72 @@ class _EnhancedSchemeFinderScreenState extends State<EnhancedSchemeFinderScreen>
     _textController.clear();
     setState(() => _isLoading = true);
 
-    try {
-      // 1️⃣ Extract all possible profile info FIRST (NON-DESTRUCTIVE)
-      ProfileExtractor.updateProfileFromText(_profile, message);
-
-      // 2️⃣ Find next missing field using single source-of-truth
-      final nextMissing = _profile.nextMissingField();
-
-      // 3️⃣ If profile incomplete → ask the next missing field.
-      if (nextMissing != null) {
-        // If Gemini is available, ask it the next question. Otherwise fall back to a
-        // local, deterministic question so the user flow continues without showing
-        // diagnostics or error messages in the UI.
-        if (_chatService.isAvailable) {
-          final reply = await _chatService.getChatResponse(
-            userMessage: message,
-            profile: _profile.toJson(),
-            availableSchemes: _allSchemes.map((s) => s.toJson()).toList(),
-          );
-          _addBot(reply ?? 'Sorry, I could not get a response.');
-          return;
-        } else {
-          // Local fallback: ask one concise question for the next missing field
-          final q = _localQuestionForField(nextMissing);
-          _addBot(q);
+    // If showing scheme selection, treat input as selection
+    if (_showSchemeSelection && _matchedSchemes.isNotEmpty) {
+      final match = RegExp(r'(save|select)?\s*(\d+)', caseSensitive: false)
+          .firstMatch(message);
+      if (match != null) {
+        final idx = int.tryParse(match.group(2) ?? '') ?? -1;
+        if (idx > 0 && idx <= _matchedSchemes.length) {
+          setState(() {
+            _selectedSchemes =
+                List.generate(_matchedSchemes.length, (i) => i == (idx - 1));
+            _showSchemeSelection = false;
+            _showEmailPrompt = true;
+          });
           return;
         }
       }
+    }
 
-      // 4️⃣ Profile complete → recommend schemes (pure Dart filtering)
+    try {
+      // Extract profile info
+      ProfileExtractor.updateProfileFromText(_profile, message);
+      final nextMissing = _profile.nextMissingField();
+
+      if (nextMissing != null) {
+        // Ask next question (Gemini or fallback)
+        if (_chatService != null) {
+          final profileMap = _profile.toJson();
+          final reply = await _chatService!.getChatResponse(
+            userMessage: message,
+            profile: profileMap,
+            availableSchemes: _allSchemes,
+          );
+          if (reply != null) _addBot(reply);
+        } else {
+          _addBot(_localQuestionForField(nextMissing));
+        }
+        return;
+      }
+
+      // Profile complete → recommend schemes
       _matchedSchemes = _filterSchemes();
-
       if (_matchedSchemes.isEmpty) {
         _addBot(
-          "I could not find any scheme matching your details. You may update your information.",
-        );
+            "I could not find any scheme matching your details. You may update your information.");
       } else {
-        _addBot(
-          "I found ${_matchedSchemes.length} schemes suitable for you.",
-        );
-
-        for (final s in _matchedSchemes.take(3)) {
-          _addBot("${s.schemeName} - ${s.benefits}");
+        _addBot("Great! I found ${_matchedSchemes.length} scheme(s) for you:");
+        for (int i = 0; i < _matchedSchemes.length; i++) {
+          final s = _matchedSchemes[i];
+          _addBot("${i + 1}. ${s.schemeName} - ${s.benefits}");
         }
+        setState(() {
+          _showSchemeSelection = true;
+          _showEmailPrompt = false;
+          _emailSending = false;
+          _emailResultMessage = null;
+          _selectedSchemes =
+              List.generate(_matchedSchemes.length, (_) => false);
+        });
+        _addBot(
+            "Which scheme(s) do you want to save to 'My Schemes'? Reply with the scheme number (e.g., 'Save 2') or tap the sidebar list.");
+        Future.delayed(const Duration(milliseconds: 500), () {
+          if (_scaffoldKey.currentState?.isEndDrawerOpen != true) {
+            _scaffoldKey.currentState?.openEndDrawer();
+          }
+        });
+        return;
       }
     } catch (e) {
       debugPrint('Chat error: $e');
@@ -173,26 +210,170 @@ class _EnhancedSchemeFinderScreenState extends State<EnhancedSchemeFinderScreen>
     return _allSchemes.where((s) {
       if (s.minAge != null && _profile.age != null && _profile.age! < s.minAge!)
         return false;
-
       if (s.maxIncomeINR != null &&
           _profile.annualIncome != null &&
           _profile.annualIncome! > s.maxIncomeINR!) return false;
-
       if (_profile.category != null &&
           s.categoryEligible != 'All' &&
           !s.categoryEligible.contains(_profile.category!)) return false;
-
       if (_profile.state != null &&
           s.state.isNotEmpty &&
           s.state.toLowerCase() != _profile.state!.toLowerCase()) return false;
-
       if (_profile.occupation != null &&
           s.occupationEligible != 'Any' &&
           s.occupationEligible != 'Not Applicable' &&
           !s.occupationEligible.contains(_profile.occupation!)) return false;
-
       return true;
     }).toList();
+  }
+
+  // ===============================================================
+  // POST-RECOMMENDATION: SCHEME SELECTION, EMAIL PROMPT, SAVE
+  // ===============================================================
+  Widget _buildSchemeSelectionSection() {
+    return Card(
+      margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Which scheme(s) do you want to save to “My Schemes”?',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            ..._matchedSchemes.asMap().entries.map((entry) {
+              int idx = entry.key;
+              final scheme = entry.value;
+              return CheckboxListTile(
+                value: _selectedSchemes[idx],
+                onChanged: (val) {
+                  setState(() {
+                    _selectedSchemes[idx] = val ?? false;
+                  });
+                },
+                title: Text(scheme.schemeName),
+                subtitle: Text(scheme.department),
+              );
+            }).toList(),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                ElevatedButton(
+                  onPressed: () {
+                    final anySelected = _selectedSchemes.any((s) => s);
+                    if (!anySelected) {
+                      setState(() {
+                        _showSchemeSelection = false;
+                        _showEmailPrompt = false;
+                        _emailResultMessage =
+                            'You did not select any scheme. Thank you for using the assistant.';
+                      });
+                      return;
+                    }
+                    setState(() {
+                      _showSchemeSelection = false;
+                      _showEmailPrompt = true;
+                    });
+                  },
+                  child: const Text('Save to My Schemes'),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmailPromptSection() {
+    return Card(
+      margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Do you want to receive a detailed email for the selected scheme(s)?',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                ElevatedButton(
+                  onPressed: () async {
+                    setState(() {
+                      _emailSending = true;
+                    });
+                    await _saveSelectedSchemesAndSendEmail(sendEmail: true);
+                    setState(() {
+                      _showEmailPrompt = false;
+                      _emailSending = false;
+                    });
+                  },
+                  child: const Text('Yes'),
+                ),
+                const SizedBox(width: 16),
+                ElevatedButton(
+                  onPressed: () async {
+                    setState(() {
+                      _emailSending = true;
+                    });
+                    await _saveSelectedSchemesAndSendEmail(sendEmail: false);
+                    setState(() {
+                      _showEmailPrompt = false;
+                      _emailSending = false;
+                    });
+                  },
+                  child: const Text('No'),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _saveSelectedSchemesAndSendEmail(
+      {required bool sendEmail}) async {
+    // TODO: Replace with actual user ID and email from auth/profile
+    final userId = 'demo_user';
+    final userEmail = 'user@example.com';
+    final userName = 'User';
+    final selected = _matchedSchemes
+        .asMap()
+        .entries
+        .where((e) => _selectedSchemes[e.key])
+        .map((e) => e.value)
+        .toList();
+    int savedCount = 0;
+    final emailService = EmailService(
+      smtpHost:
+          'smtp.example.com', // TODO: Replace with EnvConfig or secure config
+      smtpPort: 587,
+      username: 'user@example.com',
+      password: 'password',
+      useTls: true,
+    );
+    for (final scheme in selected) {
+      final saved = await _firestoreService.saveSchemeToUser(userId, scheme);
+      if (saved) savedCount++;
+      if (sendEmail) {
+        await emailService.sendSchemeDetails(
+          recipientEmail: userEmail,
+          recipientName: userName,
+          scheme: scheme,
+        );
+      }
+    }
+    setState(() {
+      _emailResultMessage = sendEmail
+          ? 'Saved $savedCount scheme(s) and sent email(s) successfully.'
+          : 'Saved $savedCount scheme(s) to My Schemes.';
+    });
   }
 
   // ===============================================================
@@ -249,6 +430,7 @@ class _EnhancedSchemeFinderScreenState extends State<EnhancedSchemeFinderScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      key: _scaffoldKey,
       appBar: AppBar(
         title: const Text('Find Schemes'),
         actions: [
@@ -256,8 +438,35 @@ class _EnhancedSchemeFinderScreenState extends State<EnhancedSchemeFinderScreen>
             icon: Icon(_voiceMode ? Icons.mic : Icons.keyboard),
             onPressed: () => setState(() => _voiceMode = !_voiceMode),
           ),
+          if (_showSchemeSelection && _matchedSchemes.isNotEmpty)
+            IconButton(
+              icon: const Icon(Icons.list),
+              tooltip: 'Show Recommended Schemes',
+              onPressed: () => _scaffoldKey.currentState?.openEndDrawer(),
+            ),
         ],
       ),
+      endDrawer: _showSchemeSelection && _matchedSchemes.isNotEmpty
+          ? Drawer(
+              child: SafeArea(
+                child: ListView.builder(
+                  itemCount: _matchedSchemes.length,
+                  itemBuilder: (context, i) {
+                    final s = _matchedSchemes[i];
+                    return ListTile(
+                      leading: CircleAvatar(child: Text('${i + 1}')),
+                      title: Text(s.schemeName),
+                      subtitle: Text(s.benefits),
+                      onTap: () {
+                        Navigator.of(context).pop();
+                        _handleUser('Save ${i + 1}');
+                      },
+                    );
+                  },
+                ),
+              ),
+            )
+          : null,
       body: Column(
         children: [
           Expanded(
@@ -268,6 +477,20 @@ class _EnhancedSchemeFinderScreenState extends State<EnhancedSchemeFinderScreen>
               itemBuilder: (_, i) => _bubble(_messages[i]),
             ),
           ),
+          if (_showSchemeSelection && _matchedSchemes.isNotEmpty)
+            _buildSchemeSelectionSection(),
+          if (_showEmailPrompt) _buildEmailPromptSection(),
+          if (_emailSending)
+            const Padding(
+              padding: EdgeInsets.all(8.0),
+              child: CircularProgressIndicator(),
+            ),
+          if (_emailResultMessage != null)
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Text(_emailResultMessage!,
+                  style: TextStyle(color: Colors.green)),
+            ),
           _inputArea(),
         ],
       ),
@@ -332,7 +555,7 @@ class _EnhancedSchemeFinderScreenState extends State<EnhancedSchemeFinderScreen>
 
   @override
   void dispose() {
-    _animationController.dispose();
+    _animationController?.dispose();
     _textController.dispose();
     _scrollController.dispose();
     _speechService.stopListening();

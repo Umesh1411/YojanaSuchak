@@ -1,0 +1,108 @@
+mutation SeedData @auth(level: PUBLIC, insecureReason: "This operation is for seeding data and does not require authentication") @transaction {
+  user_insertMany(data: [
+    {
+      id: "6b29c2e2-8dd4-4b1b-9936-94a91b97a932",
+      displayName: "Demo User 1",
+      createdAt: "2024-04-25T12:00:00Z",
+      email: "demo1@example.com",
+      photoUrl: "https://example.com/avatar1.jpg"
+    },
+    {
+      id: "7c30d3f3-9ee5-4c2c-a047-a5b02c08b043",
+      displayName: "Demo User 2",
+      createdAt: "2024-04-25T13:00:00Z",
+      email: "demo2@example.com",
+      photoUrl: "https://example.com/avatar2.jpg"
+    }
+  ])
+  movie_insertMany(data: [
+    {
+      id: "8d41e404-aff6-4d3d-b158-b6c13d19c154",
+      title: "Demo Movie 1",
+      year: 2020,
+      createdAt: "2024-04-25T14:00:00Z",
+      genres: ["Action", "Sci-Fi"],
+      runtime: 120,
+      summary: "Example movie 1 summary"
+    },
+    {
+      id: "9e52f515-c007-4e4e-b969-c7d24e2ac265",
+      title: "Demo Movie 2",
+      year: 2022,
+      createdAt: "2024-04-25T15:00:00Z",
+      genres: ["Comedy", "Romance"],
+      runtime: 105,
+      summary: "Example movie 2 summary"
+    }
+  ])
+  movieList_insertMany(data: [
+    {
+      id: "af630626-e118-4f5f-a2d0-d2e36f3cc376",
+      name: "Demo List 1",
+      description: "Example list 1",
+      createdAt: "2024-04-25T16:00:00Z",
+      updatedAt: "2024-04-25T16:00:00Z",
+      isPublic: true,
+      userId: "6b29c2e2-8dd4-4b1b-9936-94a91b97a932"
+    },
+    {
+      id: "b0741737-0229-4060-aa01-e3f4804bd487",
+      name: "Demo List 2",
+      description: "Example list 2",
+      createdAt: "2024-04-25T17:00:00Z",
+      updatedAt: "2024-04-25T17:00:00Z",
+      isPublic: false,
+      userId: "7c30d3f3-9ee5-4c2c-a047-a5b02c08b043"
+    }
+  ])
+  movieListEntry_insertMany(data: [
+    {
+      movieListId: "af630626-e118-4f5f-a2d0-d2e36f3cc376",
+      movieId: "8d41e404-aff6-4d3d-b158-b6c13d19c154",
+      position: 1
+    },
+    {
+      movieListId: "b0741737-0229-4060-aa01-e3f4804bd487",
+      movieId: "9e52f515-c007-4e4e-b969-c7d24e2ac265",
+      position: 1
+    }
+  ])
+  watch_insertMany(data: [
+    {
+      id : "c1852848-133a-4d71-bb42-e405915ce598",
+      userId: "6b29c2e2-8dd4-4b1b-9936-94a91b97a932",
+      movieId: "8d41e404-aff6-4d3d-b158-b6c13d19c154",
+      createdAt: "2024-04-25T18:00:00Z",
+      watchDate: "2024-04-26"
+    },
+    {
+      id : "d2963959-244b-4e82-cc53-f516a27df609",
+      userId: "7c30d3f3-9ee5-4c2c-a047-a5b02c08b043",
+      movieId: "9e52f515-c007-4e4e-b969-c7d24e2ac265",
+      createdAt: "2024-04-25T19:00:00Z",
+      watchDate: "2024-04-27"
+    }
+  ])
+  review_insertMany(data: [
+    {
+      id : "e3a74a6a-355c-4f93-ad54-0627b38ee71a",
+      userId: "6b29c2e2-8dd4-4b1b-9936-94a91b97a932",
+      movieId: "8d41e404-aff6-4d3d-b158-b6c13d19c154",
+      watchId: "c1852848-133a-4d71-bb42-e405915ce598",
+      createdAt: "2024-04-25T20:00:00Z",
+      updatedAt: "2024-04-25T20:00:00Z",
+      rating: 5,
+      isPublic: true
+    },
+    {
+      id: "f4b85b7b-466d-40a4-bf65-1738c49ff82b",
+      userId: "7c30d3f3-9ee5-4c2c-a047-a5b02c08b043",
+      movieId: "9e52f515-c007-4e4e-b969-c7d24e2ac265",
+      watchId: "d2963959-244b-4e82-cc53-f516a27df609",
+      createdAt: "2024-04-25T21:00:00Z",
+      updatedAt: "2024-04-25T21:00:00Z",
+      rating: 4,
+      isPublic: false
+    }
+  ])
+}

@@ -3,6 +3,8 @@ import 'package:flutter/foundation.dart';
 import '../models/scheme.dart';
 import '../models/user_profile.dart';
 import 'eligibility_filter.dart';
+import '../core/config/env_config.dart';
+import 'email_service.dart';
 
 /// Service for auto-notifying users when new eligible schemes are launched
 class NotificationService {
@@ -25,6 +27,11 @@ class NotificationService {
     });
 
     debugPrint('✅ Started listening for new schemes');
+  }
+
+  /// Public helper to trigger notifications for a scheme immediately (used by admin upload)
+  Future<void> notifyEligibleUsersForScheme(Scheme scheme) async {
+    await _notifyEligibleUsers(scheme);
   }
 
   /// Check all users and notify those eligible for the new scheme
@@ -135,24 +142,32 @@ class NotificationService {
         userProfile,
       );
 
-      // PRODUCTION: Email sending disabled - no SMTP config in AppConfig
-      // TODO: Implement email via backend service
-      debugPrint(
-          'Email sending disabled - SMTP not configured in AppConfig. Eligibility: \n$eligibilityExplanation');
-      // final emailService = EmailService(
-      //   smtpHost: AppConfig.smtpHost,
-      //   smtpPort: AppConfig.smtpPort,
-      //   username: AppConfig.smtpUsername,
-      //   password: AppConfig.smtpPassword,
-      //   useTls: AppConfig.useTls,
-      // );
+      // If SMTP config exists in env, send email using EmailService
+      if (EnvConfig.smtpHost != null &&
+          EnvConfig.smtpUsername != null &&
+          EnvConfig.smtpPassword != null) {
+        final emailService = EmailService(
+          smtpHost: EnvConfig.smtpHost!,
+          smtpPort: EnvConfig.smtpPort ?? 587,
+          username: EnvConfig.smtpUsername!,
+          password: EnvConfig.smtpPassword!,
+          useTls: EnvConfig.smtpUseTls,
+        );
 
-      // await emailService.sendEligibleSchemeEmail(
-      //   recipientEmail: userEmail,
-      //   recipientName: userName,
-      //   scheme: scheme,
-      //   eligibilityExplanation: eligibilityExplanation,
-      // );
+        final sent = await emailService.sendEligibleSchemeEmail(
+          recipientEmail: userEmail,
+          recipientName: userName,
+          scheme: scheme,
+          eligibilityExplanation: eligibilityExplanation,
+        );
+
+        if (!sent) {
+          debugPrint('❌ Failed sending eligibility email to $userEmail');
+        }
+      } else {
+        debugPrint(
+            'Email sending disabled - SMTP not configured. Eligibility: \n$eligibilityExplanation');
+      }
 
       debugPrint('✅ Eligibility flow finished for: $userEmail');
     } catch (e) {

@@ -99,11 +99,11 @@ class _HomeScreenState extends State<HomeScreen>
 
     try {
       // Get initial greeting from Gemini with timeout
-      String response = await _chatService!
+      String? maybeResponse = await _chatService!
           .getChatResponse(
         userMessage: 'Hello, I want to find government schemes.',
-        profile: _userProfile.toMap(),
-        availableSchemes: _allSchemes.map((s) => s.toMap()).toList(),
+        profile: _userProfile.toJson(),
+        availableSchemes: _allSchemes.map((s) => s.toJson()).toList(),
       )
           .timeout(
         const Duration(seconds: 30),
@@ -111,6 +111,8 @@ class _HomeScreenState extends State<HomeScreen>
           return 'Hello! I\'m here to help you find suitable government schemes. Please tell me about yourself.';
         },
       );
+      String response = maybeResponse ??
+          'Hello! I\'m here to help you find suitable government schemes. Please tell me about yourself.';
 
       if (mounted) {
         setState(() {
@@ -164,11 +166,11 @@ class _HomeScreenState extends State<HomeScreen>
     try {
       // Get response from Gemini with timeout
       debugPrint('🔄 Starting Gemini API call...');
-      String response = await _chatService!
+      String? maybeResponse = await _chatService!
           .getChatResponse(
         userMessage: userMessage,
-        profile: _userProfile.toMap(),
-        availableSchemes: _allSchemes.map((s) => s.toMap()).toList(),
+        profile: _userProfile.toJson(),
+        availableSchemes: _allSchemes.map((s) => s.toJson()).toList(),
       )
           .timeout(
         const Duration(seconds: 30),
@@ -177,6 +179,8 @@ class _HomeScreenState extends State<HomeScreen>
           return 'Sorry, the request took too long. Please try again.';
         },
       );
+      String response = maybeResponse ??
+          'Sorry, the request took too long. Please try again.';
 
       debugPrint(
           '✅ Gemini API call completed. Response length: ${response.length}');
@@ -237,7 +241,7 @@ class _HomeScreenState extends State<HomeScreen>
     try {
       // Use SchemeRecommender to obtain recommendations (server-side behavior).
       final rec = await SchemeRecommender()
-          .recommend(_userProfile.toMap(), locale: Locale('en'));
+          .recommend(_userProfile.toJson(), locale: Locale('en'));
       final recList =
           (rec['recommendations'] as List).cast<Map<String, dynamic>>();
       List<Scheme> recommendations =

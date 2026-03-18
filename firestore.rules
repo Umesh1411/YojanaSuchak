@@ -16,11 +16,15 @@ service cloud.firestore {
     match /users/{userId} {
       // Users can read their own document
       allow read: if request.auth != null && request.auth.uid == userId;
-      
       // Users can write their own document
       allow write: if request.auth != null && request.auth.uid == userId;
-      
-      // Saved schemes subcollection
+
+      // my_schemes subcollection (used by app)
+      match /my_schemes/{schemeId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+
+      // (Optional) legacy: Saved schemes subcollection
       match /savedSchemes/{schemeId} {
         allow read, write: if request.auth != null && request.auth.uid == userId;
       }

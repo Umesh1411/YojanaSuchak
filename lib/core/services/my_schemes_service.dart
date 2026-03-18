@@ -1,10 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../../services/firestore_service.dart';
 
 /// Service to manage user's saved schemes stored under users/{userId}/my_schemes (app standard)
 class MySchemesService {
   final FirebaseFirestore _firestore;
-  final FirestoreService _fsService = FirestoreService();
 
   MySchemesService({FirebaseFirestore? firestore})
       : _firestore = firestore ?? FirebaseFirestore.instance;

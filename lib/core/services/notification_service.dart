@@ -12,8 +12,7 @@ class NotificationService {
       required List<String> emails,
       String lang = 'en'}) async {
     final callable = _functions.httpsCallable('sendSchemeDetailsCallable');
-    final resp = await callable
-        .call({'schemeId': schemeId, 'emails': emails, 'lang': lang});
+    await callable.call({'schemeId': schemeId, 'emails': emails, 'lang': lang});
     // resp.data can be checked for success
     return;
   }

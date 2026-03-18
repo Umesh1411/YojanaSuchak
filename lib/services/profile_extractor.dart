@@ -60,6 +60,25 @@ class ProfileExtractor {
     return lower;
   }
 
+  static String? _extractMaritalStatus(String text) {
+    final t = text.toLowerCase();
+    if (t.contains('widow') || t.contains('widowed')) return 'Widow';
+    if (t.contains('married') && !t.contains('unmarried')) return 'Married';
+    if (t.contains('single') && !t.contains('not married')) return 'Single';
+    return null;
+  }
+
+  static bool? _extractDisability(String text) {
+    final t = text.toLowerCase();
+    if (t.contains('disability') ||
+        t.contains('disabled') ||
+        t.contains('physically disabled') ||
+        t.contains('wheelchair') ||
+        t.contains('blind') ||
+        t.contains('deaf')) return true;
+    return null;
+  }
+
   /// Extract age from text
   /// Handles both numeric (e.g., "25", "thirty five") and word forms
   static int? extractAge(String text) {
@@ -397,6 +416,18 @@ class ProfileExtractor {
     if (profile.annualIncome == null) {
       final inc = extractIncome(transcript);
       if (inc != null) profile.annualIncome = inc;
+    }
+
+    // Marital Status
+    if (profile.maritalStatus == null) {
+      final m = _extractMaritalStatus(transcript);
+      if (m != null) profile.maritalStatus = m;
+    }
+
+    // Disability
+    if (profile.disability == null) {
+      final d = _extractDisability(transcript);
+      if (d != null) profile.disability = d;
     }
 
     // Category / Caste

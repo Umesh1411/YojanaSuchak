@@ -120,19 +120,12 @@ class _HomeScreenState extends State<HomeScreen> {
     final demoUser = authService.demoUserData;
 
     // Get user info from Firebase or demo mode
-    final String displayName;
-    final String email;
-
-    if (user != null) {
-      displayName = user.displayName ?? 'User';
-      email = user.email ?? '';
-    } else if (demoUser != null) {
-      displayName = demoUser['displayName'] ?? 'Demo User';
-      email = demoUser['email'] ?? '';
-    } else {
-      displayName = 'User';
-      email = '';
-    }
+    final String displayName = user?.displayName ??
+        (demoUser != null ? (demoUser['displayName'] as String?) : null) ??
+        'User';
+    final String email = user?.email ??
+        (demoUser != null ? (demoUser['email'] as String?) : null) ??
+        '';
 
     return Drawer(
       child: ListView(
@@ -214,7 +207,8 @@ class _HomeScreenState extends State<HomeScreen> {
               Navigator.pop(context);
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => const AdminSchemeUploadScreen()),
+                MaterialPageRoute(
+                    builder: (_) => const AdminSchemeUploadScreen()),
               );
             },
           ),

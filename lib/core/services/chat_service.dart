@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'gemini_service.dart';
 import 'package:yojana_suchak/core/services/scheme_recommender.dart';
 
@@ -25,6 +24,61 @@ class ChatService {
     }
   }
 
+  /// Run the initial profile extraction + eligibility on the server.
+  /// Returns the structured result or null on error.
+  Future<Map<String, dynamic>?> runInitialProfile({
+    required String callSid,
+    required String userText,
+    required String language,
+    required List<Map<String, dynamic>> schemes,
+  }) async {
+    if (!isAvailable) return null;
+    try {
+      return await _gemini.initialProfileAndEligibility(
+          callSid: callSid,
+          userText: userText,
+          language: language,
+          schemes: schemes);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /// Send a follow-up answer and get updated profile + finalization
+  Future<Map<String, dynamic>?> runFollowupUpdate({
+    required String callSid,
+    required String followupText,
+    required String language,
+    required List<Map<String, dynamic>> schemes,
+    Map<String, dynamic>? existingProfile,
+    Map<String, dynamic>? existingAdditionalAttributes,
+  }) async {
+    if (!isAvailable) return null;
+    try {
+      return await _gemini.updateProfileAndFinalize(
+          callSid: callSid,
+          followupText: followupText,
+          language: language,
+          schemes: schemes,
+          existingProfile: existingProfile,
+          existingAdditionalAttributes: existingAdditionalAttributes);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /// Generate a short spoken explanation for a scheme
+  Future<String?> generateSchemeDetails(
+      {required Map<String, dynamic> scheme, required String language}) async {
+    if (!isAvailable) return null;
+    try {
+      return await _gemini.generateSchemeDetails(
+          scheme: scheme, language: language);
+    } catch (e) {
+      return null;
+    }
+  }
+
   List<String> missingFields(Map<String, dynamic> profile) {
     final needed = <String>[
       'age',
@@ -33,10 +87,10 @@ class ChatService {
       'occupation',
       'category'
     ];
-    final flags = ['student', 'farmer', 'woman', 'seniorCitizen', 'disability'];
-    needed.addAll(flags);
 
     final missing = <String>[];
+
+    // Basic required fields
     for (final f in needed) {
       if (!profile.containsKey(f) ||
           profile[f] == null ||
@@ -44,6 +98,51 @@ class ChatService {
         missing.add(f);
       }
     }
+
+    // Flags: only ask if not inferable from occupation/category or explicit flags
+    final occ = (profile['occupation'] ?? '').toString().toLowerCase();
+    final cat = (profile['category'] ?? '').toString().toLowerCase();
+
+    if (!(occ.contains('student') ||
+        cat == 'student' ||
+        (profile.containsKey('student') && profile['student'] == true))) {
+      if (!profile.containsKey('student') ||
+          profile['student'] == null ||
+          profile['student'].toString().isEmpty) missing.add('student');
+    }
+
+    if (!(occ.contains('farmer') ||
+        cat == 'farmer' ||
+        (profile.containsKey('farmer') && profile['farmer'] == true))) {
+      if (!profile.containsKey('farmer') ||
+          profile['farmer'] == null ||
+          profile['farmer'].toString().isEmpty) missing.add('farmer');
+    }
+
+    if (!(occ.contains('woman') ||
+        cat == 'woman' ||
+        (profile.containsKey('woman') && profile['woman'] == true))) {
+      if (!profile.containsKey('woman') ||
+          profile['woman'] == null ||
+          profile['woman'].toString().isEmpty) missing.add('woman');
+    }
+
+    if (!(occ.contains('senior') ||
+        cat == 'senior_citizen' ||
+        (profile.containsKey('seniorCitizen') &&
+            profile['seniorCitizen'] == true))) {
+      if (!profile.containsKey('seniorCitizen') ||
+          profile['seniorCitizen'] == null ||
+          profile['seniorCitizen'].toString().isEmpty)
+        missing.add('seniorCitizen');
+    }
+
+    // Disability should only be asked if not already known
+    if (!(profile.containsKey('disability') &&
+        (profile['disability'] == true || profile['disability'] == false))) {
+      missing.add('disability');
+    }
+
     return missing;
   }
 
@@ -182,11 +281,17 @@ class ChatService {
             'यह समस्या किन क्षेत्रों से संबंधित है? (शिक्षा/स्वास्थ्य/रोज़गार/कृषि/अन्य)',
         'mr':
             'ही समस्या कोणत्या क्षेत्राशी निगडीत आहे? (शिक्षण/आरोग्य/रोजगार/कृषी/इतर)'
+      },
+      'Which state and district do you belong to?': {
+        'en': 'Which state and district do you belong to?',
+        'hi': 'आप किस राज्य और जिले के रहने वाले हैं?',
+        'mr': 'आप कोणत्या राज्य आणि जिल्ह्यातील आहात?'
       }
     };
 
-    if (map.containsKey(text))
+    if (map.containsKey(text)) {
       return map[text]?[lang] ?? map[text]?['en'] ?? text;
+    }
     return text;
   }
 
@@ -202,22 +307,33 @@ class ChatService {
     if (p.contains('student') ||
         p.contains('education') ||
         p.contains('fees')) {
-      if (missingFields.contains('student'))
+      if (missingFields.contains('student')) {
         return _localized('Are you currently a student?', lang);
-      if (missingFields.contains('age'))
+      }
+      if (missingFields.contains('age')) {
         return _localized('What is your age?', lang);
-      if (missingFields.contains('income'))
+      }
+      if (missingFields.contains('income')) {
         return _localized(
             'What is your monthly/annual income? (approx.)', lang);
+      }
     }
 
     if (p.contains('health') || p.contains('medical')) {
-      if (missingFields.contains('seniorCitizen'))
+      if (missingFields.contains('seniorCitizen')) {
         return _localized('Are you a senior citizen (60+)? (yes/no)', lang);
-      if (missingFields.contains('disability'))
+      }
+      if (missingFields.contains('disability')) {
         return _localized('Do you have any disability? (yes/no)', lang);
-      if (missingFields.contains('age'))
+      }
+      if (missingFields.contains('age')) {
         return _localized('What is your age?', lang);
+      }
+    }
+
+    // If state or district missing, ask them together to avoid repetition
+    if (missingFields.contains('state') || missingFields.contains('district')) {
+      return _localized('Which state and district do you belong to?', lang);
     }
 
     final order = [
@@ -237,29 +353,52 @@ class ChatService {
       if (missingFields.contains(f)) {
         switch (f) {
           case 'occupation':
-            return _localized('What is your occupation?', lang);
+            {
+              return _localized('What is your occupation?', lang);
+            }
           case 'age':
-            return _localized('What is your age?', lang);
+            {
+              return _localized('What is your age?', lang);
+            }
           case 'income':
-            return _localized(
-                'What is your monthly/annual income? (approx.)', lang);
+            {
+              return _localized(
+                  'What is your monthly/annual income? (approx.)', lang);
+            }
           case 'category':
-            return _localized(
-                'Which category do you belong to? (General/SC/ST/OBC)', lang);
+            {
+              return _localized(
+                  'Which category do you belong to? (General/SC/ST/OBC)', lang);
+            }
           case 'gender':
-            return _localized('What is your gender?', lang);
+            {
+              return _localized('What is your gender?', lang);
+            }
           case 'student':
-            return _localized('Are you a student? (yes/no)', lang);
+            {
+              return _localized('Are you a student? (yes/no)', lang);
+            }
           case 'farmer':
-            return _localized('Are you a farmer? (yes/no)', lang);
+            {
+              return _localized('Are you a farmer? (yes/no)', lang);
+            }
           case 'woman':
-            return _localized('Are you a woman? (yes/no)', lang);
+            {
+              return _localized('Are you a woman? (yes/no)', lang);
+            }
           case 'seniorCitizen':
-            return _localized('Are you a senior citizen (60+)? (yes/no)', lang);
+            {
+              return _localized(
+                  'Are you a senior citizen (60+)? (yes/no)', lang);
+            }
           case 'disability':
-            return _localized('Do you have any disability? (yes/no)', lang);
+            {
+              return _localized('Do you have any disability? (yes/no)', lang);
+            }
           default:
-            return _localized('Please provide your $f.', lang);
+            {
+              return _localized('Please provide your $f.', lang);
+            }
         }
       }
     }
@@ -278,10 +417,22 @@ class ChatService {
     // If profile looks complete, ask recommender for top 3
     final missing = missingFields(profile);
     if (missing.isEmpty) {
-      final rec =
-          await SchemeRecommender().recommend(profile, locale: Locale('en'));
+      final rec = await SchemeRecommender()
+          .recommend(profile, locale: const Locale('en'));
       final recList =
           (rec['recommendations'] as List).cast<Map<String, dynamic>>();
+      final partialList =
+          (rec['partialMatches'] as List?)?.cast<Map<String, dynamic>>() ?? [];
+
+      if (recList.isEmpty && partialList.isNotEmpty) {
+        // Give partial matches and prompt for missing info
+        final partials = partialList
+            .map((p) => '- ${p['schemeName']}: ${p['reason'] ?? ''}')
+            .take(3)
+            .join('\n');
+        return 'I could not find fully eligible schemes, but these may partially match:\n$partials\nPlease provide the missing details to refine recommendations.';
+      }
+
       // Build a short user-facing message
       final msgs = recList
           .map((r) => '- ${r['schemeName']}: ${r['reason'] ?? ''}')

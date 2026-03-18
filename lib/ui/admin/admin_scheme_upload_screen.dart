@@ -4,6 +4,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/services/auth_service.dart';
 
+// Models & Services used when triggering notifications post-upload
+import '../../models/scheme.dart';
+import '../../services/notification_service.dart';
+
 /// Admin-only scheme upload screen with password protection
 class AdminSchemeUploadScreen extends StatefulWidget {
   const AdminSchemeUploadScreen({super.key});
@@ -156,6 +160,22 @@ class _AdminSchemeUploadScreenState extends State<AdminSchemeUploadScreen> {
     try {
       final firestore = FirebaseFirestore.instance;
 
+      // Quick permission check: try to write a small temporary doc to verify rules
+      final canWrite = await _checkWritePermission(firestore);
+      if (!canWrite) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                  'Firestore rules prevent uploads. Check rules/permissions.'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+        setState(() => _isLoading = false);
+        return;
+      }
+
       // Use manual scheme ID if provided, otherwise auto-generate
       String schemeId = _schemeIdController.text.trim();
       if (schemeId.isEmpty) {
@@ -222,14 +242,34 @@ class _AdminSchemeUploadScreenState extends State<AdminSchemeUploadScreen> {
       // Save to Firestore
       await firestore.collection('schemes').doc(schemeId).set(schemeData);
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Scheme uploaded successfully!'),
-            backgroundColor: Colors.green,
-          ),
-        );
+      // Trigger immediate notifications to eligible users (do not block UI)
+      try {
+        final schemeObj = Scheme.fromJson(schemeData);
+        NotificationService().notifyEligibleUsersForScheme(schemeObj);
+        debugPrint('🔔 Notification job started for $schemeId');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content:
+                  Text('Scheme uploaded successfully! Notifications queued.'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+      } catch (e) {
+        debugPrint('❌ Error starting notifications: $e');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content:
+                  Text('Scheme uploaded but failed to start notifications.'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        }
+      }
 
+      if (mounted) {
         // Clear form
         _formKey.currentState!.reset();
         _schemeIdController.clear();
@@ -298,6 +338,18 @@ class _AdminSchemeUploadScreenState extends State<AdminSchemeUploadScreen> {
         _documentsControllers[index].dispose();
         _documentsControllers.removeAt(index);
       });
+    }
+  }
+
+  Future<bool> _checkWritePermission(FirebaseFirestore firestore) async {
+    try {
+      // Try to write a test document
+      await firestore.collection('test').doc('test').set({'test': true});
+      // Delete it
+      await firestore.collection('test').doc('test').delete();
+      return true;
+    } catch (e) {
+      return false;
     }
   }
 

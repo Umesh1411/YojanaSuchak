@@ -7,6 +7,7 @@ import 'core/theme/app_theme.dart';
 import 'core/services/language_service.dart';
 import 'core/services/localization_service.dart';
 import 'core/utils/app_strings.dart';
+import 'services/environment_scheme_seeder.dart';
 import 'ui/screens/splash_screen.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
@@ -28,6 +29,9 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+
+  // Seed environment schemes into Firestore once (silent & non-intrusive)
+  await EnvironmentSchemeSeeder.seedOnce();
 
   // Initialize localization
   await LocalizationService.initialize();

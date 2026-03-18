@@ -28,7 +28,6 @@ class _SchemeRecommendationFlowState extends State<SchemeRecommendationFlow> {
   String _currentQuestion = '';
   String _languageCode = 'en';
 
-  Map<String, dynamic> _recommendationsResponse = {};
   List<Map<String, dynamic>> _recommendations = [];
   List<bool> _selected = [];
 
@@ -70,8 +69,6 @@ class _SchemeRecommendationFlowState extends State<SchemeRecommendationFlow> {
       _answerCtrl.text = '';
     });
   }
-
-  String _chatMessage = '';
 
   Future<void> _submitAnswer() async {
     final ans = _answerCtrl.text.trim();
@@ -132,15 +129,11 @@ class _SchemeRecommendationFlowState extends State<SchemeRecommendationFlow> {
           await _recommender.recommend(_profile, locale: Locale(_languageCode));
       final list =
           (rec['recommendations'] as List).cast<Map<String, dynamic>>();
-      final chat = _recommender.generateChatMessage(
-          list, _profile, Locale(_languageCode));
       setState(() {
-        _recommendationsResponse = rec;
         _recommendations = list;
         _selected = List.filled(list.length, false);
         _showResults = true;
         _asking = false;
-        _chatMessage = chat;
       });
     } else {
       setState(() {

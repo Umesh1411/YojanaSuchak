@@ -37,45 +37,143 @@ class SchemeRecommender {
       {Locale? locale}) async {
     locale ??= Locale('en', 'IN');
     final schemes = await fetchActiveMaharashtraSchemes();
-    final recs = recommendFromProfile(profile, schemes, locale);
+    final recsAndPartials =
+        recommendFromProfileWithPartials(profile, schemes, locale);
 
-    return {'recommendations': recs};
+    return {
+      'recommendations': recsAndPartials['recommendations'],
+      'partialMatches': recsAndPartials['partialMatches']
+    };
   }
 
-  /// Pure function: given list of schemes and a profile, return top 3 recommendations
-  List<Map<String, dynamic>> recommendFromProfile(Map<String, dynamic> profile,
-      List<Map<String, dynamic>> schemes, Locale locale) {
-    final scored = <Map<String, dynamic>>[];
+  /// Pure function: recommend top 3 and collect partial matches for transparency
+  Map<String, dynamic> recommendFromProfileWithPartials(
+      Map<String, dynamic> profile,
+      List<Map<String, dynamic>> schemes,
+      Locale locale) {
+    final eligible = <Map<String, dynamic>>[];
+    final partials = <Map<String, dynamic>>[];
 
     for (final scheme in schemes) {
-      final score = _scoreSchemeForProfile(scheme, profile);
-      scored.add({'scheme': scheme, 'score': score});
+      final schemeMap = Map<String, dynamic>.from(scheme);
+      final eligibility =
+          schemeMap['eligibility'] as Map<String, dynamic>? ?? {};
+
+      // Collect missing reasons for partial matches
+      final missingReasons = <String>[];
+
+      // Hard exclusions: disability required
+      final disReq = eligibility['disabilityRequired'] == true;
+      if (disReq && profile['disability'] != true) {
+        missingReasons.add('Requires disability');
+        partials.add({'scheme': schemeMap, 'missing': missingReasons});
+        debugPrint('Partial: ${schemeMap['schemeName']} (requires disability)');
+        continue;
+      }
+
+      // Age eligibility check
+      final userAge = profile['age'] as int?;
+      final minAge = eligibility['minAge'] as int?;
+      final maxAge = eligibility['maxAge'] as int?;
+      if (userAge != null &&
+          ((minAge != null && userAge < minAge) ||
+              (maxAge != null && userAge > maxAge))) {
+        missingReasons.add('Age not in ${minAge ?? '-'}-${maxAge ?? '-'}');
+        partials.add({'scheme': schemeMap, 'missing': missingReasons});
+        debugPrint('Partial: ${schemeMap['schemeName']} (age mismatch)');
+        continue;
+      }
+
+      // Income eligibility check
+      final userIncome = _toNum(profile['income'] ?? profile['annualIncome']);
+      final incomeLimit =
+          _toNum(eligibility['incomeLimit'] ?? schemeMap['maxIncomeINR']);
+      if (incomeLimit != null &&
+          userIncome != null &&
+          userIncome > incomeLimit) {
+        missingReasons.add('Income above ₹$incomeLimit');
+        partials.add({'scheme': schemeMap, 'missing': missingReasons});
+        debugPrint('Partial: ${schemeMap['schemeName']} (income mismatch)');
+        continue;
+      }
+
+      // Gender check
+      final userGender = (profile['gender'] ?? '').toString().toLowerCase();
+      final genderReq = (eligibility['gender'] ?? '').toString().toLowerCase();
+      if (genderReq.isNotEmpty &&
+          userGender.isNotEmpty &&
+          userGender != genderReq) {
+        missingReasons.add('Gender requirement: ${eligibility['gender']}');
+        partials.add({'scheme': schemeMap, 'missing': missingReasons});
+        debugPrint('Partial: ${schemeMap['schemeName']} (gender mismatch)');
+        continue;
+      }
+
+      // Marital status check
+      final userMarital =
+          (profile['maritalStatus'] ?? '').toString().toLowerCase();
+      final maritalReq =
+          (eligibility['maritalStatus'] ?? '').toString().toLowerCase();
+      if (maritalReq.isNotEmpty &&
+          maritalReq != 'any' &&
+          userMarital.isNotEmpty &&
+          userMarital != maritalReq) {
+        missingReasons
+            .add('Marital status requirement: ${eligibility['maritalStatus']}');
+        partials.add({'scheme': schemeMap, 'missing': missingReasons});
+        debugPrint(
+            'Partial: ${schemeMap['schemeName']} (marital status mismatch)');
+        continue;
+      }
+
+      // Passed hard checks => eligible candidate
+      eligible.add({
+        'scheme': schemeMap,
+        'score': _scoreSchemeForProfile(schemeMap, profile)
+      });
+      debugPrint(
+          'Included: ${schemeMap['schemeName']} (pre-score ${eligible.last['score']})');
     }
 
-    scored.sort((a, b) => (b['score'] as num).compareTo(a['score'] as num));
+    // Score eligible set
+    eligible.sort((a, b) => (b['score'] as num).compareTo(a['score'] as num));
 
-    final top = scored.take(3).map((entry) {
-      final scheme = Map<String, dynamic>.from(entry['scheme']);
+    final top = eligible.take(3).map((entry) {
+      final s = Map<String, dynamic>.from(entry['scheme']);
       final score = entry['score'] as num;
-
-      final schemeName = _localizedString(scheme, 'schemeName', locale);
-      final benefits = _localizedList(scheme, 'benefits', locale);
-      final reason = _buildReason(scheme, profile, score, locale);
-
+      final schemeName = _localizedString(s, 'schemeName', locale);
+      final benefits = _localizedList(s, 'benefits', locale);
+      final reason = _buildReason(s, profile, score, locale);
       return {
-        'schemeId': scheme['id'] ?? schemeName,
+        'schemeId': s['id'] ?? schemeName,
         'schemeName': schemeName,
         'reason': reason,
         'keyBenefits': benefits,
       };
     }).toList();
 
-    // If fewer than 3 schemes available, pad with empty entries (keeps format predictable)
+    // Prepare partials: include top 3 partial suggestions (if any)
+    final partialOut = partials.take(3).map((p) {
+      final s = Map<String, dynamic>.from(p['scheme']);
+      final missing = (p['missing'] as List).join(', ');
+      final schemeName = _localizedString(s, 'schemeName', locale);
+      final reason = 'Partially matches; missing: $missing.';
+      return {
+        'schemeId': s['id'] ?? schemeName,
+        'schemeName': schemeName,
+        'reason': reason,
+      };
+    }).toList();
+
+    // Pad top if fewer than 3
     while (top.length < 3) {
       top.add({'schemeName': '', 'reason': '', 'keyBenefits': []});
     }
 
-    return top.cast<Map<String, dynamic>>();
+    return {
+      'recommendations': top.cast<Map<String, dynamic>>(),
+      'partialMatches': partialOut.cast<Map<String, dynamic>>()
+    };
   }
 
   num _scoreSchemeForProfile(
@@ -84,41 +182,62 @@ class SchemeRecommender {
 
     final eligibility = scheme['eligibility'] as Map<String, dynamic>? ?? {};
 
-    // Age
+    // Age (small boost; age/income should not dominate)
     final userAge = profile['age'] as int?;
     if (userAge != null) {
       final minAge = eligibility['minAge'] as int?;
       final maxAge = eligibility['maxAge'] as int?;
       if (minAge != null && maxAge != null) {
-        if (userAge >= minAge && userAge <= maxAge) score += 20;
+        if (userAge >= minAge && userAge <= maxAge) score += 5;
       } else if (minAge != null) {
-        if (userAge >= minAge) score += 10;
+        if (userAge >= minAge) score += 3;
       } else if (maxAge != null) {
-        if (userAge <= maxAge) score += 10;
+        if (userAge <= maxAge) score += 3;
       }
     }
 
-    // Gender
+    // Gender (eligibility check already applied; small boost for match)
     final userGender = (profile['gender'] ?? '').toString().toLowerCase();
     final genderReq = (eligibility['gender'] ?? '').toString().toLowerCase();
     if (genderReq.isNotEmpty) {
-      if (userGender == genderReq) score += 15;
+      if (userGender == genderReq) score += 5;
     } else {
-      score += 2; // small boost for general eligibility
+      score += 1; // tiny boost
     }
 
-    // Income
-    final userIncome = _toNum(profile['income']);
-    final incomeLimit = _toNum(eligibility['incomeLimit']);
+    // Income (eligibility applied earlier; small boost)
+    final userIncome = _toNum(profile['income'] ?? profile['annualIncome']);
+    final incomeLimit =
+        _toNum(eligibility['incomeLimit'] ?? scheme['maxIncomeINR']);
     if (incomeLimit != null && userIncome != null) {
-      if (userIncome <= incomeLimit) score += 20;
+      if (userIncome <= incomeLimit) score += 5;
     }
 
-    // Occupation
+    // Occupation (primary signal - large weight)
     final userOcc = (profile['occupation'] ?? '').toString().toLowerCase();
-    final occReq = (eligibility['occupation'] ?? '').toString().toLowerCase();
+    final occReq =
+        (eligibility['occupation'] ?? scheme['occupationEligible'] ?? '')
+            .toString()
+            .toLowerCase();
     if (occReq.isNotEmpty) {
-      if (userOcc == occReq) score += 15;
+      if (occReq != 'any' && userOcc.isNotEmpty && userOcc == occReq) {
+        score += 50; // strong boost for direct occupation match
+      } else if (occReq == 'any') {
+        score += 2; // small boost but never outrank direct match
+      }
+    }
+
+    // Beneficiary type (secondary signal)
+    final beneficiary =
+        (scheme['beneficiaryType'] ?? '').toString().toLowerCase();
+    if (beneficiary.isNotEmpty) {
+      if (userOcc.isNotEmpty && beneficiary.contains(userOcc)) score += 20;
+      final userCat = (profile['category'] ?? '').toString().toLowerCase();
+      if (userCat.isNotEmpty && beneficiary.contains(userCat)) score += 15;
+      // low-income families
+      if (beneficiary.contains('poor') || beneficiary.contains('famil')) {
+        if (userIncome != null && userIncome < 200000) score += 15;
+      }
     }
 
     // Category
@@ -127,7 +246,6 @@ class SchemeRecommender {
     if (catReq.isNotEmpty) {
       if (userCat == catReq) score += 20;
     }
-
     // Disability
     final userDis = profile['disability'] == true;
     final disReq = eligibility['disabilityRequired'] == true;
