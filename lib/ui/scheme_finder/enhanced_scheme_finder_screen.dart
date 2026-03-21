@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 import 'package:flutter/foundation.dart';
 import '../../models/user_profile.dart';
@@ -7,9 +8,9 @@ import '../../services/speech_service.dart';
 import '../../services/tts_service.dart';
 import '../../services/data_service.dart';
 import '../../core/services/chat_service.dart';
+import '../../core/services/my_schemes_service.dart';
+import '../../core/services/notification_service.dart';
 import '../../services/profile_extractor.dart';
-import '../../services/firestore_service.dart';
-import '../../services/email_service.dart';
 import '../../core/theme/app_theme.dart';
 
 class EnhancedSchemeFinderScreen extends StatefulWidget {
@@ -26,7 +27,8 @@ class _EnhancedSchemeFinderScreenState extends State<EnhancedSchemeFinderScreen>
   final SpeechService _speechService = SpeechService();
   final TTSService _ttsService = TTSService();
   ChatService? _chatService;
-  final FirestoreService _firestoreService = FirestoreService();
+  final MySchemesService _mySchemesService = MySchemesService();
+  final NotificationService _notificationService = NotificationService();
 
   // State
   final UserProfile _profile = UserProfile();
@@ -42,6 +44,8 @@ class _EnhancedSchemeFinderScreenState extends State<EnhancedSchemeFinderScreen>
   bool _emailSending = false;
   String? _emailResultMessage;
   List<bool> _selectedSchemes = [];
+  bool _isSelectionDialogOpen = false;
+  bool _hasShownPopupOnce = false;
 
   final TextEditingController _textController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
@@ -152,6 +156,21 @@ class _EnhancedSchemeFinderScreenState extends State<EnhancedSchemeFinderScreen>
           _emailResultMessage = null;
           _selectedSchemes =
               List.generate(_matchedSchemes.length, (_) => false);
+        });
+        _hasShownPopupOnce = false;
+
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted || _isSelectionDialogOpen || _hasShownPopupOnce) return;
+
+          _hasShownPopupOnce = true;
+
+          Future.delayed(const Duration(seconds: 1), () {
+            if (!mounted || _isSelectionDialogOpen) return;
+
+            print("Popup triggered from handleUser (final fix)");
+
+            _showSchemeSelectionPopup(_matchedSchemes);
+          });
         });
         _addBot(
             "Which scheme(s) do you want to save to 'My Schemes'? Reply with the scheme number (e.g., 'Save 2') or tap the sidebar list.");
@@ -339,41 +358,211 @@ class _EnhancedSchemeFinderScreenState extends State<EnhancedSchemeFinderScreen>
 
   Future<void> _saveSelectedSchemesAndSendEmail(
       {required bool sendEmail}) async {
-    // TODO: Replace with actual user ID and email from auth/profile
-    final userId = 'demo_user';
-    final userEmail = 'user@example.com';
-    final userName = 'User';
+    final user = FirebaseAuth.instance.currentUser;
+    final userId = user?.uid ?? 'anonymous';
+    final userEmail = user?.email;
     final selected = _matchedSchemes
         .asMap()
         .entries
         .where((e) => _selectedSchemes[e.key])
         .map((e) => e.value)
         .toList();
+    if (selected.isEmpty) return;
+
     int savedCount = 0;
-    final emailService = EmailService(
-      smtpHost:
-          'smtp.example.com', // TODO: Replace with EnvConfig or secure config
-      smtpPort: 587,
-      username: 'user@example.com',
-      password: 'password',
-      useTls: true,
-    );
-    for (final scheme in selected) {
-      final saved = await _firestoreService.saveSchemeToUser(userId, scheme);
-      if (saved) savedCount++;
-      if (sendEmail) {
-        await emailService.sendSchemeDetails(
-          recipientEmail: userEmail,
-          recipientName: userName,
-          scheme: scheme,
+    final selectedSchemeIds = selected
+        .map((s) => s.schemeId.isNotEmpty ? s.schemeId : s.schemeName)
+        .toList();
+
+    await _mySchemesService.saveSchemes(userId, selectedSchemeIds,
+        emails: userEmail != null ? [userEmail] : []);
+    savedCount = selectedSchemeIds.length;
+
+    if (sendEmail && userEmail != null) {
+      for (final scheme in selected) {
+        await _notificationService.sendSchemeDetailsToEmails(
+          schemeId: scheme.schemeId.isNotEmpty ? scheme.schemeId : scheme.schemeName,
+          emails: [userEmail],
         );
       }
     }
+
     setState(() {
       _emailResultMessage = sendEmail
           ? 'Saved $savedCount scheme(s) and sent email(s) successfully.'
           : 'Saved $savedCount scheme(s) to My Schemes.';
     });
+  }
+
+  Future<void> _showSchemeSelectionPopup(List<Scheme> recommendations) async {
+    if (recommendations.isEmpty || !mounted) return;
+    _isSelectionDialogOpen = true;
+
+    final TextEditingController emailController = TextEditingController();
+    final localSelected = List<bool>.filled(recommendations.length, false);
+    bool isSubmitting = false;
+    String? validationError;
+
+    try {
+      await showDialog<void>(
+        context: context,
+        barrierDismissible: false,
+        builder: (dialogContext) {
+          return StatefulBuilder(
+            builder: (context, setDialogState) {
+              return AlertDialog(
+                title: const Text('Save Recommended Schemes'),
+                content: SizedBox(
+                  width: 420,
+                  child: SingleChildScrollView(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text('Select schemes to save and send via email:'),
+                        const SizedBox(height: 10),
+                        ...recommendations.asMap().entries.map((entry) {
+                          final i = entry.key;
+                          final scheme = entry.value;
+                          return CheckboxListTile(
+                            dense: true,
+                            contentPadding: EdgeInsets.zero,
+                            value: localSelected[i],
+                            onChanged: isSubmitting
+                                ? null
+                                : (val) {
+                                    setDialogState(() {
+                                      localSelected[i] = val ?? false;
+                                    });
+                                  },
+                            title: Text(scheme.schemeName),
+                            subtitle: Text(scheme.department),
+                          );
+                        }),
+                        const SizedBox(height: 8),
+                        TextField(
+                          controller: emailController,
+                          enabled: !isSubmitting,
+                          keyboardType: TextInputType.emailAddress,
+                          decoration: const InputDecoration(
+                            labelText: 'Email(s) (comma separated)',
+                            hintText: 'abc@example.com, xyz@example.com',
+                          ),
+                        ),
+                        if (validationError != null) ...[
+                          const SizedBox(height: 8),
+                          Text(
+                            validationError!,
+                            style: const TextStyle(color: Colors.red),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: isSubmitting
+                        ? null
+                        : () => Navigator.of(dialogContext).pop(),
+                    child: const Text('Cancel'),
+                  ),
+                  ElevatedButton(
+                    onPressed: isSubmitting
+                        ? null
+                        : () async {
+                            final selectedSchemes = recommendations
+                                .asMap()
+                                .entries
+                                .where((e) => localSelected[e.key])
+                                .map((e) => e.value)
+                                .toList();
+
+                            final emails = emailController.text
+                                .split(',')
+                                .map((e) => e.trim())
+                                .where((e) => e.isNotEmpty)
+                                .toList();
+
+                            if (selectedSchemes.isEmpty) {
+                              setDialogState(() {
+                                validationError =
+                                    'Please select at least one scheme.';
+                              });
+                              return;
+                            }
+                            if (emails.isEmpty) {
+                              setDialogState(() {
+                                validationError =
+                                    'Please enter at least one email address.';
+                              });
+                              return;
+                            }
+
+                            setDialogState(() {
+                              isSubmitting = true;
+                              validationError = null;
+                            });
+
+                            try {
+                              final userId =
+                                  FirebaseAuth.instance.currentUser?.uid ??
+                                      'anonymous';
+                              final selectedSchemeIds = selectedSchemes
+                                  .map((s) => s.schemeId.isNotEmpty
+                                      ? s.schemeId
+                                      : s.schemeName)
+                                  .toList();
+
+                              await _mySchemesService.saveSchemes(
+                                userId,
+                                selectedSchemeIds,
+                                emails: emails,
+                              );
+
+                              for (final scheme in selectedSchemes) {
+                                final schemeId = scheme.schemeId.isNotEmpty
+                                    ? scheme.schemeId
+                                    : scheme.schemeName;
+                                await _notificationService
+                                    .sendSchemeDetailsToEmails(
+                                  schemeId: schemeId,
+                                  emails: emails,
+                                );
+                              }
+
+                              if (!mounted) return;
+                              setState(() {
+                                _emailResultMessage =
+                                    'Saved selected schemes and sent email successfully.';
+                              });
+                              Navigator.of(dialogContext).pop();
+                            } catch (e) {
+                              setDialogState(() {
+                                isSubmitting = false;
+                                validationError =
+                                    'Failed to save/send. Please try again.';
+                              });
+                            }
+                          },
+                    child: isSubmitting
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Text('Save & Send Email'),
+                  ),
+                ],
+              );
+            },
+          );
+        },
+      );
+    } finally {
+      emailController.dispose();
+      _isSelectionDialogOpen = false;
+    }
   }
 
   // ===============================================================
@@ -479,6 +668,19 @@ class _EnhancedSchemeFinderScreenState extends State<EnhancedSchemeFinderScreen>
           ),
           if (_showSchemeSelection && _matchedSchemes.isNotEmpty)
             _buildSchemeSelectionSection(),
+          if (_matchedSchemes.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.all(12),
+              child: ElevatedButton(
+                onPressed: () {
+                  if (!_isSelectionDialogOpen) {
+                    print("Popup safe trigger");
+                    _showSchemeSelectionPopup(_matchedSchemes);
+                  }
+                },
+                child: const Text("Select & Save Schemes"),
+              ),
+            ),
           if (_showEmailPrompt) _buildEmailPromptSection(),
           if (_emailSending)
             const Padding(
