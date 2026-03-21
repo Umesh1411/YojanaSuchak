@@ -6,15 +6,15 @@ class AppTheme {
   static const Color primaryColor = Color(0xFF1E88E5); // Blue
   static const Color secondaryColor = Color(0xFF43A047); // Green
   static const Color accentColor = Color(0xFFFF6F00); // Orange
-  
+
   // Background Colors
   static const Color backgroundColor = Color(0xFFF5F5F5);
   static const Color surfaceColor = Colors.white;
-  
+
   // Text Colors
   static const Color textPrimary = Color(0xFF212121);
   static const Color textSecondary = Color(0xFF757575);
-  
+
   // Error & Success
   static const Color errorColor = Color(0xFFD32F2F);
   static const Color successColor = Color(0xFF43A047);
@@ -27,7 +27,6 @@ class AppTheme {
         primary: primaryColor,
         secondary: secondaryColor,
         surface: surfaceColor,
-        background: backgroundColor,
         error: errorColor,
       ),
       scaffoldBackgroundColor: backgroundColor,
@@ -84,7 +83,8 @@ class AppTheme {
           borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: errorColor),
         ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       ),
       textTheme: const TextTheme(
         displayLarge: TextStyle(
@@ -124,4 +124,3 @@ class AppTheme {
     );
   }
 }
-

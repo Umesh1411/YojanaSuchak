@@ -4,10 +4,10 @@ import '../models/user_profile.dart';
 import '../models/scheme.dart';
 import '../services/speech_service.dart';
 import '../services/tts_service.dart';
-import '../services/gemini_chat_service.dart';
+import 'package:yojana_suchak/core/services/chat_service.dart';
+import 'package:yojana_suchak/core/services/scheme_recommender.dart';
 import '../services/profile_extractor.dart';
 import '../services/data_service.dart';
-import '../core/config/app_config.dart';
 
 /// Main screen with voice interaction and scheme recommendations
 class HomeScreen extends StatefulWidget {
@@ -22,7 +22,7 @@ class _HomeScreenState extends State<HomeScreen>
   // Services
   final SpeechService _speechService = SpeechService();
   final TTSService _ttsService = TTSService();
-  GeminiChatService? _geminiChatService;
+  ChatService? _chatService;
 
   // State
   final UserProfile _userProfile = UserProfile();
@@ -75,22 +75,16 @@ class _HomeScreenState extends State<HomeScreen>
       return;
     }
 
-    // Initialize Gemini Chat Service
-    if (AppConfig.isGeminiConfigured) {
-      _geminiChatService = GeminiChatService(apiKey: AppConfig.geminiApiKey);
+    // Initialize Chat Service (server-side Gemini via callable)
+    _chatService = ChatService();
+    await _chatService?.initialize();
 
-      // Start conversation with greeting
-      _startConversation();
-    } else {
-      setState(() {
-        _botResponse =
-            'Gemini API key not configured. Please set your API key in app_config.dart';
-      });
-    }
+    // Start conversation with greeting
+    _startConversation();
   }
 
   Future<void> _startConversation() async {
-    if (_geminiChatService == null) {
+    if (_chatService == null || !_chatService!.isAvailable) {
       setState(() {
         _botResponse =
             'Hello! I\'m here to help you find suitable government schemes. Please tell me about yourself.';
@@ -105,11 +99,11 @@ class _HomeScreenState extends State<HomeScreen>
 
     try {
       // Get initial greeting from Gemini with timeout
-      String response = await _geminiChatService!
+      String? maybeResponse = await _chatService!
           .getChatResponse(
         userMessage: 'Hello, I want to find government schemes.',
-        profile: _userProfile,
-        availableSchemes: _allSchemes,
+        profile: _userProfile.toJson(),
+        availableSchemes: _allSchemes.map((s) => s.toJson()).toList(),
       )
           .timeout(
         const Duration(seconds: 30),
@@ -117,6 +111,8 @@ class _HomeScreenState extends State<HomeScreen>
           return 'Hello! I\'m here to help you find suitable government schemes. Please tell me about yourself.';
         },
       );
+      String response = maybeResponse ??
+          'Hello! I\'m here to help you find suitable government schemes. Please tell me about yourself.';
 
       if (mounted) {
         setState(() {
@@ -150,7 +146,7 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   Future<void> _processUserInput(String userMessage) async {
-    if (_geminiChatService == null || userMessage.trim().isEmpty) return;
+    if (_chatService == null || userMessage.trim().isEmpty) return;
 
     // Add user message to history
     _conversationHistory.add({
@@ -170,11 +166,11 @@ class _HomeScreenState extends State<HomeScreen>
     try {
       // Get response from Gemini with timeout
       debugPrint('🔄 Starting Gemini API call...');
-      String response = await _geminiChatService!
+      String? maybeResponse = await _chatService!
           .getChatResponse(
         userMessage: userMessage,
-        profile: _userProfile,
-        availableSchemes: _allSchemes,
+        profile: _userProfile.toJson(),
+        availableSchemes: _allSchemes.map((s) => s.toJson()).toList(),
       )
           .timeout(
         const Duration(seconds: 30),
@@ -183,6 +179,8 @@ class _HomeScreenState extends State<HomeScreen>
           return 'Sorry, the request took too long. Please try again.';
         },
       );
+      String response = maybeResponse ??
+          'Sorry, the request took too long. Please try again.';
 
       debugPrint(
           '✅ Gemini API call completed. Response length: ${response.length}');
@@ -229,43 +227,25 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   void _extractProfileInfo(String text) {
-    // Try to extract all possible information from the text
-    int? age = ProfileExtractor.extractAge(text);
-    if (age != null) _userProfile.age = age;
-
-    String? district = ProfileExtractor.extractDistrict(text);
-    if (district != null) _userProfile.district = district;
-
-    String? state = ProfileExtractor.extractState(text);
-    if (state != null) _userProfile.state = state;
-
-    String? gender = ProfileExtractor.extractGender(text);
-    if (gender != null) _userProfile.gender = gender;
-
-    int? income = ProfileExtractor.extractIncome(text);
-    if (income != null) _userProfile.annualIncome = income;
-
-    String? category = ProfileExtractor.extractCategory(text);
-    if (category != null) _userProfile.category = category;
-
-    // Extract occupation using ProfileExtractor
-    String? occupation = ProfileExtractor.extractOccupation(text);
-    if (occupation != null) _userProfile.occupation = occupation;
+    // Use the consolidated, non-destructive extractor which also normalizes casing
+    ProfileExtractor.updateProfileFromText(_userProfile, text);
   }
 
   Future<void> _getRecommendations() async {
-    if (_geminiChatService == null || _allSchemes.isEmpty) return;
+    if (_chatService == null || _allSchemes.isEmpty) return;
 
     setState(() {
       _isLoading = true;
     });
 
     try {
+      // Use SchemeRecommender to obtain recommendations (server-side behavior).
+      final rec = await SchemeRecommender()
+          .recommend(_userProfile.toJson(), locale: Locale('en'));
+      final recList =
+          (rec['recommendations'] as List).cast<Map<String, dynamic>>();
       List<Scheme> recommendations =
-          await _geminiChatService!.getRecommendations(
-        profile: _userProfile,
-        allSchemes: _allSchemes,
-      );
+          recList.map((m) => Scheme.fromJson(m)).toList();
 
       if (recommendations.isNotEmpty) {
         _recommendations = recommendations;

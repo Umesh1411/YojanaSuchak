@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../onboarding/onboarding_screen.dart';
@@ -49,35 +50,38 @@ class _SplashScreenState extends State<SplashScreen>
     _controller.forward();
   }
 
-  Future<void> _checkFirstLaunch() async {
-    // Always show splash for 2-3 seconds
-    await Future.delayed(const Duration(seconds: 2));
-    
-    if (!mounted) return;
+  Timer? _splashTimer;
 
-    final prefs = await SharedPreferences.getInstance();
-    final hasSeenTutorial = prefs.getBool('has_seen_tutorial') ?? false;
+  void _checkFirstLaunch() {
+    // Use a cancelable Timer so tests can cancel if the widget is disposed.
+    _splashTimer = Timer(const Duration(seconds: 2), () async {
+      if (!mounted) return;
 
-    if (!hasSeenTutorial) {
-      // First time - show tutorial
-      await prefs.setBool('has_seen_tutorial', true);
-      if (mounted) {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => const OnboardingScreen()),
-        );
+      final prefs = await SharedPreferences.getInstance();
+      final hasSeenTutorial = prefs.getBool('has_seen_tutorial') ?? false;
+
+      if (!hasSeenTutorial) {
+        // First time - show tutorial
+        await prefs.setBool('has_seen_tutorial', true);
+        if (mounted) {
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (_) => const OnboardingScreen()),
+          );
+        }
+      } else {
+        // Already seen tutorial - go to login
+        if (mounted) {
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (_) => const AuthWrapper()),
+          );
+        }
       }
-    } else {
-      // Already seen tutorial - go to login
-      if (mounted) {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => const AuthWrapper()),
-        );
-      }
-    }
+    });
   }
 
   @override
   void dispose() {
+    _splashTimer?.cancel();
     _controller.dispose();
     super.dispose();
   }
@@ -165,7 +169,3 @@ class _SplashScreenState extends State<SplashScreen>
     );
   }
 }
-
-
-
-

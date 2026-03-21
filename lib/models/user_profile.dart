@@ -5,16 +5,21 @@ class UserProfile {
   String? phoneNumber;
   int? age;
   String? gender; // Male, Female, Other
-  String? occupation; // e.g., Teacher, Engineer, Farmer, Student, Business, Government Employee
+  String?
+      occupation; // e.g., Teacher, Engineer, Farmer, Student, Business, Government Employee
   String? caste; // SC, ST, OBC, General (social category/caste)
-  String? category; // SC, ST, OBC, General (social category) OR student, farmer, woman, senior_citizen, unemployed (target group) - legacy support
+  String?
+      category; // SC, ST, OBC, General (social category) OR student, farmer, woman, senior_citizen, unemployed (target group) - legacy support
   int? annualIncome;
   String? state;
   String? district;
-  
+
   // Additional fields
   String? specialCondition;
   String? selectedSchemeForDetails; // Scheme user wants more info about
+  // Additional attributes
+  String? maritalStatus; // e.g., Widow, Married, Single
+  bool? disability; // true if user explicitly says they have a disability
 
   UserProfile({
     this.fullName,
@@ -29,6 +34,8 @@ class UserProfile {
     this.district,
     this.specialCondition,
     this.selectedSchemeForDetails,
+    this.maritalStatus,
+    this.disability,
   });
 
   /// Get caste/category for eligibility checking (prefers caste, falls back to category)
@@ -56,6 +63,20 @@ class UserProfile {
     if (annualIncome == null) missing.add('annualIncome');
     // caste/category left intentionally OPTIONAL — do not require by default
     return missing;
+  }
+
+  /// Single source-of-truth: get the NEXT missing field in the exact priority required
+  /// Priority order (MANDATORY): occupation → age → gender → state → district → annualIncome → category
+  /// Returns the field key (e.g., 'occupation', 'age', ...) or null if profile is complete
+  String? nextMissingField() {
+    if (occupation == null) return 'occupation';
+    if (age == null) return 'age';
+    if (gender == null) return 'gender';
+    if (state == null) return 'state';
+    if (district == null) return 'district';
+    if (annualIncome == null) return 'annual income';
+    if (caste == null && category == null) return 'category';
+    return null;
   }
 
   /// Convert to string for Gemini prompt
@@ -89,6 +110,8 @@ User Profile:
       'district': district,
       'specialCondition': specialCondition,
       'selectedSchemeForDetails': selectedSchemeForDetails,
+      'maritalStatus': maritalStatus,
+      'disability': disability,
       'updatedAt': DateTime.now().toIso8601String(),
     };
   }
@@ -108,6 +131,8 @@ User Profile:
       district: json['district'] as String?,
       specialCondition: json['specialCondition'] as String?,
       selectedSchemeForDetails: json['selectedSchemeForDetails'] as String?,
+      maritalStatus: json['maritalStatus'] as String?,
+      disability: json['disability'] as bool?,
     );
   }
 }
