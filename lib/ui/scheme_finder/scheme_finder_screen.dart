@@ -44,6 +44,9 @@ class _SchemeFinderScreenState extends State<SchemeFinderScreen>
   String? _emailResultMessage;
   List<Scheme> _allSchemes = [];
 
+  // Text input for typing instead of speaking
+  final TextEditingController _textController = TextEditingController();
+
   // Animation
   late AnimationController _animationController;
   late Animation<double> _scaleAnimation;
@@ -179,20 +182,175 @@ class _SchemeFinderScreenState extends State<SchemeFinderScreen>
   }
 
   Future<void> _waitForTTSAndShowSelection() async {
-    // Wait briefly to allow TTS to start
     await Future.delayed(const Duration(milliseconds: 1000));
-    
-    // Poll while TTS is speaking
     while (_ttsService.isSpeaking() && mounted) {
       await Future.delayed(const Duration(milliseconds: 500));
     }
-    
-    // Once finished (or if TTS wasn't available), show the UI
-    if (mounted) {
-      setState(() {
-        _showSchemeSelection = true;
-      });
-    }
+    if (!mounted) return;
+    // Show as a draggable bottom sheet once TTS finishes
+    _showSelectionBottomSheet();
+  }
+
+  void _showSelectionBottomSheet() {
+    if (!mounted) return;
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => DraggableScrollableSheet(
+        initialChildSize: 0.55,
+        minChildSize: 0.35,
+        maxChildSize: 0.90,
+        expand: false,
+        builder: (_, scrollCtrl) => Container(
+          decoration: BoxDecoration(
+            color: Theme.of(context).scaffoldBackgroundColor,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+            boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 16)],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Center(
+                child: Container(
+                  margin: const EdgeInsets.only(top: 10, bottom: 8),
+                  width: 40, height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+                child: Text(
+                  '✅ Found ${_recommendations.length} scheme(s) for you',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Text(
+                  'Select schemes to save to My Schemes or email yourself.',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.grey),
+                ),
+              ),
+              const SizedBox(height: 12),
+              // Scheme Cards
+              Expanded(
+                child: ListView.separated(
+                  controller: scrollCtrl,
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  separatorBuilder: (_, __) => const SizedBox(height: 10),
+                  itemCount: _recommendations.length,
+                  itemBuilder: (_, idx) {
+                    final rec = _recommendations[idx];
+                    final selected = _selectedSchemes.length > idx && _selectedSchemes[idx];
+                    return StatefulBuilder(builder: (bCtx, setLocal) {
+                      return GestureDetector(
+                        onTap: () {
+                          setState(() { _selectedSchemes[idx] = !_selectedSchemes[idx]; });
+                          setLocal(() {});
+                        },
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: selected ? AppTheme.primaryColor.withOpacity(0.1) : Colors.white,
+                            border: Border.all(
+                              color: selected ? AppTheme.primaryColor : Colors.grey.shade200,
+                              width: selected ? 2 : 1,
+                            ),
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                selected ? Icons.check_circle : Icons.radio_button_unchecked,
+                                color: selected ? AppTheme.primaryColor : Colors.grey,
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(rec.scheme.schemeName, style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color: selected ? AppTheme.primaryColor : Colors.black87,
+                                    )),
+                                    const SizedBox(height: 2),
+                                    Text(rec.scheme.department, style: Theme.of(context).textTheme.bodySmall),
+                                    const SizedBox(height: 4),
+                                    Text(rec.keyBenefits, style: Theme.of(context).textTheme.bodySmall, maxLines: 2, overflow: TextOverflow.ellipsis),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    });
+                  },
+                ),
+              ),
+              // Action Buttons
+              Padding(
+                padding: EdgeInsets.fromLTRB(16, 8, 16, MediaQuery.of(context).viewInsets.bottom + 16),
+                child: Column(
+                  children: [
+                    ElevatedButton.icon(
+                      onPressed: _selectedSchemes.any((s) => s)
+                          ? () async {
+                              Navigator.pop(ctx);
+                              setState(() { _emailSending = true; });
+                              await _saveSelectedSchemesAndSendEmail(sendEmail: false);
+                              if (!mounted) return;
+                              setState(() { _emailSending = false; });
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text(_emailResultMessage ?? 'Saved to My Schemes!')),
+                              );
+                            }
+                          : null,
+                      icon: const Icon(Icons.bookmark_add),
+                      label: const Text('Save to My Schemes'),
+                      style: ElevatedButton.styleFrom(
+                        minimumSize: const Size.fromHeight(46),
+                        backgroundColor: AppTheme.primaryColor,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    OutlinedButton.icon(
+                      onPressed: _selectedSchemes.any((s) => s)
+                          ? () async {
+                              Navigator.pop(ctx);
+                              setState(() { _emailSending = true; });
+                              await _saveSelectedSchemesAndSendEmail(sendEmail: true);
+                              if (!mounted) return;
+                              setState(() { _emailSending = false; });
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text(_emailResultMessage ?? 'Email sent!')),
+                              );
+                            }
+                          : null,
+                      icon: const Icon(Icons.email_outlined),
+                      label: const Text('Save & Email Me'),
+                      style: OutlinedButton.styleFrom(
+                        minimumSize: const Size.fromHeight(46),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                    ),
+                    if (!_selectedSchemes.any((s) => s)) ...
+                      [const SizedBox(height: 4), Text('Select at least one scheme above.', textAlign: TextAlign.center, style: TextStyle(color: Colors.grey, fontSize: 12))],
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   void _speakMessage(String message) {
@@ -205,6 +363,35 @@ class _SchemeFinderScreenState extends State<SchemeFinderScreen>
       appBar: AppBar(
         title: const Text('Scheme Finder'),
       ),
+      // Bottom bar with text input and mic — always visible above keyboard
+      bottomNavigationBar: Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom + 8,
+          left: 12, right: 12, top: 4,
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: TextField(
+                controller: _textController,
+                decoration: InputDecoration(
+                  hintText: _isListening ? 'Listening...' : 'Type your answer or tap 🎤',
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(24)),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  suffixIcon: IconButton(
+                    icon: const Icon(Icons.send),
+                    onPressed: () => _handleTextInput(_textController.text),
+                  ),
+                ),
+                textInputAction: TextInputAction.send,
+                onSubmitted: _handleTextInput,
+              ),
+            ),
+            const SizedBox(width: 8),
+            _buildMicrophoneButton(),
+          ],
+        ),
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -216,32 +403,38 @@ class _SchemeFinderScreenState extends State<SchemeFinderScreen>
             const SizedBox(height: 16),
             if (_isLoading)
               _buildLoadingIndicator()
-            else if (_currentState == ConversationState.result &&
-                _recommendations.isNotEmpty) ...[
-              if (_showSchemeSelection) _buildSchemeSelectionSection(),
-              if (_showEmailPrompt) ...[
-                const SizedBox(height: 16),
-                _buildEmailPromptSection(),
-              ],
-              if (_emailResultMessage != null) ...[
-                const SizedBox(height: 16),
-                Text(_emailResultMessage!,
-                    style: const TextStyle(color: Colors.green)),
-              ],
+            else if (_currentState == ConversationState.result && _recommendations.isNotEmpty) ...[
+              // Show a recap button to re-open the selection sheet
+              ElevatedButton.icon(
+                onPressed: _showSelectionBottomSheet,
+                icon: const Icon(Icons.check_box_outlined),
+                label: const Text('Select / Save Schemes'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.primaryColor,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+              ),
+              if (_emailResultMessage != null) ...[const SizedBox(height: 8), Text(_emailResultMessage!, style: const TextStyle(color: Colors.green))],
               const SizedBox(height: 16),
               ..._buildRecommendationCards(),
             ] else if (_currentState == ConversationState.error)
               _buildErrorCard(),
             const SizedBox(height: 16),
-            _buildMicrophoneButton(),
-            if (_transcript.isNotEmpty) ...[
-              const SizedBox(height: 16),
-              _buildTranscriptCard(),
-            ],
+            if (_transcript.isNotEmpty) _buildTranscriptCard(),
           ],
         ),
       ),
     );
+  }
+
+  void _handleTextInput(String text) {
+    if (text.trim().isEmpty) return;
+    _textController.clear();
+    setState(() { _transcript = text; });
+    final parsed = ProfileExtractor.extractAll(text);
+    ProfileExtractor.applyParsedToProfile(_userProfile, parsed);
+    Future.delayed(const Duration(milliseconds: 300), _moveToNextState);
   }
 
   Future<void> _startListening() async {
@@ -500,8 +693,8 @@ class _SchemeFinderScreenState extends State<SchemeFinderScreen>
   Future<void> _saveSelectedSchemesAndSendEmail(
       {required bool sendEmail}) async {
     final auth = AuthService();
-    String userId = 'demo_user';
-    String userEmail = 'user@example.com';
+    String? userId;
+    String userEmail = '';
     String userName = 'User';
 
     try {
@@ -510,15 +703,31 @@ class _SchemeFinderScreenState extends State<SchemeFinderScreen>
           auth.currentUser != null) {
         final u = auth.currentUser!;
         userId = u.uid;
-        userEmail = u.email ?? userEmail;
+        userEmail = u.email ?? '';
         userName = u.displayName ?? (u.email?.split('@').first ?? userName);
       } else if (auth.demoUserData != null) {
         final demo = auth.demoUserData!;
-        userId = demo['uid'] ?? userId;
-        userEmail = demo['email'] ?? userEmail;
-        userName = demo['displayName'] ?? userName;
+        userId = demo['uid'] as String?;
+        userEmail = demo['email'] as String? ?? '';
+        userName = demo['displayName'] as String? ?? userName;
       }
     } catch (_) {}
+
+    if (userId == null || userId.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Please log in to save schemes to My Schemes.'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+        setState(() {
+          _showEmailPrompt = false;
+          _emailSending = false;
+        });
+      }
+      return;
+    }
 
     final selected = _recommendations
         .asMap()
@@ -526,6 +735,14 @@ class _SchemeFinderScreenState extends State<SchemeFinderScreen>
         .where((e) => _selectedSchemes[e.key])
         .map((e) => e.value.scheme)
         .toList();
+
+    if (selected.isEmpty) {
+      setState(() {
+        _emailResultMessage = 'No schemes were selected.';
+        _emailSending = false;
+      });
+      return;
+    }
 
     final firestoreService = FirestoreService();
     final emailService = EmailService(

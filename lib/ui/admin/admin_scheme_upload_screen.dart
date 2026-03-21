@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:file_picker/file_picker.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/config/app_config.dart';
 import '../../core/services/auth_service.dart';
 import '../../models/scheme.dart';
 import '../../services/notification_service.dart';
+import '../../services/csv_uploader_service.dart';
 
 /// Admin-only scheme upload screen with password protection
 class AdminSchemeUploadScreen extends StatefulWidget {
@@ -16,11 +18,19 @@ class AdminSchemeUploadScreen extends StatefulWidget {
       _AdminSchemeUploadScreenState();
 }
 
-class _AdminSchemeUploadScreenState extends State<AdminSchemeUploadScreen> {
+class _AdminSchemeUploadScreenState extends State<AdminSchemeUploadScreen>
+    with SingleTickerProviderStateMixin {
   final _passwordController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
   bool _isAuthenticated = false;
   bool _isLoading = false;
+  late TabController _tabController;
+
+  // CSV upload state
+  String? _pickedFileName;
+  String? _csvContent;
+  String? _csvUploadStatus;
+  bool _csvUploading = false;
 
   // Form controllers
   final TextEditingController _domainCodeController = TextEditingController();
@@ -76,7 +86,14 @@ class _AdminSchemeUploadScreenState extends State<AdminSchemeUploadScreen> {
   ];
 
   @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 2, vsync: this);
+  }
+
+  @override
   void dispose() {
+    _tabController.dispose();
     _domainCodeController.dispose();
     _passwordController.dispose();
     _schemeIdController.dispose();
@@ -133,41 +150,8 @@ class _AdminSchemeUploadScreenState extends State<AdminSchemeUploadScreen> {
       return;
     }
 
-    // Check if user is authenticated with Firebase
-    final authService = AuthService();
-    final isAuthenticated = authService.isAuthenticated;
-    final currentUser = authService.currentUser;
-
-    // Debug info
-    debugPrint(
-        '🔐 Auth Check - isFirebaseConfigured: ${authService.isFirebaseConfigured}');
-    debugPrint('🔐 Auth Check - isAuthenticated: $isAuthenticated');
-    debugPrint('🔐 Auth Check - currentUser: ${currentUser?.email ?? "null"}');
-
-    if (!authService.isFirebaseConfigured) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-                'Firebase is not configured. Please check your Firebase setup.'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-      return;
-    }
-
-    if (!isAuthenticated || currentUser == null) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Please log in with Firebase to upload schemes.'),
-            backgroundColor: Colors.orange,
-          ),
-        );
-      }
-      return;
-    }
+    // Admin is verified by hardcoded password at the top of this screen.
+    // No Firebase auth check required for admin scheme upload.
 
     setState(() => _isLoading = true);
 
@@ -261,31 +245,17 @@ class _AdminSchemeUploadScreenState extends State<AdminSchemeUploadScreen> {
       // Save to Firestore
       await firestore.collection('schemes').doc(schemeId).set(schemeData);
 
-      // Trigger notifications for new scheme
-      try {
-        final schemeForNotification = Map<String, dynamic>.from(schemeData);
-        schemeForNotification['createdAt'] = Timestamp.now();
-        schemeForNotification['updatedAt'] = Timestamp.now();
-        final schemeModel = Scheme.fromJson(schemeForNotification);
-        
-        // Import notification service dynamically if needed, or we can assume it's imported at the top.
-        // Wait, I should add the import to the top of the file.
-        // Will add the import in another chunk.
-        final notificationSvc = NotificationService();
-        await notificationSvc.notifyEligibleUsersForScheme(schemeModel);
-      } catch (e) {
-        debugPrint('⚠️ Error triggering notifications post-upload: $e');
-      }
-
+      // Show success BEFORE triggering notifications (which may fail due to permissions)
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Scheme uploaded successfully!'),
+          SnackBar(
+            content: Text('Scheme "${_schemeNameController.text.trim()}" uploaded successfully! (ID: $schemeId)'),
             backgroundColor: Colors.green,
+            duration: const Duration(seconds: 4),
           ),
         );
 
-        // Clear form
+        // Clear form immediately after success
         _formKey.currentState!.reset();
         _domainCodeController.clear();
         _schemeIdController.clear();
@@ -306,26 +276,32 @@ class _AdminSchemeUploadScreenState extends State<AdminSchemeUploadScreen> {
         _documentsControllers.clear();
         _documentsControllers.add(TextEditingController());
       }
+
+      // Trigger notifications in background — errors here do NOT affect the upload
+      (() async {
+        try {
+          final schemeModel = Scheme.fromJson({
+            ...schemeData,
+            'createdAt': Timestamp.now(),
+            'updatedAt': Timestamp.now(),
+          });
+          final notificationSvc = NotificationService();
+          await notificationSvc.notifyEligibleUsersForScheme(schemeModel);
+        } catch (e) {
+          debugPrint('⚠️ Notifications skipped (non-critical): $e');
+        }
+      })();
+
     } catch (e) {
       debugPrint('❌ Error uploading scheme: $e');
-      debugPrint('❌ Error type: ${e.runtimeType}');
-
       String errorMessage = 'Error uploading scheme. Please try again.';
-
-      if (e.toString().contains('permission-denied') ||
-          e.toString().contains('permission')) {
-        errorMessage =
-            'Permission denied. Please ensure you are logged in with Firebase.';
-        debugPrint(
-            '❌ Firestore permission error - User might not be authenticated');
-      } else if (e.toString().contains('network') ||
-          e.toString().contains('connection')) {
+      if (e.toString().contains('permission-denied') || e.toString().contains('permission')) {
+        errorMessage = 'Permission denied. Make sure Firestore rules allow scheme writes.';
+      } else if (e.toString().contains('network') || e.toString().contains('connection')) {
         errorMessage = 'Network error. Please check your internet connection.';
       } else if (e.toString().contains('unavailable')) {
-        errorMessage =
-            'Firestore is temporarily unavailable. Please try again later.';
+        errorMessage = 'Firestore is temporarily unavailable. Please try again later.';
       }
-
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -336,9 +312,7 @@ class _AdminSchemeUploadScreenState extends State<AdminSchemeUploadScreen> {
         );
       }
     } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -432,25 +406,37 @@ class _AdminSchemeUploadScreenState extends State<AdminSchemeUploadScreen> {
       appBar: AppBar(
         title: const Text('Upload Scheme (Admin)'),
         backgroundColor: AppTheme.primaryColor,
+        bottom: TabBar(
+          controller: _tabController,
+          labelColor: Colors.white,
+          unselectedLabelColor: Colors.white70,
+          indicatorColor: Colors.white,
+          tabs: const [
+            Tab(icon: Icon(Icons.edit_note), text: 'Manual Entry'),
+            Tab(icon: Icon(Icons.upload_file), text: 'CSV / Excel'),
+          ],
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.logout),
-            onPressed: () {
-              setState(() => _isAuthenticated = false);
-            },
+            onPressed: () => setState(() => _isAuthenticated = false),
             tooltip: 'Logout',
           ),
         ],
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
-              padding: const EdgeInsets.all(16.0),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
+          : TabBarView(
+              controller: _tabController,
+              children: [
+                // --- Tab 1: Manual Entry Form ---
+                SingleChildScrollView(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
                     // Firebase Authentication Warning
                     if (!isFirebaseAuthenticated)
                       Container(
@@ -771,8 +757,155 @@ class _AdminSchemeUploadScreenState extends State<AdminSchemeUploadScreen> {
                 ),
               ),
             ),
+
+            // --- Tab 2: CSV / Excel Upload ---
+            SingleChildScrollView(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.indigo.shade50,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.indigo.shade200),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(children: [
+                          Icon(Icons.info_outline, color: Colors.indigo.shade700),
+                          const SizedBox(width: 8),
+                          Text('CSV Format', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.indigo.shade900)),
+                        ]),
+                        const SizedBox(height: 8),
+                        Text('Upload a .csv or .xlsx file with the following columns:', style: TextStyle(fontSize: 12, color: Colors.indigo.shade700)),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Scheme_ID, Scheme_Name, State, Department, Occupation_Eligible, Gender_Eligible, Category_Eligible, Caste_Eligible, Min_Age, Max_Age, Max_Income_INR, Income_Rule_Type, Other_Eligibility_Criteria, Beneficiary_Type, All_Benefits_Description, Application_Mode, Application_Deadline, Important_Documents, Official_Apply_Link, Remarks',
+                          style: TextStyle(fontSize: 11, color: Colors.indigo.shade600, fontFamily: 'monospace'),
+                        ),
+                        const SizedBox(height: 4),
+                        Text('Important_Documents should be semicolon-separated (e.g. Aadhaar;PAN)', style: TextStyle(fontSize: 11, color: Colors.indigo.shade500)),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  if (_pickedFileName != null)
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.green.shade50,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.green.shade200),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.check_circle, color: Colors.green),
+                          const SizedBox(width: 8),
+                          Expanded(child: Text(_pickedFileName!, style: const TextStyle(fontWeight: FontWeight.bold))),
+                          IconButton(
+                            icon: const Icon(Icons.close, color: Colors.red),
+                            onPressed: () => setState(() { _pickedFileName = null; _csvContent = null; _csvUploadStatus = null; }),
+                          ),
+                        ],
+                      ),
+                    ),
+                  const SizedBox(height: 16),
+                  OutlinedButton.icon(
+                    onPressed: _csvUploading ? null : _pickCsvFile,
+                    icon: const Icon(Icons.folder_open),
+                    label: const Text('Pick CSV / Excel File'),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  if (_csvContent != null)
+                    ElevatedButton.icon(
+                      onPressed: _csvUploading ? null : _uploadCsvToFirestore,
+                      icon: _csvUploading
+                          ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                          : const Icon(Icons.cloud_upload),
+                      label: Text(_csvUploading ? 'Uploading...' : 'Upload to Firestore'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.indigo,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                    ),
+                  if (_csvUploadStatus != null) ...[
+                    const SizedBox(height: 16),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: _csvUploadStatus!.contains('Error') || _csvUploadStatus!.contains('failed')
+                            ? Colors.red.shade50
+                            : Colors.green.shade50,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(_csvUploadStatus!, style: TextStyle(
+                        color: _csvUploadStatus!.contains('Error') || _csvUploadStatus!.contains('failed')
+                            ? Colors.red.shade800
+                            : Colors.green.shade800,
+                      )),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
+        ),
     );
   }
+
+  Future<void> _pickCsvFile() async {
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['csv', 'xlsx', 'xls'],
+        withData: true,
+      );
+      if (result != null && result.files.isNotEmpty) {
+        final file = result.files.first;
+        if (file.bytes != null) {
+          setState(() {
+            _pickedFileName = file.name;
+            _csvContent = String.fromCharCodes(file.bytes!);
+            _csvUploadStatus = null;
+          });
+        }
+      }
+    } catch (e) {
+      setState(() {
+        _csvUploadStatus = 'Error picking file: $e';
+      });
+    }
+  }
+
+  Future<void> _uploadCsvToFirestore() async {
+    if (_csvContent == null) return;
+    setState(() { _csvUploading = true; _csvUploadStatus = null; });
+    try {
+      final uploader = CsvUploaderService();
+      final result = await uploader.uploadSchemesFromCsvContent(_csvContent!);
+      setState(() {
+        _csvUploadStatus = result.message;
+        if (result.success) {
+          _pickedFileName = null;
+          _csvContent = null;
+        }
+      });
+    } catch (e) {
+      setState(() { _csvUploadStatus = 'Error: $e'; });
+    } finally {
+      setState(() { _csvUploading = false; });
+    }
+  }
+
 
   Widget _buildTextField({
     required TextEditingController controller,

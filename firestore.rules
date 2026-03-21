@@ -2,35 +2,35 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     
-    // Schemes collection - allow reads for everyone, writes for authenticated users
+    // Schemes - public read; anyone with Firebase auth can write (admin screen has hardcoded password guard)
     match /schemes/{schemeId} {
-      // Anyone can read schemes
       allow read: if true;
-      
-      // Only authenticated users can write (create, update, delete)
-      // In production, you might want to restrict this to admin users only
       allow write: if request.auth != null;
     }
     
-    // Users collection - users can only access their own data
+    // Users collection
     match /users/{userId} {
-      // Users can read their own document
-      allow read: if request.auth != null && request.auth.uid == userId;
-      // Users can write their own document
-      allow write: if request.auth != null && request.auth.uid == userId;
+      // Owner can read/write their own document
+      allow read, write: if request.auth != null && request.auth.uid == userId;
 
-      // my_schemes subcollection (used by app)
+      // my_schemes subcollection
       match /my_schemes/{schemeId} {
         allow read, write: if request.auth != null && request.auth.uid == userId;
       }
 
-      // (Optional) legacy: Saved schemes subcollection
+      // notifications - owner reads, any authenticated user can write (admin notification sweep)
+      match /notifications/{notifId} {
+        allow read: if request.auth != null && request.auth.uid == userId;
+        allow write: if request.auth != null;
+      }
+
+      // legacy savedSchemes
       match /savedSchemes/{schemeId} {
         allow read, write: if request.auth != null && request.auth.uid == userId;
       }
     }
     
-    // Deny all other access
+    // Deny everything else
     match /{document=**} {
       allow read, write: if false;
     }

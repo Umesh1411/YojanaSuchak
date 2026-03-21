@@ -9,6 +9,42 @@ import 'firestore_service.dart';
 class CsvUploaderService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
+  /// Upload schemes from CSV string content (from file picker)
+  Future<UploadResult> uploadSchemesFromCsvContent(String csvContent) async {
+    try {
+      final List<Scheme> schemes = _parseCsv(csvContent);
+      debugPrint('✅ Parsed ${schemes.length} schemes from picked CSV');
+
+      if (schemes.isEmpty) {
+        return UploadResult(success: false, message: 'No valid schemes found in the CSV.', schemesUploaded: 0);
+      }
+
+      int uploaded = 0;
+      int failed = 0;
+      for (final scheme in schemes) {
+        try {
+          final docId = scheme.schemeId.isNotEmpty
+              ? scheme.schemeId
+              : _generateDocId(scheme.schemeName);
+          await _firestore.collection('schemes').doc(docId).set(scheme.toJson());
+          uploaded++;
+        } catch (e) {
+          debugPrint('❌ Failed to upload ${scheme.schemeName}: $e');
+          failed++;
+        }
+      }
+      FirestoreService.clearCache();
+      return UploadResult(
+        success: uploaded > 0,
+        message: 'Uploaded $uploaded scheme(s) successfully${failed > 0 ? ", $failed failed" : ""}.',
+        schemesUploaded: uploaded,
+        schemesFailed: failed,
+      );
+    } catch (e) {
+      return UploadResult(success: false, message: 'Error processing CSV: $e', schemesUploaded: 0);
+    }
+  }
+
   /// Upload schemes from CSV to Firestore
   /// Clears existing schemes and uploads new ones
   Future<UploadResult> uploadSchemesFromCsv() async {
