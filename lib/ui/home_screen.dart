@@ -227,8 +227,8 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   void _extractProfileInfo(String text) {
-    // Use the consolidated, non-destructive extractor which also normalizes casing
-    ProfileExtractor.updateProfileFromText(_userProfile, text);
+    final parsed = ProfileExtractor.extractAll(text);
+    ProfileExtractor.applyParsedToProfile(_userProfile, parsed);
   }
 
   Future<void> _getRecommendations() async {

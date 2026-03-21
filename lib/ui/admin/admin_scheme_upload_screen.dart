@@ -4,6 +4,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/config/app_config.dart';
 import '../../core/services/auth_service.dart';
+import '../../models/scheme.dart';
+import '../../services/notification_service.dart';
 
 /// Admin-only scheme upload screen with password protection
 class AdminSchemeUploadScreen extends StatefulWidget {
@@ -21,6 +23,7 @@ class _AdminSchemeUploadScreenState extends State<AdminSchemeUploadScreen> {
   bool _isLoading = false;
 
   // Form controllers
+  final TextEditingController _domainCodeController = TextEditingController();
   final TextEditingController _schemeIdController = TextEditingController();
   final TextEditingController _schemeNameController = TextEditingController();
   final TextEditingController _categoryController = TextEditingController();
@@ -74,6 +77,7 @@ class _AdminSchemeUploadScreenState extends State<AdminSchemeUploadScreen> {
 
   @override
   void dispose() {
+    _domainCodeController.dispose();
     _passwordController.dispose();
     _schemeIdController.dispose();
     _schemeNameController.dispose();
@@ -170,9 +174,30 @@ class _AdminSchemeUploadScreenState extends State<AdminSchemeUploadScreen> {
     try {
       final firestore = FirebaseFirestore.instance;
 
-      // Use manual scheme ID if provided, otherwise auto-generate
+      String domainCode = _domainCodeController.text.trim().toUpperCase();
       String schemeId = _schemeIdController.text.trim();
-      if (schemeId.isEmpty) {
+
+      // Use sequential generation if domain provided
+      if (schemeId.isEmpty && domainCode.isNotEmpty) {
+        final snapshot = await firestore
+            .collection('schemes')
+            .where(FieldPath.documentId, isGreaterThanOrEqualTo: '${domainCode}_')
+            .where(FieldPath.documentId, isLessThan: '${domainCode}_z')
+            .get();
+
+        int maxNumber = 0;
+        for (var doc in snapshot.docs) {
+          final id = doc.id;
+          final parts = id.split('_');
+          if (parts.length >= 2 && parts[0] == domainCode) {
+            final number = int.tryParse(parts[1]);
+            if (number != null && number > maxNumber) {
+              maxNumber = number;
+            }
+          }
+        }
+        schemeId = '${domainCode}_${(maxNumber + 1).toString().padLeft(3, '0')}';
+      } else if (schemeId.isEmpty) {
         schemeId = _schemeNameController.text
             .toLowerCase()
             .replaceAll(RegExp(r'[^a-z0-9\s-]'), '')
@@ -236,6 +261,22 @@ class _AdminSchemeUploadScreenState extends State<AdminSchemeUploadScreen> {
       // Save to Firestore
       await firestore.collection('schemes').doc(schemeId).set(schemeData);
 
+      // Trigger notifications for new scheme
+      try {
+        final schemeForNotification = Map<String, dynamic>.from(schemeData);
+        schemeForNotification['createdAt'] = Timestamp.now();
+        schemeForNotification['updatedAt'] = Timestamp.now();
+        final schemeModel = Scheme.fromJson(schemeForNotification);
+        
+        // Import notification service dynamically if needed, or we can assume it's imported at the top.
+        // Wait, I should add the import to the top of the file.
+        // Will add the import in another chunk.
+        final notificationSvc = NotificationService();
+        await notificationSvc.notifyEligibleUsersForScheme(schemeModel);
+      } catch (e) {
+        debugPrint('⚠️ Error triggering notifications post-upload: $e');
+      }
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -246,6 +287,7 @@ class _AdminSchemeUploadScreenState extends State<AdminSchemeUploadScreen> {
 
         // Clear form
         _formKey.currentState!.reset();
+        _domainCodeController.clear();
         _schemeIdController.clear();
         _schemeNameController.clear();
         _categoryController.clear();
@@ -485,7 +527,21 @@ class _AdminSchemeUploadScreenState extends State<AdminSchemeUploadScreen> {
                           ),
                         ],
                       ),
-                    ), // Scheme Name
+                    ),
+                    // Domain Code
+                    _buildTextField(
+                      controller: _domainCodeController,
+                      label: 'Domain Prefix (e.g., CHD, WMN, AGR) *',
+                      icon: Icons.domain,
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return 'Please enter a domain prefix';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    // Scheme Name
                     _buildTextField(
                       controller: _schemeNameController,
                       label: 'Scheme Name *',

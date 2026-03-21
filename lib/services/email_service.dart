@@ -278,7 +278,96 @@ class EmailService {
 </html>
 ''';
   }
-}
+  /// Send email for scheme advertisement (ineligible but notified)
+  Future<bool> sendAdvertisementEmail({
+    required String recipientEmail,
+    required String recipientName,
+    required Scheme scheme,
+  }) async {
+    try {
+      final smtpServer = SmtpServer(
+        smtpHost,
+        port: smtpPort,
+        username: username,
+        password: password,
+        ssl: false,
+        allowInsecure: false,
+        ignoreBadCertificate: false,
+      );
 
+      final message = Message()
+        ..from = Address(username, 'YojanaSuchak')
+        ..recipients.add(recipientEmail)
+        ..subject = 'New Scheme Alert: ${scheme.schemeName}'
+        ..html = _buildAdvertisementEmailHtml(
+          recipientName,
+          scheme,
+        );
+
+      debugPrint('📧 Sending advertisement email to: $recipientEmail');
+      final sendReport = await send(message, smtpServer);
+      
+      debugPrint('✅ Advertisement email sent successfully!');
+      return true;
+    } catch (e, stackTrace) {
+      debugPrint('❌ Error sending advertisement email: $e');
+      return false;
+    }
+  }
+
+  /// Build HTML email content for advertisement notification
+  String _buildAdvertisementEmailHtml(
+    String recipientName,
+    Scheme scheme,
+  ) {
+    return '''
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background-color: #78909c; color: white; padding: 20px; text-align: center; }
+        .content { padding: 20px; background-color: #f9f9f9; }
+        .scheme-name { font-size: 24px; font-weight: bold; color: #1E88E5; margin: 20px 0; }
+        .section { margin: 20px 0; }
+        .section-title { font-weight: bold; color: #1E88E5; margin-bottom: 10px; }
+        .footer { text-align: center; padding: 20px; color: #666; font-size: 12px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>YojanaSuchak</h1>
+            <p>New Govt Scheme Alert</p>
+        </div>
+        <div class="content">
+            <p>Dear $recipientName,</p>
+            <p>A new government scheme has been launched. Even though it may not exactly match your profile criteria, we are sharing it with you as it might be useful for your family or friends:</p>
+            
+            <div class="scheme-name">\${scheme.schemeName}</div>
+            
+            <div class="section">
+                <div class="section-title">Department:</div>
+                <p>\${scheme.department}</p>
+            </div>
+            
+            <div class="section">
+                <div class="section-title">Benefits:</div>
+                <p>\${scheme.allBenefitsDescription.isNotEmpty ? scheme.allBenefitsDescription : scheme.benefits}</p>
+            </div>
+            
+            <p>If you know someone who might benefit from this, please share it with them.</p>
+            <p>Best regards,<br>YojanaSuchak Team</p>
+        </div>
+        <div class="footer">
+            <p>This is an automated email from YojanaSuchak app.</p>
+        </div>
+    </div>
+</body>
+</html>
+''';
+  }
+}
 
 

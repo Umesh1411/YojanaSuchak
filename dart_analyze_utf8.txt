@@ -1,0 +1,209 @@
+Analyzing YojanaSuchak...
+
+  error - lib\core\services\gemini_service.dart:1:8 - Target of URI doesn't exist: 'package:cloud_functions/cloud_functions.dart'. Try creating the file referenced by the URI, or try using a URI for a file that does exist. - uri_does_not_exist
+  error - lib\core\services\gemini_service.dart:7:9 - Undefined class 'HttpsCallable'. Try changing the name to the name of an existing class, or creating a class with the name 'HttpsCallable'. - undefined_class
+  error - lib\core\services\gemini_service.dart:8:7 - Undefined name 'FirebaseFunctions'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - lib\core\services\gemini_service.dart:9:9 - Undefined class 'HttpsCallable'. Try changing the name to the name of an existing class, or creating a class with the name 'HttpsCallable'. - undefined_class
+  error - lib\core\services\gemini_service.dart:10:7 - Undefined name 'FirebaseFunctions'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - lib\core\services\gemini_service.dart:11:9 - Undefined class 'HttpsCallable'. Try changing the name to the name of an existing class, or creating a class with the name 'HttpsCallable'. - undefined_class
+  error - lib\core\services\gemini_service.dart:12:7 - Undefined name 'FirebaseFunctions'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - lib\core\services\gemini_service.dart:13:9 - Undefined class 'HttpsCallable'. Try changing the name to the name of an existing class, or creating a class with the name 'HttpsCallable'. - undefined_class
+  error - lib\core\services\gemini_service.dart:14:7 - Undefined name 'FirebaseFunctions'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - lib\core\services\notification_service.dart:1:8 - Target of URI doesn't exist: 'package:cloud_functions/cloud_functions.dart'. Try creating the file referenced by the URI, or try using a URI for a file that does exist. - uri_does_not_exist
+  error - lib\core\services\notification_service.dart:4:9 - Undefined class 'FirebaseFunctions'. Try changing the name to the name of an existing class, or creating a class with the name 'FirebaseFunctions'. - undefined_class
+  error - lib\core\services\notification_service.dart:6:24 - Undefined class 'FirebaseFunctions'. Try changing the name to the name of an existing class, or creating a class with the name 'FirebaseFunctions'. - undefined_class
+  error - lib\core\services\notification_service.dart:7:35 - Undefined name 'FirebaseFunctions'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - lib\ui\home_screen.dart:231:22 - The method 'updateProfileFromText' isn't defined for the type 'ProfileExtractor'. Try correcting the name to the name of an existing method, or defining a method named 'updateProfileFromText'. - undefined_method
+  error - lib\ui\scheme_finder\scheme_finder_screen.dart:3:8 - Target of URI doesn't exist: '../../models/conversation_state.dart'. Try creating the file referenced by the URI, or try using a URI for a file that does exist. - uri_does_not_exist
+  error - lib\ui\scheme_finder\scheme_finder_screen.dart:34:3 - Undefined class 'ConversationState'. Try changing the name to the name of an existing class, or creating a class with the name 'ConversationState'. - undefined_class
+  error - lib\ui\scheme_finder\scheme_finder_screen.dart:34:37 - Undefined name 'ConversationState'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - lib\ui\scheme_finder\scheme_finder_screen.dart:86:23 - Undefined name 'ConversationState'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - lib\ui\scheme_finder\scheme_finder_screen.dart:88:19 - Undefined name 'ConversationState'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - lib\ui\scheme_finder\scheme_finder_screen.dart:98:28 - Undefined name 'ConversationState'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - lib\ui\scheme_finder\scheme_finder_screen.dart:100:27 - Undefined name 'ConversationState'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - lib\ui\scheme_finder\scheme_finder_screen.dart:102:23 - Undefined name 'ConversationState'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - lib\ui\scheme_finder\scheme_finder_screen.dart:104:28 - Undefined name 'ConversationState'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - lib\ui\scheme_finder\scheme_finder_screen.dart:106:27 - Undefined name 'ConversationState'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - lib\ui\scheme_finder\scheme_finder_screen.dart:108:23 - Undefined name 'ConversationState'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - lib\ui\scheme_finder\scheme_finder_screen.dart:110:28 - Undefined name 'ConversationState'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - lib\ui\scheme_finder\scheme_finder_screen.dart:112:27 - Undefined name 'ConversationState'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - lib\ui\scheme_finder\scheme_finder_screen.dart:114:23 - Undefined name 'ConversationState'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - lib\ui\scheme_finder\scheme_finder_screen.dart:116:28 - Undefined name 'ConversationState'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - lib\ui\scheme_finder\scheme_finder_screen.dart:118:27 - Undefined name 'ConversationState'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - lib\ui\scheme_finder\scheme_finder_screen.dart:120:23 - Undefined name 'ConversationState'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - lib\ui\scheme_finder\scheme_finder_screen.dart:129:23 - Undefined name 'ConversationState'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - lib\ui\scheme_finder\scheme_finder_screen.dart:133:19 - Undefined name 'ConversationState'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - lib\ui\scheme_finder\scheme_finder_screen.dart:147:25 - Undefined name 'ConversationState'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - lib\ui\scheme_finder\scheme_finder_screen.dart:155:21 - Undefined name 'ConversationState'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - lib\ui\scheme_finder\scheme_finder_screen.dart:158:25 - Undefined name 'ConversationState'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - lib\ui\scheme_finder\scheme_finder_screen.dart:161:21 - Undefined name 'ConversationState'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - lib\ui\scheme_finder\scheme_finder_screen.dart:196:39 - Undefined name 'ConversationState'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - lib\ui\scheme_finder\scheme_finder_screen.dart:210:41 - Undefined name 'ConversationState'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - lib\ui\scheme_finder\scheme_finder_screen.dart:243:31 - Undefined name 'ConversationState'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - lib\ui\scheme_finder\scheme_finder_screen.dart:245:31 - Undefined name 'ConversationState'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - lib\ui\scheme_finder\scheme_finder_screen.dart:247:31 - Undefined name 'ConversationState'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - lib\ui\scheme_finder\scheme_finder_screen.dart:249:31 - Undefined name 'ConversationState'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+   info - lib\core\config\app_config.dart:1:1 - Dangling library doc comment. Add a 'library' directive after the library comment. - dangling_library_doc_comments
+   info - lib\core\config\env_config.dart:82:9 - Statements in an if should be enclosed in a block. Try wrapping the statement in a block. - curly_braces_in_flow_control_structures
+   info - lib\core\services\chat_service.dart:111:50 - Statements in an if should be enclosed in a block. Try wrapping the statement in a block. - curly_braces_in_flow_control_structures
+   info - lib\core\services\chat_service.dart:119:49 - Statements in an if should be enclosed in a block. Try wrapping the statement in a block. - curly_braces_in_flow_control_structures
+   info - lib\core\services\chat_service.dart:127:48 - Statements in an if should be enclosed in a block. Try wrapping the statement in a block. - curly_braces_in_flow_control_structures
+   info - lib\core\services\chat_service.dart:137:9 - Statements in an if should be enclosed in a block. Try wrapping the statement in a block. - curly_braces_in_flow_control_structures
+   info - lib\core\services\chat_service.dart:448:56 - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation. - prefer_const_constructors
+   info - lib\core\services\demo_auth_service.dart:8:23 - The private field _users could be 'final'. Try making the field 'final'. - prefer_final_fields
+   info - lib\core\services\demo_auth_service.dart:13:37 - The private field _userData could be 'final'. Try making the field 'final'. - prefer_final_fields
+   info - lib\core\services\gemini_service.dart:1:8 - The imported package 'cloud_functions' isn't a dependency of the importing package. Try adding a dependency for 'cloud_functions' in the 'pubspec.yaml' file. - depend_on_referenced_packages
+   info - lib\core\services\gemini_service.dart:34:9 - Statements in an if should be enclosed in a block. Try wrapping the statement in a block. - curly_braces_in_flow_control_structures
+   info - lib\core\services\localization_service.dart:27:43 - The private field _translations could be 'final'. Try making the field 'final'. - prefer_final_fields
+   info - lib\core\services\notification_service.dart:1:8 - The imported package 'cloud_functions' isn't a dependency of the importing package. Try adding a dependency for 'cloud_functions' in the 'pubspec.yaml' file. - depend_on_referenced_packages
+   info - lib\core\services\scheme_recommender.dart:38:16 - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation. - prefer_const_constructors
+   info - lib\core\services\scheme_recommender.dart:291:15 - Statements in an if should be enclosed in a block. Try wrapping the statement in a block. - curly_braces_in_flow_control_structures
+   info - lib\core\services\scheme_recommender.dart:434:7 - Statements in an if should be enclosed in a block. Try wrapping the statement in a block. - curly_braces_in_flow_control_structures
+   info - lib\core\services\scheme_recommender.dart:436:7 - Statements in an if should be enclosed in a block. Try wrapping the statement in a block. - curly_braces_in_flow_control_structures
+   info - lib\core\services\scheme_recommender.dart:439:7 - Statements in an if should be enclosed in a block. Try wrapping the statement in a block. - curly_braces_in_flow_control_structures
+   info - lib\main.dart:18:33 - Unnecessary use of double quotes. Try using single quotes unless the string contains single quotes. - prefer_single_quotes
+   info - lib\main.dart:58:16 - Unnecessary use of double quotes. Try using single quotes unless the string contains single quotes. - prefer_single_quotes
+   info - lib\services\auto_upload_on_startup.dart:17:9 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - lib\services\auto_upload_on_startup.dart:21:7 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - lib\services\auto_upload_on_startup.dart:26:9 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - lib\services\auto_upload_on_startup.dart:29:9 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - lib\services\auto_upload_on_startup.dart:33:7 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - lib\services\auto_upload_on_startup.dart:42:5 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - lib\services\data_service.dart:23:9 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - lib\services\data_service.dart:27:7 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - lib\services\data_service.dart:28:7 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - lib\services\eligibility_filter.dart:145:56 - Unnecessary braces in a string interpolation. Try removing the braces. - unnecessary_brace_in_string_interps
+   info - lib\services\gemini_service.dart:48:7 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - lib\services\gemini_service.dart:142:7 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - lib\services\gemini_service.dart:143:7 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - lib\services\one_time_upload.dart:13:7 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - lib\services\one_time_upload.dart:19:9 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - lib\services\one_time_upload.dart:21:9 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - lib\services\one_time_upload.dart:33:9 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - lib\services\one_time_upload.dart:35:9 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - lib\services\one_time_upload.dart:36:9 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - lib\services\one_time_upload.dart:47:7 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - lib\services\one_time_upload.dart:58:7 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - lib\services\one_time_upload.dart:60:7 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - lib\services\one_time_upload.dart:63:7 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - lib\services\one_time_upload.dart:78:13 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - lib\services\one_time_upload.dart:81:11 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - lib\services\one_time_upload.dart:89:7 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - lib\services\one_time_upload.dart:99:7 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - lib\services\one_time_upload.dart:100:7 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - lib\services\one_time_upload.dart:138:9 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - lib\services\one_time_upload.dart:238:7 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - lib\services\one_time_upload.dart:240:7 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - lib\services\profile_extractor.dart:101:33 - Unnecessary use of double quotes. Try using single quotes unless the string contains single quotes. - prefer_single_quotes
+   info - lib\services\speech_service.dart:17:7 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - lib\services\speech_service.dart:23:9 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - lib\services\speech_service.dart:30:9 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - lib\services\speech_service.dart:104:7 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - lib\services\tts_service.dart:28:9 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - lib\services\tts_service.dart:49:7 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - lib\services\tts_service.dart:84:7 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - lib\services\tts_service.dart:96:7 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - lib\ui\admin\admin_scheme_upload_screen.dart:2:8 - The import of 'package:flutter/foundation.dart' is unnecessary because all of the used elements are also provided by the import of 'package:flutter/material.dart'. Try removing the import directive. - unnecessary_import
+   info - lib\ui\admin\admin_scheme_upload_screen.dart:754:7 - 'value' is deprecated and shouldn't be used. Use initialValue instead. This will set the initial value for the form field. This feature was deprecated after v3.33.0-1.0.pre. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - lib\ui\admin\csv_upload_screen.dart:146:46 - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check. Guard a 'State.context' use with a 'mounted' check on the State, and other BuildContext use with a 'mounted' check on the BuildContext. - use_build_context_synchronously
+   info - lib\ui\auth\login_screen.dart:75:52 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - lib\ui\auth\login_screen.dart:89:26 - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation. - prefer_const_constructors
+   info - lib\ui\auth\login_screen.dart:206:25 - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation. - prefer_const_constructors
+   info - lib\ui\auth\login_screen.dart:226:30 - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation. - prefer_const_constructors
+   info - lib\ui\auth\signup_screen.dart:76:16 - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation. - prefer_const_constructors
+   info - lib\ui\auth\signup_screen.dart:192:25 - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation. - prefer_const_constructors
+   info - lib\ui\auth\signup_screen.dart:205:30 - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation. - prefer_const_constructors
+   info - lib\ui\contact\contact_us_screen.dart:2:8 - The import of 'package:flutter/foundation.dart' is unnecessary because all of the used elements are also provided by the import of 'package:flutter/material.dart'. Try removing the import directive. - unnecessary_import
+   info - lib\ui\home\home_screen.dart:66:17 - 'groupValue' is deprecated and shouldn't be used. Use a RadioGroup ancestor to manage group value instead. This feature was deprecated after v3.32.0-0.0.pre. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - lib\ui\home\home_screen.dart:67:17 - 'onChanged' is deprecated and shouldn't be used. Use RadioGroup to handle value change instead. This feature was deprecated after v3.32.0-0.0.pre. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - lib\ui\home\home_screen.dart:275:41 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - lib\ui\home\home_screen.dart:291:47 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - lib\ui\home\home_screen.dart:321:47 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - lib\ui\home_screen.dart:34:29 - The private field _conversationHistory could be 'final'. Try making the field 'final'. - prefer_final_fields
+   info - lib\ui\home_screen.dart:244:53 - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation. - prefer_const_constructors
+   info - lib\ui\home_screen.dart:429:28 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - lib\ui\my_schemes\my_schemes_screen.dart:2:8 - The import of 'package:flutter/foundation.dart' is unnecessary because all of the used elements are also provided by the import of 'package:flutter/material.dart'. Try removing the import directive. - unnecessary_import
+   info - lib\ui\my_schemes\my_schemes_screen.dart:161:28 - Don't use 'BuildContext's across async gaps. Try rewriting the code to not use the 'BuildContext', or guard the use with a 'mounted' check. - use_build_context_synchronously
+   info - lib\ui\my_schemes\my_schemes_screen.dart:324:39 - 'value' is deprecated and shouldn't be used. Use initialValue instead. This will set the initial value for the form field. This feature was deprecated after v3.33.0-1.0.pre. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - lib\ui\my_schemes\my_schemes_screen.dart:332:46 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - lib\ui\onboarding\onboarding_screen.dart:154:35 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - lib\ui\pages\scheme_recommendation_flow.dart:163:35 - Statements in an if should be enclosed in a block. Try wrapping the statement in a block. - curly_braces_in_flow_control_structures
+   info - lib\ui\pages\scheme_recommendation_flow.dart:168:30 - Statements in an if should be enclosed in a block. Try wrapping the statement in a block. - curly_braces_in_flow_control_structures
+   info - lib\ui\pages\scheme_recommendation_flow.dart:172:32 - Statements in an if should be enclosed in a block. Try wrapping the statement in a block. - curly_braces_in_flow_control_structures
+   info - lib\ui\pages\scheme_recommendation_flow.dart:176:31 - Statements in an if should be enclosed in a block. Try wrapping the statement in a block. - curly_braces_in_flow_control_structures
+   info - lib\ui\pages\scheme_recommendation_flow.dart:178:7 - Statements in an if should be enclosed in a block. Try wrapping the statement in a block. - curly_braces_in_flow_control_structures
+   info - lib\ui\pages\scheme_recommendation_flow.dart:180:23 - Statements in an if should be enclosed in a block. Try wrapping the statement in a block. - curly_braces_in_flow_control_structures
+   info - lib\ui\profile\profile_screen.dart:426:7 - 'value' is deprecated and shouldn't be used. Use initialValue instead. This will set the initial value for the form field. This feature was deprecated after v3.33.0-1.0.pre. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - lib\ui\rate_us\rate_us_screen.dart:62:46 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - lib\ui\scheme_finder\enhanced_scheme_finder_screen.dart:15:8 - The import of 'package:flutter/foundation.dart' is unnecessary because all of the used elements are also provided by the import of 'package:flutter/material.dart'. Try removing the import directive. - unnecessary_import
+   info - lib\ui\scheme_finder\enhanced_scheme_finder_screen.dart:79:16 - Unnecessary use of double quotes. Try using single quotes unless the string contains single quotes. - prefer_single_quotes
+   info - lib\ui\scheme_finder\enhanced_scheme_finder_screen.dart:390:11 - Unnecessary use of double quotes. Try using single quotes unless the string contains single quotes. - prefer_single_quotes
+   info - lib\ui\scheme_finder\enhanced_scheme_finder_screen.dart:395:13 - Unnecessary use of double quotes. Try using single quotes unless the string contains single quotes. - prefer_single_quotes
+   info - lib\ui\scheme_finder\enhanced_scheme_finder_screen.dart:426:27 - Use interpolation to compose strings and values. Try using string interpolation to build the composite string. - prefer_interpolation_to_compose_strings
+   info - lib\ui\scheme_finder\enhanced_scheme_finder_screen.dart:510:26 - Use interpolation to compose strings and values. Try using string interpolation to build the composite string. - prefer_interpolation_to_compose_strings
+   info - lib\ui\scheme_finder\enhanced_scheme_finder_screen.dart:552:9 - Statements in an if should be enclosed in a block. Try wrapping the statement in a block. - curly_braces_in_flow_control_structures
+   info - lib\ui\scheme_finder\enhanced_scheme_finder_screen.dart:554:9 - Statements in an if should be enclosed in a block. Try wrapping the statement in a block. - curly_braces_in_flow_control_structures
+   info - lib\ui\scheme_finder\enhanced_scheme_finder_screen.dart:556:9 - Statements in an if should be enclosed in a block. Try wrapping the statement in a block. - curly_braces_in_flow_control_structures
+   info - lib\ui\scheme_finder\enhanced_scheme_finder_screen.dart:558:9 - Statements in an if should be enclosed in a block. Try wrapping the statement in a block. - curly_braces_in_flow_control_structures
+   info - lib\ui\scheme_finder\enhanced_scheme_finder_screen.dart:744:18 - Unnecessary use of double quotes. Try using single quotes unless the string contains single quotes. - prefer_single_quotes
+   info - lib\ui\scheme_finder\enhanced_scheme_finder_screen.dart:800:26 - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation. - prefer_const_constructors
+   info - lib\ui\scheme_finder\enhanced_scheme_finder_screen.dart:839:16 - Unnecessary use of 'toList' in a spread. Try removing the invocation of 'toList'. - unnecessary_to_list_in_spreads
+   info - lib\ui\scheme_finder\enhanced_scheme_finder_screen.dart:965:32 - Don't use 'BuildContext's across async gaps. Try rewriting the code to not use the 'BuildContext', or guard the use with a 'mounted' check. - use_build_context_synchronously
+   info - lib\ui\scheme_finder\scheme_finder_screen.dart:311:49 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - lib\ui\scheme_finder\scheme_finder_screen.dart:323:56 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - lib\ui\scheme_finder\scheme_finder_screen.dart:419:11 - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation. - prefer_const_constructors
+   info - lib\ui\scheme_finder\scheme_finder_screen.dart:522:32 - Don't use 'BuildContext's across async gaps. Try rewriting the code to not use the 'BuildContext', or guard the use with a 'mounted' check. - use_build_context_synchronously
+   info - lib\ui\scheme_finder\scheme_finder_screen.dart:588:28 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - lib\ui\scheme_finder\scheme_finder_screen.dart:609:36 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - lib\ui\scheme_finder\scheme_finder_screen.dart:634:38 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - lib\ui\scheme_finder\scheme_finder_screen.dart:776:34 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - lib\ui\screens\splash_screen.dart:113:49 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - lib\ui\screens\splash_screen.dart:140:30 - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation. - prefer_const_constructors
+   info - lib\ui\screens\splash_screen.dart:153:45 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - lib\ui\settings\settings_screen.dart:116:27 - 'groupValue' is deprecated and shouldn't be used. Use a RadioGroup ancestor to manage group value instead. This feature was deprecated after v3.32.0-0.0.pre. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - lib\ui\settings\settings_screen.dart:117:27 - 'onChanged' is deprecated and shouldn't be used. Use RadioGroup to handle value change instead. This feature was deprecated after v3.32.0-0.0.pre. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - lib\ui\settings\settings_screen.dart:139:32 - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check. Guard a 'State.context' use with a 'mounted' check on the State, and other BuildContext use with a 'mounted' check on the BuildContext. - use_build_context_synchronously
+   info - scripts\gemini_smoke_test.dart:10:5 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - scripts\gemini_smoke_test.dart:34:3 - Use 'const' for final variables initialized to a constant value. Try replacing 'final' with 'const'. - prefer_const_declarations
+   info - scripts\gemini_smoke_test.dart:37:3 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - scripts\gemini_smoke_test.dart:43:7 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - scripts\gemini_smoke_test.dart:44:7 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - scripts\gemini_smoke_test.dart:45:7 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - scripts\gemini_smoke_test.dart:49:7 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - scripts\gemini_smoke_test.dart:52:9 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - scripts\gemini_smoke_test.dart:56:9 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - scripts\gemini_smoke_test.dart:59:9 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - scripts\gemini_smoke_test.dart:66:3 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - scripts\gemini_smoke_test.dart:76:5 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - scripts\gemini_smoke_test.dart:79:7 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - scripts\gemini_smoke_test.dart:80:7 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - scripts\gemini_smoke_test.dart:82:7 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - scripts\gemini_smoke_test.dart:88:5 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - scripts\gemini_smoke_test.dart:91:5 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - scripts\upload_csv_to_firestore.dart:1:1 - Dangling library doc comment. Add a 'library' directive after the library comment. - dangling_library_doc_comments
+   info - scripts\upload_csv_to_firestore.dart:12:8 - Can't use a relative path to import a library in 'lib'. Try fixing the relative path or changing the import to a 'package:' import. - avoid_relative_lib_imports
+   info - scripts\upload_csv_to_firestore.dart:13:8 - Can't use a relative path to import a library in 'lib'. Try fixing the relative path or changing the import to a 'package:' import. - avoid_relative_lib_imports
+   info - scripts\upload_csv_to_firestore.dart:16:3 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - scripts\upload_csv_to_firestore.dart:23:5 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - scripts\upload_csv_to_firestore.dart:28:7 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - scripts\upload_csv_to_firestore.dart:29:7 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - scripts\upload_csv_to_firestore.dart:34:5 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - scripts\upload_csv_to_firestore.dart:38:5 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - scripts\upload_csv_to_firestore.dart:41:7 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - scripts\upload_csv_to_firestore.dart:46:5 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - scripts\upload_csv_to_firestore.dart:48:5 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - scripts\upload_csv_to_firestore.dart:51:5 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - scripts\upload_csv_to_firestore.dart:66:11 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - scripts\upload_csv_to_firestore.dart:69:9 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - scripts\upload_csv_to_firestore.dart:74:5 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - scripts\upload_csv_to_firestore.dart:75:5 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - scripts\upload_csv_to_firestore.dart:76:5 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - scripts\upload_csv_to_firestore.dart:77:5 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - scripts\upload_csv_to_firestore.dart:79:7 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - scripts\upload_csv_to_firestore.dart:81:5 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - scripts\upload_csv_to_firestore.dart:85:5 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - scripts\upload_csv_to_firestore.dart:86:5 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - scripts\upload_csv_to_firestore.dart:119:7 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - scripts\upload_csv_to_firestore.dart:211:3 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+
+205 issues found.

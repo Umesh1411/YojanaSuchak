@@ -65,8 +65,11 @@ class NotificationService {
 
         if (eligibleSchemes.isNotEmpty) {
           // User is eligible - send notification and email
-          await _sendNotificationToUser(userId, scheme, userProfile, userData);
+          await _sendNotificationToUser(userId, scheme, userProfile, userData, isEligible: true);
           notifiedCount++;
+        } else {
+          // User is ineligible - send advertisement
+          await _sendNotificationToUser(userId, scheme, userProfile, userData, isEligible: false);
         }
       }
 
@@ -89,12 +92,13 @@ class NotificationService {
         (userData.containsKey('caste') || userData.containsKey('category'));
   }
 
-  /// Send notification and email to eligible user
+  /// Send notification and email to user
   Future<void> _sendNotificationToUser(
     String userId,
     Scheme scheme,
     UserProfile userProfile,
     Map<String, dynamic> userData,
+    {required bool isEligible}
   ) async {
     try {
       // Create in-app notification document
@@ -103,10 +107,10 @@ class NotificationService {
           .doc(userId)
           .collection('notifications')
           .add({
-        'type': 'new_scheme',
+        'type': isEligible ? 'new_scheme' : 'advertisement',
         'schemeId': scheme.schemeId,
         'schemeName': scheme.schemeName,
-        'message': 'New scheme available: ${scheme.schemeName}',
+        'message': isEligible ? 'New scheme available: ${scheme.schemeName}' : 'New scheme launched: ${scheme.schemeName}',
         'read': false,
         'createdAt': FieldValue.serverTimestamp(),
       });
@@ -114,17 +118,58 @@ class NotificationService {
       // Send email if user has email address
       final userEmail = userData['email'] as String?;
       if (userEmail != null && userEmail.isNotEmpty) {
-        await _sendEligibilityEmail(
-          userEmail: userEmail,
-          userName: userProfile.fullName ?? 'User',
-          scheme: scheme,
-          userProfile: userProfile,
-        );
+        if (isEligible) {
+          await _sendEligibilityEmail(
+            userEmail: userEmail,
+            userName: userProfile.fullName ?? 'User',
+            scheme: scheme,
+            userProfile: userProfile,
+          );
+        } else {
+          await _sendAdvertisementEmail(
+            userEmail: userEmail,
+            userName: userProfile.fullName ?? 'User',
+            scheme: scheme,
+          );
+        }
       }
 
-      debugPrint('✅ Notification sent to user: $userId');
+      debugPrint('✅ Notification sent to user: $userId (Eligible: $isEligible)');
     } catch (e) {
       debugPrint('❌ Error sending notification to user $userId: $e');
+    }
+  }
+
+  /// Send advertisement email to ineligible user
+  Future<void> _sendAdvertisementEmail({
+    required String userEmail,
+    required String userName,
+    required Scheme scheme,
+  }) async {
+    try {
+      if (EnvConfig.smtpHost != null &&
+          EnvConfig.smtpUsername != null &&
+          EnvConfig.smtpPassword != null) {
+        final emailService = EmailService(
+          smtpHost: EnvConfig.smtpHost!,
+          smtpPort: EnvConfig.smtpPort ?? 587,
+          username: EnvConfig.smtpUsername!,
+          password: EnvConfig.smtpPassword!,
+          useTls: EnvConfig.smtpUseTls,
+        );
+
+        final sent = await emailService.sendAdvertisementEmail(
+          recipientEmail: userEmail,
+          recipientName: userName,
+          scheme: scheme,
+        );
+
+        if (!sent) {
+          debugPrint('❌ Failed sending ad email to $userEmail');
+        }
+      }
+    } catch (e) {
+      debugPrint('❌ Error sending ad email: $e');
     }
   }
 

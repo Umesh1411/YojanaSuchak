@@ -146,13 +146,19 @@ class _SchemeFinderScreenState extends State<SchemeFinderScreen>
       setState(() {
         _currentState = ConversationState.result;
         _isLoading = false;
-        _showSchemeSelection = true;
+        _showSchemeSelection = false; // Delay showing selection
         _selectedSchemes = List.generate(_recommendations.length, (_) => false);
         _showEmailPrompt = false;
         _emailResultMessage = null;
       });
 
-      _speakMessage(ConversationState.result.getMessage());
+      String explanation = "I found \${_recommendations.length} schemes for you based on your profile. ";
+      for (int i = 0; i < _recommendations.length; i++) {
+        explanation += "Number \${i + 1}. \${_recommendations[i].scheme.schemeName}. ";
+      }
+      
+      _speakMessage(explanation);
+      _waitForTTSAndShowSelection();
     } catch (e) {
       setState(() {
         _currentState = ConversationState.error;
@@ -170,6 +176,23 @@ class _SchemeFinderScreenState extends State<SchemeFinderScreen>
         keyBenefits: scheme.benefits,
       );
     }).toList();
+  }
+
+  Future<void> _waitForTTSAndShowSelection() async {
+    // Wait briefly to allow TTS to start
+    await Future.delayed(const Duration(milliseconds: 1000));
+    
+    // Poll while TTS is speaking
+    while (_ttsService.isSpeaking() && mounted) {
+      await Future.delayed(const Duration(milliseconds: 500));
+    }
+    
+    // Once finished (or if TTS wasn't available), show the UI
+    if (mounted) {
+      setState(() {
+        _showSchemeSelection = true;
+      });
+    }
   }
 
   void _speakMessage(String message) {
