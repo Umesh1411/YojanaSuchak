@@ -8,6 +8,9 @@ import '../../services/gemini_service.dart';
 import '../../services/eligibility_filter.dart';
 import '../../services/profile_extractor.dart';
 import '../../services/data_service.dart';
+import '../../services/firestore_service.dart';
+import '../../services/email_service.dart';
+import '../../core/services/auth_service.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/app_strings.dart';
 import '../../core/config/app_config.dart';
@@ -34,6 +37,11 @@ class _SchemeFinderScreenState extends State<SchemeFinderScreen>
   bool _isListening = false;
   bool _isLoading = false;
   List<SchemeRecommendation> _recommendations = [];
+  List<bool> _selectedSchemes = [];
+  bool _showSchemeSelection = false;
+  bool _showEmailPrompt = false;
+  bool _emailSending = false;
+  String? _emailResultMessage;
   List<Scheme> _allSchemes = [];
 
   // Animation
@@ -86,7 +94,8 @@ class _SchemeFinderScreenState extends State<SchemeFinderScreen>
   void _moveToNextState() {
     if (!_userProfile.isComplete()) {
       List<String> missing = _userProfile.getMissingFields();
-      if (missing.contains('age') && _currentState != ConversationState.askAge) {
+      if (missing.contains('age') &&
+          _currentState != ConversationState.askAge) {
         setState(() {
           _currentState = ConversationState.askAge;
         });
@@ -137,6 +146,10 @@ class _SchemeFinderScreenState extends State<SchemeFinderScreen>
       setState(() {
         _currentState = ConversationState.result;
         _isLoading = false;
+        _showSchemeSelection = true;
+        _selectedSchemes = List.generate(_recommendations.length, (_) => false);
+        _showEmailPrompt = false;
+        _emailResultMessage = null;
       });
 
       _speakMessage(ConversationState.result.getMessage());
@@ -149,8 +162,7 @@ class _SchemeFinderScreenState extends State<SchemeFinderScreen>
     }
   }
 
-  List<SchemeRecommendation> _getFallbackRecommendations(
-      List<Scheme> schemes) {
+  List<SchemeRecommendation> _getFallbackRecommendations(List<Scheme> schemes) {
     return schemes.take(3).map((scheme) {
       return SchemeRecommendation(
         scheme: scheme,
@@ -158,6 +170,55 @@ class _SchemeFinderScreenState extends State<SchemeFinderScreen>
         keyBenefits: scheme.benefits,
       );
     }).toList();
+  }
+
+  void _speakMessage(String message) {
+    _ttsService.speak(message);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Scheme Finder'),
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _buildStateCard(),
+            const SizedBox(height: 16),
+            _buildProfileCard(),
+            const SizedBox(height: 16),
+            if (_isLoading)
+              _buildLoadingIndicator()
+            else if (_currentState == ConversationState.result &&
+                _recommendations.isNotEmpty) ...[
+              if (_showSchemeSelection) _buildSchemeSelectionSection(),
+              if (_showEmailPrompt) ...[
+                const SizedBox(height: 16),
+                _buildEmailPromptSection(),
+              ],
+              if (_emailResultMessage != null) ...[
+                const SizedBox(height: 16),
+                Text(_emailResultMessage!,
+                    style: const TextStyle(color: Colors.green)),
+              ],
+              const SizedBox(height: 16),
+              ..._buildRecommendationCards(),
+            ] else if (_currentState == ConversationState.error)
+              _buildErrorCard(),
+            const SizedBox(height: 16),
+            _buildMicrophoneButton(),
+            if (_transcript.isNotEmpty) ...[
+              const SizedBox(height: 16),
+              _buildTranscriptCard(),
+            ],
+          ],
+        ),
+      ),
+    );
   }
 
   Future<void> _startListening() async {
@@ -212,51 +273,274 @@ class _SchemeFinderScreenState extends State<SchemeFinderScreen>
     });
   }
 
-  Future<void> _speakMessage(String message) async {
-    await _ttsService.speak(message);
-  }
-
-  @override
-  void dispose() {
-    _animationController.dispose();
-    _speechService.stopListening();
-    _ttsService.stop();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(AppStrings.findScheme),
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
+  Widget _buildSchemeSelectionSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Which scheme(s) do you want to save to “My Schemes”?',
+          style: Theme.of(context).textTheme.titleMedium,
+        ),
+        const SizedBox(height: 8),
+        SizedBox(
+          height: 140,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemCount: _recommendations.length,
+            separatorBuilder: (_, __) => const SizedBox(width: 12),
+            itemBuilder: (context, idx) {
+              final rec = _recommendations[idx];
+              final selected = _selectedSchemes[idx];
+              return GestureDetector(
+                onTap: () {
+                  setState(() {
+                    // Guard against index mismatch if recommendations update concurrently
+                    if (idx >= _selectedSchemes.length) {
+                      _selectedSchemes =
+                          List.generate(_recommendations.length, (_) => false);
+                    }
+                    _selectedSchemes[idx] = !_selectedSchemes[idx];
+                  });
+                },
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  width: 220,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: selected
+                        ? AppTheme.primaryColor.withOpacity(0.15)
+                        : Colors.white,
+                    border: Border.all(
+                      color: selected
+                          ? AppTheme.primaryColor
+                          : Colors.grey.shade300,
+                      width: selected ? 2 : 1,
+                    ),
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      if (selected)
+                        BoxShadow(
+                          color: AppTheme.primaryColor.withOpacity(0.08),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(
+                            selected
+                                ? Icons.check_circle
+                                : Icons.radio_button_unchecked,
+                            color:
+                                selected ? AppTheme.primaryColor : Colors.grey,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              rec.scheme.schemeName,
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: selected
+                                    ? AppTheme.primaryColor
+                                    : Colors.black87,
+                              ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        rec.scheme.department,
+                        style: Theme.of(context).textTheme.bodySmall,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        rec.keyBenefits,
+                        style: Theme.of(context).textTheme.bodySmall,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+        const SizedBox(height: 16),
+        Row(
           children: [
-            _buildStateCard(),
-            const SizedBox(height: 24),
-            _buildMicrophoneButton(),
-            const SizedBox(height: 24),
-            if (_transcript.isNotEmpty) _buildTranscriptCard(),
-            const SizedBox(height: 24),
-            if (_userProfile.age != null ||
-                _userProfile.district != null ||
-                _userProfile.annualIncome != null ||
-                _userProfile.category != null)
-              _buildProfileCard(),
-            const SizedBox(height: 24),
-            if (_isLoading) _buildLoadingIndicator(),
-            if (_currentState == ConversationState.result &&
-                _recommendations.isNotEmpty)
-              ..._buildRecommendationCards(),
-            if (_currentState == ConversationState.error)
-              _buildErrorCard(),
+            ElevatedButton(
+              onPressed: _selectedSchemes.any((s) => s)
+                  ? () {
+                      setState(() {
+                        _showSchemeSelection = false;
+                        _showEmailPrompt = true;
+                      });
+                    }
+                  : null,
+              child: const Text('Save to My Schemes'),
+            ),
+            const SizedBox(width: 12),
+            if (!_selectedSchemes.any((s) => s))
+              Expanded(
+                child: Text(
+                  'Select at least one scheme to enable saving.',
+                  style: Theme.of(context)
+                      .textTheme
+                      .bodySmall
+                      ?.copyWith(color: Colors.grey),
+                ),
+              ),
           ],
         ),
-      ),
+      ],
     );
+  }
+
+  Widget _buildEmailPromptSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Do you want to receive a detailed email for the selected scheme(s)?',
+          style: Theme.of(context).textTheme.bodyLarge,
+        ),
+        const SizedBox(height: 12),
+        if (_emailSending)
+          Row(
+            children: const [
+              SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(strokeWidth: 2)),
+              SizedBox(width: 12),
+              Text('Sending...'),
+            ],
+          )
+        else
+          Row(
+            children: [
+              ElevatedButton(
+                onPressed: () async {
+                  setState(() {
+                    _emailSending = true;
+                  });
+                  await _saveSelectedSchemesAndSendEmail(sendEmail: true);
+                  if (!mounted) return;
+                  setState(() {
+                    _showEmailPrompt = false;
+                    _emailSending = false;
+                  });
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                        content: Text(
+                            _emailResultMessage ?? 'Saved and email sent.')),
+                  );
+                },
+                child: const Text('Yes'),
+              ),
+              const SizedBox(width: 16),
+              ElevatedButton(
+                onPressed: () async {
+                  setState(() {
+                    _emailSending = true;
+                  });
+                  await _saveSelectedSchemesAndSendEmail(sendEmail: false);
+                  if (!mounted) return;
+                  setState(() {
+                    _showEmailPrompt = false;
+                    _emailSending = false;
+                  });
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                        content: Text(
+                            _emailResultMessage ?? 'Saved to My Schemes.')),
+                  );
+                },
+                child: const Text('No'),
+              ),
+            ],
+          ),
+      ],
+    );
+  }
+
+  Future<void> _saveSelectedSchemesAndSendEmail(
+      {required bool sendEmail}) async {
+    final auth = AuthService();
+    String userId = 'demo_user';
+    String userEmail = 'user@example.com';
+    String userName = 'User';
+
+    try {
+      if (auth.isFirebaseConfigured &&
+          auth.isAuthenticated &&
+          auth.currentUser != null) {
+        final u = auth.currentUser!;
+        userId = u.uid;
+        userEmail = u.email ?? userEmail;
+        userName = u.displayName ?? (u.email?.split('@').first ?? userName);
+      } else if (auth.demoUserData != null) {
+        final demo = auth.demoUserData!;
+        userId = demo['uid'] ?? userId;
+        userEmail = demo['email'] ?? userEmail;
+        userName = demo['displayName'] ?? userName;
+      }
+    } catch (_) {}
+
+    final selected = _recommendations
+        .asMap()
+        .entries
+        .where((e) => _selectedSchemes[e.key])
+        .map((e) => e.value.scheme)
+        .toList();
+
+    final firestoreService = FirestoreService();
+    final emailService = EmailService(
+      smtpHost: AppConfig.smtpHost,
+      smtpPort: AppConfig.smtpPort,
+      username: AppConfig.smtpUsername,
+      password: AppConfig.smtpPassword,
+      useTls: AppConfig.useTls,
+    );
+
+    int savedCount = 0;
+    for (final scheme in selected) {
+      final saved = await firestoreService.saveSchemeToUser(userId, scheme);
+      if (saved) savedCount++;
+      if (sendEmail) {
+        if (userEmail.isEmpty || userEmail.contains('@example.com')) {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content:
+                Text('Please update your email in Profile to receive mails.'),
+          ));
+          continue;
+        }
+
+        await emailService.sendSchemeDetails(
+          recipientEmail: userEmail,
+          recipientName: userName,
+          scheme: scheme,
+        );
+      }
+    }
+
+    setState(() {
+      _emailResultMessage = sendEmail
+          ? 'Saved $savedCount scheme(s) and sent email(s) successfully.'
+          : 'Saved $savedCount scheme(s) to My Schemes.';
+      // Reset selection state so UI reflects saved state and prevents stale indices
+      _selectedSchemes = List.generate(_recommendations.length, (_) => false);
+    });
   }
 
   Widget _buildStateCard() {
@@ -510,9 +794,3 @@ class _SchemeFinderScreenState extends State<SchemeFinderScreen>
     );
   }
 }
-
-
-
-
-
-

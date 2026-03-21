@@ -18,18 +18,46 @@ class AppConfig {
   static String get geminiApiKey => _geminiApiKey ?? '';
 
   /// Check if Gemini is configured
-  static bool get isGeminiConfigured => _geminiApiKey != null && _geminiApiKey!.isNotEmpty;
+  static bool get isGeminiConfigured =>
+      _geminiApiKey != null && _geminiApiKey!.isNotEmpty;
 
-  // Email SMTP Configuration - can be extended if needed
-  static String get smtpHost => 'smtp.gmail.com';
-  static int get smtpPort => 587;
-  static String get smtpUsername => '';
-  static String get smtpPassword => '';
-  static bool get useTls => true;
+  // Email SMTP Configuration
+  static String? _smtpHost;
+  static int? _smtpPort;
+  static String? _smtpUsername;
+  static String? _smtpPassword;
+  static bool? _smtpSecure;
+
+  static void setSmtpConfig({
+    required String host,
+    required int port,
+    required String username,
+    required String password,
+    required bool secure,
+  }) {
+    _smtpHost = host;
+    _smtpPort = port;
+    _smtpUsername = username;
+    _smtpPassword = password;
+    _smtpSecure = secure;
+  }
+
+  static String get smtpHost => _smtpHost ?? '';
+  static int get smtpPort => _smtpPort ?? 587;
+  static String get smtpUsername => _smtpUsername ?? '';
+  static String get smtpPassword => _smtpPassword ?? '';
+  static bool get useTls => _smtpSecure ?? true;
 
   // Check if Email is configured
-  static bool get isEmailConfigured => smtpUsername.isNotEmpty && smtpPassword.isNotEmpty;
+  static bool get isEmailConfigured =>
+      smtpUsername.isNotEmpty && smtpPassword.isNotEmpty;
 
-  // Admin password
-  static String get adminPassword => '';
+  // Admin password (for local/dev use only)
+  static String? _adminPassword;
+  static void setAdminPassword(String password) {
+    _adminPassword = password;
+  }
+
+  static String get adminPassword => _adminPassword ?? '';
+  static bool get isAdminConfigured => adminPassword.isNotEmpty;
 }

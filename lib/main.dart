@@ -10,7 +10,6 @@ import 'core/config/app_config.dart';
 import 'ui/screens/splash_screen.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
-
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -20,10 +19,31 @@ void main() async {
     final geminiKey = dotenv.env['GEMINI_API_KEY'] ?? '';
     AppConfig.setGeminiApiKey(geminiKey);
     if (geminiKey.isNotEmpty) {
-      debugPrint('✅ Gemini API key loaded (length: ${geminiKey.length})');
+      debugPrint('✅ Gemini API key loaded (length: \\${geminiKey.length})');
     } else {
       debugPrint('⚠️ Gemini API key not found in .env');
     }
+
+    // Load SMTP config
+    final smtpHost = dotenv.env['SMTP_HOST'] ?? 'smtp.gmail.com';
+    final smtpPort = int.tryParse(dotenv.env['SMTP_PORT'] ?? '587') ?? 587;
+    final smtpUser = dotenv.env['SMTP_USER'] ?? '';
+    final smtpPass = dotenv.env['SMTP_PASS'] ?? '';
+    final smtpSecure =
+        (dotenv.env['SMTP_SECURE'] ?? 'false').toLowerCase() == 'true';
+    AppConfig.setSmtpConfig(
+      host: smtpHost,
+      port: smtpPort,
+      username: smtpUser,
+      password: smtpPass,
+      secure: smtpSecure,
+    );
+    debugPrint(
+        '✅ SMTP config loaded: host=$smtpHost, port=$smtpPort, user=$smtpUser, secure=$smtpSecure');
+
+    // Load admin password (optional, local/dev only)
+    final adminPassword = dotenv.env['ADMIN_PASSWORD'] ?? '';
+    AppConfig.setAdminPassword(adminPassword);
   } catch (e) {
     debugPrint('⚠️ Could not load .env file: $e');
     AppConfig.setGeminiApiKey('');

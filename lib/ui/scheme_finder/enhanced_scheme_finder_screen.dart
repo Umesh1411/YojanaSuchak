@@ -5,12 +5,14 @@ import '../../services/speech_service.dart';
 import '../../services/tts_service.dart';
 import '../../services/data_service.dart';
 import '../../services/gemini_chat_service.dart';
+import '../../services/firestore_service.dart';
+import '../../services/email_service.dart';
 import '../../services/profile_extractor.dart';
 import '../../services/eligibility_filter.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/config/app_config.dart';
+import '../../core/services/auth_service.dart';
 import 'package:flutter/foundation.dart';
-
 
 /// ===============================================================
 /// ENHANCED SCHEME FINDER – GEMINI DRIVEN (SINGLE FILE VERSION)
@@ -25,6 +27,12 @@ class EnhancedSchemeFinderScreen extends StatefulWidget {
 
 class _EnhancedSchemeFinderScreenState extends State<EnhancedSchemeFinderScreen>
     with SingleTickerProviderStateMixin {
+  // Post-recommendation flow state
+  bool _showSchemeSelection = false;
+  bool _showEmailPrompt = false;
+  bool _emailSending = false;
+  String? _emailResultMessage;
+  List<bool> _selectedSchemes = [];
   // ------------------ Services ------------------
   final SpeechService _speechService = SpeechService();
   final TTSService _ttsService = TTSService();
@@ -44,11 +52,12 @@ class _EnhancedSchemeFinderScreenState extends State<EnhancedSchemeFinderScreen>
   bool _initialProblemCaptured = false; // True after first user message
   String? _initialProblemText; // Store first user message for context
   int _followUpCount = 0; // Track follow-up questions (soft limit at 5)
-  
+
   // NEW: Session-level state for intelligent questioning
   String? _sessionLanguage; // Lock language to first message (en/hi/mr)
   final Set<String> _askedQuestions = {}; // Track which questions were asked
-  Set<String> _requiredFields = {}; // Fields required by current matching schemes
+  Set<String> _requiredFields =
+      {}; // Fields required by current matching schemes
 
   final TextEditingController _textController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
@@ -68,7 +77,7 @@ class _EnhancedSchemeFinderScreenState extends State<EnhancedSchemeFinderScreen>
 
   Future<void> _init() async {
     debugPrint("🚀 _init() starting...");
-    
+
     // Initialize core services on all platforms
     final speechReady = await _speechService.initialize();
     await _ttsService.initialize();
@@ -106,7 +115,8 @@ class _EnhancedSchemeFinderScreenState extends State<EnhancedSchemeFinderScreen>
     // Add initial bot message after initialization
     // Per design: user describes freely first, no questions asked
     Future.microtask(() {
-      _addBot('Tell me about your situation or problem. I\'ll find schemes for you.');
+      _addBot(
+          'Tell me about your situation or problem. I\'ll find schemes for you.');
     });
   }
 
@@ -128,13 +138,14 @@ class _EnhancedSchemeFinderScreenState extends State<EnhancedSchemeFinderScreen>
       _sessionLanguage = detectedLanguage;
       debugPrint('🔒 Session language LOCKED: $_sessionLanguage');
     } else {
-      debugPrint('🌐 Using session language: $_sessionLanguage (detected: $detectedLanguage)');
+      debugPrint(
+          '🌐 Using session language: $_sessionLanguage (detected: $detectedLanguage)');
     }
 
     // Step 1: Extract profile fields intelligently (handles multi-field in single message)
     final parsed = ProfileExtractor.extractMultipleFields(message);
     ProfileExtractor.applyParsedToProfile(_profile, parsed);
-    
+
     if (parsed.isNotEmpty) {
       debugPrint('✅ Extracted fields: ${parsed.keys.join(", ")}');
       // Mark these fields as "answered" so we don't ask about them again
@@ -162,30 +173,32 @@ class _EnhancedSchemeFinderScreenState extends State<EnhancedSchemeFinderScreen>
     if (_initialProblemCaptured && _geminiReady) {
       final filteredSchemes = _filterSchemes();
       final profileMissing = _getProfileMissingFields();
-      
+
       // CRITICAL: Distinguish "no schemes matched" from "profile incomplete"
       final hasSchemes = filteredSchemes.isNotEmpty;
       final profileComplete = profileMissing.isEmpty;
-      
-      debugPrint('📊 State: hasSchemes=$hasSchemes, profileComplete=$profileComplete, followUp=$_followUpCount/5');
+
+      debugPrint(
+          '📊 State: hasSchemes=$hasSchemes, profileComplete=$profileComplete, followUp=$_followUpCount/5');
 
       // Compute which fields are required by schemes that DID match
-      _requiredFields = hasSchemes ? _computeRequiredFields(filteredSchemes) : <String>{};
+      _requiredFields =
+          hasSchemes ? _computeRequiredFields(filteredSchemes) : <String>{};
       debugPrint('📋 Required from schemes: $_requiredFields');
       debugPrint('📋 Missing from profile: $profileMissing');
-      
+
       // MERGED required fields: from schemes + profile missing
       // If schemes matched, prioritize their requirements
       // If no schemes matched, fall back to general profile missing fields
-      final mergedMissingFields = hasSchemes
-          ? _requiredFields.union(profileMissing)
-          : profileMissing;
-      
+      final mergedMissingFields =
+          hasSchemes ? _requiredFields.union(profileMissing) : profileMissing;
+
       // Compute which fields we haven't asked about yet
       final missingToAsk = mergedMissingFields
-          .where((field) => !_askedQuestions.contains(field) && !_isFieldFilled(field))
+          .where((field) =>
+              !_askedQuestions.contains(field) && !_isFieldFilled(field))
           .toSet();
-      
+
       debugPrint('❓ To ask: $missingToAsk (total asked: $_askedQuestions)');
 
       // DECISION LOGIC:
@@ -193,13 +206,14 @@ class _EnhancedSchemeFinderScreenState extends State<EnhancedSchemeFinderScreen>
       // 2. If profile complete BUT no schemes → ask 1-2 last-resort clarifying Qs (soft limit +2)
       // 3. If profile incomplete → ask missing fields (soft limit at 5, hard limit at 7)
       // 4. Never ask if missingToAsk is empty
-      
-      final shouldShowResults = (profileComplete && hasSchemes) || 
-                                (_followUpCount >= 7);
-      final allowEmergencyQuestions = !hasSchemes && profileComplete && _followUpCount < 7;
+
+      final shouldShowResults =
+          (profileComplete && hasSchemes) || (_followUpCount >= 7);
+      final allowEmergencyQuestions =
+          !hasSchemes && profileComplete && _followUpCount < 7;
       final normalQuestioning = !profileComplete && _followUpCount < 5;
       final softLimitReached = _followUpCount >= 5 && missingToAsk.length <= 1;
-      
+
       if (missingToAsk.isEmpty) {
         // No more fields to ask about
         debugPrint('🛑 No missing fields to ask');
@@ -217,8 +231,9 @@ class _EnhancedSchemeFinderScreenState extends State<EnhancedSchemeFinderScreen>
         await _showSchemeResults();
       } else if (normalQuestioning || allowEmergencyQuestions) {
         // Continue asking (normal mode or emergency mode)
-        debugPrint('❓ Asking follow-up (normal=$normalQuestioning, emergency=$allowEmergencyQuestions)');
-        
+        debugPrint(
+            '❓ Asking follow-up (normal=$normalQuestioning, emergency=$allowEmergencyQuestions)');
+
         final geminiDecision = await _askGeminiForNextStep(
           _sessionLanguage!,
           missingToAsk,
@@ -248,10 +263,12 @@ class _EnhancedSchemeFinderScreenState extends State<EnhancedSchemeFinderScreen>
           }
 
           _addBot(question);
-          debugPrint('❓ Follow-up $_followUpCount: $question (mode: ${allowEmergencyQuestions ? 'emergency' : 'normal'})');
+          debugPrint(
+              '❓ Follow-up $_followUpCount: $question (mode: ${allowEmergencyQuestions ? 'emergency' : 'normal'})');
         } else {
           // Unexpected format: treat as DONE
-          debugPrint('⚠️ Unexpected Gemini response: "$geminiDecision" — treating as DONE');
+          debugPrint(
+              '⚠️ Unexpected Gemini response: "$geminiDecision" — treating as DONE');
           _matchedSchemes = _rankSchemes(filteredSchemes);
           await _showSchemeResults();
         }
@@ -292,33 +309,38 @@ class _EnhancedSchemeFinderScreenState extends State<EnhancedSchemeFinderScreen>
         'category': 'caste/category',
       };
 
-      final missingFieldsList = missingFields
-          .map((f) => fieldLabels[f] ?? f)
-          .join(', ');
+      final missingFieldsList =
+          missingFields.map((f) => fieldLabels[f] ?? f).join(', ');
 
-      final languageName = sessionLanguage == 'hi' ? 'Hindi' : 
-                           sessionLanguage == 'mr' ? 'Marathi' : 'English';
+      final languageName = sessionLanguage == 'hi'
+          ? 'Hindi'
+          : sessionLanguage == 'mr'
+              ? 'Marathi'
+              : 'English';
 
       // Build context based on whether we have schemes or not
       String schemeSummary = '';
       String contextLine = '';
-      
+
       if (noSchemeContext || candidateSchemes.isEmpty) {
         // No schemes matched yet: general profile-building context
-        contextLine = 'No schemes matched your profile yet. Let\'s gather more information.';
+        contextLine =
+            'No schemes matched your profile yet. Let\'s gather more information.';
       } else {
         // Schemes exist: provide context
         schemeSummary = candidateSchemes
             .take(5)
-            .map((s) => 
+            .map((s) =>
                 '${s.schemeName} (occupation: ${s.occupationEligible}, minAge: ${s.minAge}, maxAge: ${s.maxAge}, maxIncome: ${s.maxIncomeINR}, category: ${s.categoryEligible})')
             .join('\n');
-        contextLine = 'Candidate Schemes (${candidateSchemes.length}):\n$schemeSummary\n';
+        contextLine =
+            'Candidate Schemes (${candidateSchemes.length}):\n$schemeSummary\n';
       }
 
       // IMPORTANT: Gemini is told EXACTLY which fields are missing and required
       // It MUST NOT invent eligibility rules or decide which schemes to recommend
-      final decisionPrompt = '''You are an eligibility assistant helping Indian citizens. Your role is ONLY to generate natural questions, NOT decide eligibility.
+      final decisionPrompt =
+          '''You are an eligibility assistant helping Indian citizens. Your role is ONLY to generate natural questions, NOT decide eligibility.
 
 Language: Respond ONLY in $languageName.
 
@@ -364,7 +386,8 @@ Do NOT include any other text.''';
   /// Display filtered schemes with explanations
   Future<void> _showSchemeResults() async {
     if (_matchedSchemes.isEmpty) {
-      _addBot("I found some schemes that may help you. I may need one or two more details to confirm eligibility.");
+      _addBot(
+          "I found some schemes that may help you. I may need one or two more details to confirm eligibility.");
       return;
     }
     _matchedSchemes = _rankSchemes(_matchedSchemes);
@@ -378,11 +401,13 @@ Do NOT include any other text.''';
       if (score < 20) {
         String note;
         if (_sessionLanguage == 'hi') {
-          note = 'नोट: यह योजना आंशिक रूप से मेल खाती है; कृपया पात्रता जाँचें।';
+          note =
+              'नोट: यह योजना आंशिक रूप से मेल खाती है; कृपया पात्रता जाँचें।';
         } else if (_sessionLanguage == 'mr') {
           note = 'टीप: ही योजना आंशिक जुळणारी आहे; कृपया पात्रता तपासा.';
         } else {
-          note = 'Note: This scheme is a partial match; please verify eligibility.';
+          note =
+              'Note: This scheme is a partial match; please verify eligibility.';
         }
         _addBot('${scheme.schemeName}: $note');
       }
@@ -394,7 +419,10 @@ Do NOT include any other text.''';
             scheme: scheme,
           );
           // Ensure explanation starts with scheme name for consistent formatting
-          if (!explanation.trim().toLowerCase().startsWith(scheme.schemeName.toLowerCase())) {
+          if (!explanation
+              .trim()
+              .toLowerCase()
+              .startsWith(scheme.schemeName.toLowerCase())) {
             explanation = '${scheme.schemeName}: ' + explanation.trim();
           }
           _addBot(explanation);
@@ -406,6 +434,15 @@ Do NOT include any other text.''';
         _addBot('${scheme.schemeName}: This scheme matches your profile.');
       }
     }
+
+    // After showing recommendations, start post-recommendation flow
+    setState(() {
+      _showSchemeSelection = true;
+      _showEmailPrompt = false;
+      _emailSending = false;
+      _emailResultMessage = null;
+      _selectedSchemes = List.generate(_matchedSchemes.length, (_) => false);
+    });
   }
 
   // (Removed local Gemini caller and local parser; profile parsing is handled
@@ -423,7 +460,8 @@ Do NOT include any other text.''';
         _profile,
         initialProblemText: _initialProblemText,
       );
-      debugPrint('🔍 Filtered ${_allSchemes.length} → ${filtered.length} schemes');
+      debugPrint(
+          '🔍 Filtered ${_allSchemes.length} → ${filtered.length} schemes');
       return filtered;
     } catch (e) {
       debugPrint('⚠️ EligibilityFilter error: $e — returning all schemes');
@@ -469,7 +507,9 @@ Do NOT include any other text.''';
         required.add('location');
       }
       // If scheme explicitly mentions district-level eligibility in otherEligibilityCriteria or remarks, require location
-      final otherLower = scheme.otherEligibilityCriteria.toLowerCase() + ' ' + scheme.remarks.toLowerCase();
+      final otherLower = scheme.otherEligibilityCriteria.toLowerCase() +
+          ' ' +
+          scheme.remarks.toLowerCase();
       if (otherLower.contains('district')) {
         required.add('location');
       }
@@ -508,10 +548,14 @@ Do NOT include any other text.''';
     final missing = _profile.getMissingFields();
     final mapped = <String>{};
     for (final field in missing) {
-      if (field == 'age') mapped.add('age');
-      else if (field == 'gender') mapped.add('gender');
-      else if (field == 'occupation') mapped.add('occupation');
-      else if (field == 'location') mapped.add('location');
+      if (field == 'age')
+        mapped.add('age');
+      else if (field == 'gender')
+        mapped.add('gender');
+      else if (field == 'occupation')
+        mapped.add('occupation');
+      else if (field == 'location')
+        mapped.add('location');
       else if (field == 'annualIncome') {
         // Avoid asking income initially for students/unemployed
         final occ = (_profile.occupation ?? '').toLowerCase();
@@ -538,26 +582,39 @@ Do NOT include any other text.''';
 
       // +30 Occupation match (HIGHEST PRIORITY)
       if (_profile.occupation != null && _profile.occupation!.isNotEmpty) {
-        if (s.occupationEligible.toLowerCase().contains(_profile.occupation!.toLowerCase())) {
+        if (s.occupationEligible
+            .toLowerCase()
+            .contains(_profile.occupation!.toLowerCase())) {
           score += 30;
         }
       }
 
       // +20 BeneficiaryType / targetGroup match
       if (_profile.occupation != null && _profile.occupation!.isNotEmpty) {
-        if (s.beneficiaryType.toLowerCase().contains(_profile.occupation!.toLowerCase())) {
+        if (s.beneficiaryType
+            .toLowerCase()
+            .contains(_profile.occupation!.toLowerCase())) {
           score += 20;
         }
       }
       if (_profile.category != null && _profile.category!.isNotEmpty) {
-        if (s.beneficiaryType.toLowerCase().contains(_profile.category!.toLowerCase())) {
+        if (s.beneficiaryType
+            .toLowerCase()
+            .contains(_profile.category!.toLowerCase())) {
           score += 20;
         }
       }
 
       // +15 BenefitType matches problem intent
       final intentKeywords = {
-        'education': ['education', 'scholarship', 'fees', 'school', 'college', 'study'],
+        'education': [
+          'education',
+          'scholarship',
+          'fees',
+          'school',
+          'college',
+          'study'
+        ],
         'agriculture': ['farmer', 'agriculture', 'crop', 'seeds', 'farming'],
         'pension': ['pension', 'elderly', 'senior', 'old'],
         'housing': ['house', 'housing', 'home'],
@@ -572,15 +629,20 @@ Do NOT include any other text.''';
 
       // +10 Category/caste match
       if (_profile.category != null) {
-        if (s.casteEligible.toLowerCase().contains(_profile.category!.toLowerCase()) ||
-            s.categoryEligible.toLowerCase().contains(_profile.category!.toLowerCase())) {
+        if (s.casteEligible
+                .toLowerCase()
+                .contains(_profile.category!.toLowerCase()) ||
+            s.categoryEligible
+                .toLowerCase()
+                .contains(_profile.category!.toLowerCase())) {
           score += 10;
         }
       }
 
       // +5 Age match
       if (_profile.age != null && (s.minAge != null || s.maxAge != null)) {
-        if ((s.minAge == null || _profile.age! >= s.minAge!) && (s.maxAge == null || _profile.age! <= s.maxAge!)) {
+        if ((s.minAge == null || _profile.age! >= s.minAge!) &&
+            (s.maxAge == null || _profile.age! <= s.maxAge!)) {
           score += 5;
         }
       }
@@ -592,13 +654,17 @@ Do NOT include any other text.''';
 
       // -30 Penalty: health schemes when intent is NOT health
       final benefitLower = s.benefitType.toLowerCase();
-      if (!problem.contains('health') && !problem.contains('illness') && benefitLower.contains('health')) {
+      if (!problem.contains('health') &&
+          !problem.contains('illness') &&
+          benefitLower.contains('health')) {
         score -= 30;
       }
       if (problem.contains('education') && benefitLower.contains('health')) {
         score -= 30;
       }
-      if (problem.contains('farmer') && benefitLower.contains('health') && !problem.contains('health')) {
+      if (problem.contains('farmer') &&
+          benefitLower.contains('health') &&
+          !problem.contains('health')) {
         score -= 30;
       }
 
@@ -607,10 +673,9 @@ Do NOT include any other text.''';
     }
 
     scored.sort((a, b) => b.value.compareTo(a.value));
-    _schemeScores = { for (final e in scored) e.key.schemeId : e.value };
+    _schemeScores = {for (final e in scored) e.key.schemeId: e.value};
     return scored.map((e) => e.key).toList();
   }
-
 
   // ===============================================================
   // UI HELPERS
@@ -690,7 +755,6 @@ Do NOT include any other text.''';
     }
   }
 
-
   void _stopListening() {
     _speechService.stopListening();
     setState(() {
@@ -721,10 +785,205 @@ Do NOT include any other text.''';
               itemBuilder: (_, i) => _bubble(_messages[i]),
             ),
           ),
+          if (_showSchemeSelection && _matchedSchemes.isNotEmpty)
+            _buildSchemeSelectionSection(),
+          if (_showEmailPrompt) _buildEmailPromptSection(),
+          if (_emailSending)
+            const Padding(
+              padding: EdgeInsets.all(8.0),
+              child: CircularProgressIndicator(),
+            ),
+          if (_emailResultMessage != null)
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Text(_emailResultMessage!,
+                  style: TextStyle(color: Colors.green)),
+            ),
           _inputArea(),
         ],
       ),
     );
+  }
+
+  Widget _buildSchemeSelectionSection() {
+    return Card(
+      margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Which scheme(s) do you want to save to “My Schemes”?',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            ..._matchedSchemes.asMap().entries.map((entry) {
+              int idx = entry.key;
+              final scheme = entry.value;
+              return CheckboxListTile(
+                value: _selectedSchemes[idx],
+                onChanged: (val) {
+                  setState(() {
+                    // Guard against index mismatch if matched schemes update concurrently
+                    if (idx >= _selectedSchemes.length) {
+                      _selectedSchemes =
+                          List.generate(_matchedSchemes.length, (_) => false);
+                    }
+                    _selectedSchemes[idx] = val ?? false;
+                  });
+                },
+                title: Text(scheme.schemeName),
+                subtitle: Text(scheme.department),
+              );
+            }).toList(),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                ElevatedButton(
+                  onPressed: () {
+                    final anySelected = _selectedSchemes.any((s) => s);
+                    if (!anySelected) {
+                      setState(() {
+                        _showSchemeSelection = false;
+                        _showEmailPrompt = false;
+                        _emailResultMessage =
+                            'You did not select any scheme. Thank you for using the assistant.';
+                      });
+                      return;
+                    }
+                    setState(() {
+                      _showSchemeSelection = false;
+                      _showEmailPrompt = true;
+                    });
+                  },
+                  child: const Text('Save to My Schemes'),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmailPromptSection() {
+    return Card(
+      margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Do you want to receive a detailed email for the selected scheme(s)?',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                ElevatedButton(
+                  onPressed: () async {
+                    setState(() {
+                      _emailSending = true;
+                    });
+                    await _saveSelectedSchemesAndSendEmail(sendEmail: true);
+                    setState(() {
+                      _showEmailPrompt = false;
+                      _emailSending = false;
+                    });
+                  },
+                  child: const Text('Yes'),
+                ),
+                const SizedBox(width: 16),
+                ElevatedButton(
+                  onPressed: () async {
+                    setState(() {
+                      _emailSending = true;
+                    });
+                    await _saveSelectedSchemesAndSendEmail(sendEmail: false);
+                    setState(() {
+                      _showEmailPrompt = false;
+                      _emailSending = false;
+                    });
+                  },
+                  child: const Text('No'),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _saveSelectedSchemesAndSendEmail(
+      {required bool sendEmail}) async {
+    final auth = AuthService();
+    String userId = 'demo_user';
+    String userEmail = 'user@example.com';
+    String userName = 'User';
+
+    try {
+      if (auth.isFirebaseConfigured &&
+          auth.isAuthenticated &&
+          auth.currentUser != null) {
+        final u = auth.currentUser!;
+        userId = u.uid;
+        userEmail = u.email ?? userEmail;
+        userName = u.displayName ?? (u.email?.split('@').first ?? userName);
+      } else if (auth.demoUserData != null) {
+        final demo = auth.demoUserData!;
+        userId = demo['uid'] ?? userId;
+        userEmail = demo['email'] ?? userEmail;
+        userName = demo['displayName'] ?? userName;
+      }
+    } catch (_) {}
+
+    final selected = _matchedSchemes
+        .asMap()
+        .entries
+        .where((e) => _selectedSchemes[e.key])
+        .map((e) => e.value)
+        .toList();
+
+    final firestoreService = FirestoreService();
+    final emailService = EmailService(
+      smtpHost: AppConfig.smtpHost,
+      smtpPort: AppConfig.smtpPort,
+      username: AppConfig.smtpUsername,
+      password: AppConfig.smtpPassword,
+      useTls: AppConfig.useTls,
+    );
+
+    int savedCount = 0;
+    for (final scheme in selected) {
+      final saved = await firestoreService.saveSchemeToUser(userId, scheme);
+      if (saved) savedCount++;
+      if (sendEmail) {
+        if (userEmail.isEmpty || userEmail.contains('@example.com')) {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content:
+                Text('Please update your email in Profile to receive mails.'),
+          ));
+          continue;
+        }
+
+        await emailService.sendSchemeDetails(
+          recipientEmail: userEmail,
+          recipientName: userName,
+          scheme: scheme,
+        );
+      }
+    }
+
+    setState(() {
+      _emailResultMessage = sendEmail
+          ? 'Saved $savedCount scheme(s) and sent email(s) successfully.'
+          : 'Saved $savedCount scheme(s) to My Schemes.';
+      // Reset selection state to prevent stale selection state
+      _selectedSchemes = List.generate(_matchedSchemes.length, (_) => false);
+    });
   }
 
   Widget _bubble(_ChatMessage m) {

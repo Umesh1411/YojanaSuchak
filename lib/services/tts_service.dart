@@ -15,9 +15,9 @@ class TTSService {
 
     try {
       // Check if TTS is available on this platform
-      _isAvailable = await _flutterTts.isLanguageAvailable('en-US') || 
-                     await _flutterTts.isLanguageAvailable('en-IN');
-      
+      _isAvailable = await _flutterTts.isLanguageAvailable('en-US') ||
+          await _flutterTts.isLanguageAvailable('en-IN');
+
       // On web, TTS might not be available immediately
       if (kIsWeb && !_isAvailable) {
         // Try to initialize with default settings
@@ -32,9 +32,10 @@ class TTSService {
       // Get current language and set TTS language accordingly
       final locale = await LanguageService.getCurrentLanguage();
       String ttsLanguage = _getTtsLanguageCode(locale);
-      
+
       await _flutterTts.setLanguage(ttsLanguage);
-      await _flutterTts.setSpeechRate(1.3); // Faster speech rate for better user experience
+      await _flutterTts
+          .setSpeechRate(1.0); // Normal speech rate for better user experience
       await _flutterTts.setVolume(1.0);
       await _flutterTts.setPitch(1.0);
 

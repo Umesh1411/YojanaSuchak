@@ -100,12 +100,76 @@ exports.onNewSchemeAdded = functions.firestore
         </html>
       `;
 
-      // Send notifications to all subscribed users
-      const promises = [];
+      // Filter subscribed users by eligibility for this scheme
+      function isUserEligibleForScheme(userData, scheme) {
+        try {
+          // Parse numeric fields safely
+          const age = userData.age !== undefined && userData.age !== null ? Number(userData.age) : null;
+          const income = userData.annualIncome !== undefined && userData.annualIncome !== null ? Number(userData.annualIncome) : null;
 
+          // Age check
+          if (age !== null && (scheme.minAge !== undefined || scheme.maxAge !== undefined)) {
+            if (scheme.minAge !== undefined && age < Number(scheme.minAge)) return false;
+            if (scheme.maxAge !== undefined && age > Number(scheme.maxAge)) return false;
+          }
+
+          // Income check
+          if (income !== null && scheme.maxIncomeINR !== undefined && scheme.maxIncomeINR !== null) {
+            if (income > Number(scheme.maxIncomeINR)) return false;
+          }
+
+          // Occupation / beneficiary type
+          const occ = (userData.occupation || '').toString().toLowerCase();
+          const occReq = (scheme.occupationEligible || '').toString().toLowerCase();
+          if (occReq && occReq !== 'any' && occReq !== 'not applicable') {
+            if (!(occ && occ.includes(occReq)) && !(occReq && occReq.includes(occ))) return false;
+          }
+
+          // Category / caste
+          const category = (userData.category || '').toString().toLowerCase();
+          const catReq = (scheme.categoryEligible || '').toString().toLowerCase();
+          if (catReq && catReq !== 'all') {
+            if (!(category && category.includes(catReq)) && !(catReq && catReq.includes(category))) return false;
+          }
+
+          // Gender
+          const gender = (userData.gender || '').toString().toLowerCase();
+          const genderReq = (scheme.genderEligible || '').toString().toLowerCase();
+          if (genderReq && genderReq !== 'all') {
+            if (!(gender && gender.includes(genderReq)) && !(genderReq && genderReq.includes(gender))) return false;
+          }
+
+          // State / location
+          const state = (userData.state || 'India').toString().toLowerCase();
+          const schemeState = (scheme.state || 'India').toString().toLowerCase();
+          if (schemeState && schemeState !== 'india') {
+            if (!(state && state.includes(schemeState)) && !(schemeState && schemeState.includes(state))) return false;
+          }
+
+          return true;
+        } catch (e) {
+          console.error('Eligibility check error:', e);
+          return false;
+        }
+      }
+
+      const eligibleUsers = [];
       usersSnapshot.forEach((userDoc) => {
         const userData = userDoc.data();
         const userId = userDoc.id;
+        if (isUserEligibleForScheme(userData, newScheme)) {
+          eligibleUsers.push({ id: userId, data: userData });
+        }
+      });
+
+      console.log(`🔎 Eligible users for this scheme: ${eligibleUsers.length}`);
+
+      // Send notifications to eligible users
+      const promises = [];
+
+      eligibleUsers.forEach((entry) => {
+        const userData = entry.data;
+        const userId = entry.id;
 
         // Send email notification
         if (userData.email) {

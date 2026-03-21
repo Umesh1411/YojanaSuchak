@@ -15,16 +15,13 @@ class FirestoreService {
     }
 
     try {
-      final QuerySnapshot snapshot = await _firestore
-          .collection('schemes')
-          .get();
+      final QuerySnapshot snapshot =
+          await _firestore.collection('schemes').get();
 
-      _cachedSchemes = snapshot.docs
-          .map((doc) {
-            final data = doc.data() as Map<String, dynamic>;
-            return Scheme.fromJson(data);
-          })
-          .toList();
+      _cachedSchemes = snapshot.docs.map((doc) {
+        final data = doc.data() as Map<String, dynamic>;
+        return Scheme.fromJson(data);
+      }).toList();
 
       return _cachedSchemes ?? [];
     } catch (e) {
@@ -36,10 +33,7 @@ class FirestoreService {
   /// Fetch a specific scheme by ID
   Future<Scheme?> fetchSchemeById(String schemeId) async {
     try {
-      final doc = await _firestore
-          .collection('schemes')
-          .doc(schemeId)
-          .get();
+      final doc = await _firestore.collection('schemes').doc(schemeId).get();
 
       if (doc.exists) {
         final data = doc.data() as Map<String, dynamic>;
@@ -57,7 +51,7 @@ class FirestoreService {
     try {
       // Generate a unique document ID based on scheme name
       final schemeId = _generateSchemeId(scheme.schemeName);
-      
+
       await _firestore
           .collection('users')
           .doc(userId)
@@ -71,7 +65,8 @@ class FirestoreService {
         'documents': {}, // Document checklist - will be populated by user
       }, SetOptions(merge: true));
 
-      debugPrint('✅ Scheme saved successfully: ${scheme.schemeName} for user: $userId');
+      debugPrint(
+          '✅ Scheme saved successfully: ${scheme.schemeName} for user: $userId');
       return true;
     } catch (e, stackTrace) {
       debugPrint('❌ Error saving scheme to user: $e');
@@ -92,7 +87,7 @@ class FirestoreService {
         'progress': progress,
         'updatedAt': FieldValue.serverTimestamp(),
       };
-      
+
       if (documents != null) {
         updateData['documents'] = documents;
       }
@@ -138,9 +133,7 @@ class FirestoreService {
   Future<List<Scheme>> getUserSavedSchemes(String userId) async {
     try {
       final mySchemes = await getUserMySchemes(userId);
-      final schemes = mySchemes
-          .map((data) => Scheme.fromJson(data))
-          .toList();
+      final schemes = mySchemes.map((data) => Scheme.fromJson(data)).toList();
 
       debugPrint('✅ Loaded ${schemes.length} saved schemes for user: $userId');
       return schemes;
@@ -190,21 +183,41 @@ class FirestoreService {
 
   /// Generate a unique ID for a scheme based on its name
   String _generateSchemeId(String schemeName) {
-    // Convert scheme name to a valid document ID
-    return schemeName
+    // Sanitize name then truncate the sanitized value (avoid range errors)
+    var sanitized = schemeName
         .toLowerCase()
         .replaceAll(RegExp(r'[^a-z0-9\s-]'), '')
         .replaceAll(RegExp(r'\s+'), '_')
-        .substring(0, schemeName.length > 50 ? 50 : schemeName.length);
+        .replaceAll(RegExp(r'_+'), '_')
+        .trim();
+
+    // Remove leading/trailing underscores
+    sanitized = sanitized.replaceAll(RegExp(r'^_+|_+$'), '');
+
+    if (sanitized.isEmpty) {
+      // Fallback id when name sanitizes to empty
+      sanitized = 'scheme_${DateTime.now().millisecondsSinceEpoch}';
+    }
+
+    // Truncate safely
+    final end = sanitized.length > 50 ? 50 : sanitized.length;
+    try {
+      final result = sanitized.substring(0, end);
+      debugPrint(
+          '🔧 _generateSchemeId -> sanitized: "$sanitized" (len=${sanitized.length}), end=$end, result: "$result"');
+      return result;
+    } catch (e) {
+      // In the unlikely event of a substring error, return a safe fallback id
+      debugPrint('⚠️ _generateSchemeId fallback due to: $e');
+      return 'scheme_${DateTime.now().millisecondsSinceEpoch}';
+    }
   }
 
   /// Save or update user profile
-  Future<bool> saveUserProfile(String userId, Map<String, dynamic> profileData) async {
+  Future<bool> saveUserProfile(
+      String userId, Map<String, dynamic> profileData) async {
     try {
-      await _firestore
-          .collection('users')
-          .doc(userId)
-          .set({
+      await _firestore.collection('users').doc(userId).set({
         ...profileData,
         'updatedAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
@@ -221,10 +234,7 @@ class FirestoreService {
   /// Get user profile from Firestore
   Future<Map<String, dynamic>?> getUserProfile(String userId) async {
     try {
-      final doc = await _firestore
-          .collection('users')
-          .doc(userId)
-          .get();
+      final doc = await _firestore.collection('users').doc(userId).get();
 
       if (doc.exists) {
         return doc.data();
@@ -241,6 +251,3 @@ class FirestoreService {
     _cachedSchemes = null;
   }
 }
-
-
-
