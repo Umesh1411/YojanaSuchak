@@ -35,7 +35,7 @@ class TTSService {
 
       await _flutterTts.setLanguage(ttsLanguage);
       await _flutterTts
-          .setSpeechRate(1.0); // Normal speech rate for better user experience
+          .setSpeechRate(0.5); // 0.5 is normal speed for Android
       await _flutterTts.setVolume(1.0);
       await _flutterTts.setPitch(1.0);
 

@@ -366,6 +366,7 @@ Do NOT include any other text.''';
         userMessage: decisionPrompt,
         profile: _profile,
         availableSchemes: candidateSchemes,
+        sessionLanguage: sessionLanguage,
       );
 
       // Parse response strictly
@@ -373,9 +374,9 @@ Do NOT include any other text.''';
       if (trimmed.startsWith('ASK:') || trimmed == 'DONE') {
         return trimmed;
       } else {
-        // Invalid format — treat as DONE to prevent infinite loops
-        debugPrint('⚠️ Gemini format invalid: "$trimmed" — treating as DONE');
-        return 'DONE';
+        // If Gemini forgot the ASK: prefix but wrote a question, accept it
+        debugPrint('⚠️ Gemini missing prefix: "$trimmed" — treating as question');
+        return 'ASK: $trimmed';
       }
     } catch (e) {
       debugPrint('❌ Gemini error: $e');
@@ -769,6 +770,12 @@ Do NOT include any other text.''';
       appBar: AppBar(
         title: const Text('Find Schemes'),
         actions: [
+          if (_voiceMode)
+            IconButton(
+              icon: const Icon(Icons.volume_off),
+              tooltip: 'Skip audio / Stop TTS',
+              onPressed: () => _ttsService.stop(),
+            ),
           IconButton(
             icon: Icon(_voiceMode ? Icons.mic : Icons.keyboard),
             onPressed: () => setState(() => _voiceMode = !_voiceMode),
@@ -777,142 +784,139 @@ Do NOT include any other text.''';
       ),
       body: Column(
         children: [
-          Expanded(
-            child: ListView.builder(
-              controller: _scrollController,
-              padding: const EdgeInsets.all(16),
-              itemCount: _messages.length,
-              itemBuilder: (_, i) => _bubble(_messages[i]),
-            ),
-          ),
-          if (_showSchemeSelection && _matchedSchemes.isNotEmpty)
-            _buildSchemeSelectionSection(),
-          if (_showEmailPrompt) _buildEmailPromptSection(),
-          if (_emailSending)
-            const Padding(
-              padding: EdgeInsets.all(8.0),
-              child: CircularProgressIndicator(),
-            ),
+          if (_emailSending) const LinearProgressIndicator(),
           if (_emailResultMessage != null)
             Padding(
               padding: const EdgeInsets.all(8.0),
               child: Text(_emailResultMessage!,
-                  style: TextStyle(color: Colors.green)),
+                  style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
             ),
-          _inputArea(),
+          Expanded(
+            child: ListView.builder(
+              controller: _scrollController,
+              padding: const EdgeInsets.all(16),
+              itemCount: _messages.length + (_showSchemeSelection && _matchedSchemes.isNotEmpty ? 1 : 0),
+              itemBuilder: (_, i) {
+                if (i < _messages.length) {
+                  return _bubble(_messages[i]);
+                } else {
+                  return Padding(
+                    padding: const EdgeInsets.only(top: 16.0),
+                    child: _buildSaveCard(),
+                  );
+                }
+              },
+            ),
+          ),
+          SafeArea(child: _inputArea()),
         ],
       ),
     );
   }
 
-  Widget _buildSchemeSelectionSection() {
-    return Card(
-      margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Which scheme(s) do you want to save to “My Schemes”?',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8),
-            ..._matchedSchemes.asMap().entries.map((entry) {
-              int idx = entry.key;
-              final scheme = entry.value;
-              return CheckboxListTile(
-                value: _selectedSchemes[idx],
-                onChanged: (val) {
-                  setState(() {
-                    // Guard against index mismatch if matched schemes update concurrently
-                    if (idx >= _selectedSchemes.length) {
-                      _selectedSchemes =
-                          List.generate(_matchedSchemes.length, (_) => false);
-                    }
-                    _selectedSchemes[idx] = val ?? false;
-                  });
-                },
-                title: Text(scheme.schemeName),
-                subtitle: Text(scheme.department),
-              );
-            }).toList(),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                ElevatedButton(
-                  onPressed: () {
-                    final anySelected = _selectedSchemes.any((s) => s);
-                    if (!anySelected) {
-                      setState(() {
-                        _showSchemeSelection = false;
-                        _showEmailPrompt = false;
-                        _emailResultMessage =
-                            'You did not select any scheme. Thank you for using the assistant.';
-                      });
-                      return;
-                    }
-                    setState(() {
-                      _showSchemeSelection = false;
-                      _showEmailPrompt = true;
-                    });
-                  },
-                  child: const Text('Save to My Schemes'),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+  Widget _buildSaveCard() {
+    final anySelected = _selectedSchemes.any((s) => s);
+    final selectedCount = _selectedSchemes.where((s) => s).length;
+    final titleText = _sessionLanguage == 'hi' 
+        ? 'योजनाएं सहेजें' 
+        : _sessionLanguage == 'mr' 
+            ? 'योजना जतन करा' 
+            : 'Save Schemes';
+    final subText = _sessionLanguage == 'hi'
+        ? '🔖 चुनें, फिर सेव या ईमेल करें'
+        : _sessionLanguage == 'mr'
+            ? '🔖 निवडा, नंतर जतन करा किंवा ईमेल करा'
+            : 'Tap 🔖 to select, then save or email';
 
-  Widget _buildEmailPromptSection() {
     return Card(
-      margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Do you want to receive a detailed email for the selected scheme(s)?',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                ElevatedButton(
-                  onPressed: () async {
-                    setState(() {
-                      _emailSending = true;
-                    });
-                    await _saveSelectedSchemesAndSendEmail(sendEmail: true);
-                    setState(() {
-                      _showEmailPrompt = false;
-                      _emailSending = false;
-                    });
-                  },
-                  child: const Text('Yes'),
+      elevation: 4,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: AppTheme.primaryColor.withOpacity(0.4), width: 1.5),
+      ),
+      child: ExpansionTile(
+        initiallyExpanded: true,
+        leading: const Icon(Icons.bookmark_add_outlined, color: AppTheme.primaryColor),
+        title: Text(
+          anySelected ? '$titleText  (✓ $selectedCount)' : titleText,
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            color: AppTheme.primaryColor,
+          ),
+        ),
+        subtitle: Text(subText),
+        children: [
+          ..._matchedSchemes.asMap().entries.map((entry) {
+            int idx = entry.key;
+            final scheme = entry.value;
+            final selected = _selectedSchemes.length > idx && _selectedSchemes[idx];
+            return ListTile(
+              onTap: () {
+                setState(() {
+                  if (_selectedSchemes.length > idx) {
+                    _selectedSchemes[idx] = !_selectedSchemes[idx];
+                  }
+                });
+              },
+              leading: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 200),
+                child: Icon(
+                  selected ? Icons.bookmark : Icons.bookmark_border,
+                  key: ValueKey(selected),
+                  color: selected ? AppTheme.primaryColor : Colors.grey,
                 ),
-                const SizedBox(width: 16),
-                ElevatedButton(
-                  onPressed: () async {
-                    setState(() {
-                      _emailSending = true;
-                    });
-                    await _saveSelectedSchemesAndSendEmail(sendEmail: false);
-                    setState(() {
-                      _showEmailPrompt = false;
-                      _emailSending = false;
-                    });
-                  },
-                  child: const Text('No'),
+              ),
+              title: Text(
+                scheme.schemeName,
+                style: TextStyle(
+                  fontWeight: selected ? FontWeight.bold : FontWeight.normal,
+                  color: selected ? AppTheme.primaryColor : Colors.black87,
+                ),
+              ),
+              subtitle: Text(scheme.department, style: const TextStyle(fontSize: 12)),
+              trailing: selected
+                  ? const Icon(Icons.check_circle, color: Colors.green, size: 20)
+                  : null,
+            );
+          }),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                ElevatedButton.icon(
+                  onPressed: anySelected && !_emailSending
+                      ? () async {
+                          setState(() => _emailSending = true);
+                          await _saveSelectedSchemesAndSendEmail(sendEmail: false);
+                        }
+                      : null,
+                  icon: const Icon(Icons.bookmark_add),
+                  label: Text(_sessionLanguage == 'hi' ? 'सहेजें (Save)' : _sessionLanguage == 'mr' ? 'जतन करा (Save)' : 'Save to My Schemes'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.primaryColor,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                OutlinedButton.icon(
+                  onPressed: anySelected && !_emailSending
+                      ? () async {
+                          setState(() => _emailSending = true);
+                          await _saveSelectedSchemesAndSendEmail(sendEmail: true);
+                        }
+                      : null,
+                  icon: const Icon(Icons.email_outlined),
+                  label: Text(_sessionLanguage == 'hi' ? 'ईमेल करें (Email)' : _sessionLanguage == 'mr' ? 'ईमेल करा (Email)' : 'Save & Email Me'),
+                  style: OutlinedButton.styleFrom(
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
                 ),
               ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

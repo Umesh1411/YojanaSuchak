@@ -187,8 +187,10 @@ class _SchemeFinderScreenState extends State<SchemeFinderScreen>
       await Future.delayed(const Duration(milliseconds: 500));
     }
     if (!mounted) return;
-    // Show as a draggable bottom sheet once TTS finishes
-    _showSelectionBottomSheet();
+    // Just reveal the scheme cards with checkboxes — no popup
+    setState(() {
+      _showSchemeSelection = true;
+    });
   }
 
   void _showSelectionBottomSheet() {
@@ -363,33 +365,32 @@ class _SchemeFinderScreenState extends State<SchemeFinderScreen>
       appBar: AppBar(
         title: const Text('Scheme Finder'),
       ),
-      // Bottom bar with text input and mic — always visible above keyboard
-      bottomNavigationBar: Padding(
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.of(context).viewInsets.bottom + 8,
-          left: 12, right: 12, top: 4,
-        ),
-        child: Row(
-          children: [
-            Expanded(
-              child: TextField(
-                controller: _textController,
-                decoration: InputDecoration(
-                  hintText: _isListening ? 'Listening...' : 'Type your answer or tap 🎤',
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(24)),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                  suffixIcon: IconButton(
-                    icon: const Icon(Icons.send),
-                    onPressed: () => _handleTextInput(_textController.text),
+      // Simple bottom bar: mic button + text input
+      bottomNavigationBar: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
+          child: Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _textController,
+                  decoration: InputDecoration(
+                    hintText: _isListening ? 'Listening...' : 'Type your answer or tap 🎤',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(24)),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                    suffixIcon: IconButton(
+                      icon: const Icon(Icons.send),
+                      onPressed: () => _handleTextInput(_textController.text),
+                    ),
                   ),
+                  textInputAction: TextInputAction.send,
+                  onSubmitted: _handleTextInput,
                 ),
-                textInputAction: TextInputAction.send,
-                onSubmitted: _handleTextInput,
               ),
-            ),
-            const SizedBox(width: 8),
-            _buildMicrophoneButton(),
-          ],
+              const SizedBox(width: 8),
+              _buildMicrophoneButton(),
+            ],
+          ),
         ),
       ),
       body: SingleChildScrollView(
@@ -404,26 +405,141 @@ class _SchemeFinderScreenState extends State<SchemeFinderScreen>
             if (_isLoading)
               _buildLoadingIndicator()
             else if (_currentState == ConversationState.result && _recommendations.isNotEmpty) ...[
-              // Show a recap button to re-open the selection sheet
-              ElevatedButton.icon(
-                onPressed: _showSelectionBottomSheet,
-                icon: const Icon(Icons.check_box_outlined),
-                label: const Text('Select / Save Schemes'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.primaryColor,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                ),
-              ),
-              if (_emailResultMessage != null) ...[const SizedBox(height: 8), Text(_emailResultMessage!, style: const TextStyle(color: Colors.green))],
-              const SizedBox(height: 16),
+              if (_emailResultMessage != null) ...[
+                Text(_emailResultMessage!, style: const TextStyle(color: Colors.green)),
+                const SizedBox(height: 8),
+              ],
               ..._buildRecommendationCards(),
+              // Save card appears after TTS finishes (no popup!)
+              if (_showSchemeSelection) ...[const SizedBox(height: 8), _buildSaveCard()],
             ] else if (_currentState == ConversationState.error)
               _buildErrorCard(),
             const SizedBox(height: 16),
             if (_transcript.isNotEmpty) _buildTranscriptCard(),
           ],
         ),
+      ),
+    );
+  }
+
+  // Expansion card to save/email schemes — shown after TTS finishes
+  Widget _buildSaveCard() {
+    final anySelected = _selectedSchemes.any((s) => s);
+    final selectedCount = _selectedSchemes.where((s) => s).length;
+    return Card(
+      elevation: 4,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: AppTheme.primaryColor.withOpacity(0.4), width: 1.5),
+      ),
+      child: ExpansionTile(
+        initiallyExpanded: true,
+        leading: const Icon(Icons.bookmark_add_outlined, color: AppTheme.primaryColor),
+        title: Text(
+          anySelected ? 'Save Schemes  (✓ $selectedCount selected)' : 'Save to My Schemes',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: AppTheme.primaryColor,
+          ),
+        ),
+        subtitle: const Text('Tap 🔖 to select, then save or email'),
+        children: [
+          // Scheme rows with bookmark toggles
+          ..._recommendations.asMap().entries.map((e) {
+            final idx = e.key;
+            final rec = e.value;
+            final selected = _selectedSchemes.length > idx && _selectedSchemes[idx];
+            return ListTile(
+              onTap: () {
+                setState(() {
+                  if (_selectedSchemes.length > idx) {
+                    _selectedSchemes[idx] = !_selectedSchemes[idx];
+                  }
+                });
+              },
+              leading: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 200),
+                child: Icon(
+                  selected ? Icons.bookmark : Icons.bookmark_border,
+                  key: ValueKey(selected),
+                  color: selected ? AppTheme.primaryColor : Colors.grey,
+                ),
+              ),
+              title: Text(
+                rec.scheme.schemeName,
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  color: selected ? AppTheme.primaryColor : Colors.black87,
+                ),
+              ),
+              subtitle: Text(rec.scheme.department, style: const TextStyle(fontSize: 12)),
+              trailing: selected
+                  ? const Icon(Icons.check_circle, color: Colors.green, size: 20)
+                  : null,
+            );
+          }),
+          // Action buttons
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                ElevatedButton.icon(
+                  onPressed: anySelected && !_emailSending
+                      ? () async {
+                          setState(() => _emailSending = true);
+                          await _saveSelectedSchemesAndSendEmail(sendEmail: false);
+                          if (!mounted) return;
+                          setState(() => _emailSending = false);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text(_emailResultMessage ?? 'Saved to My Schemes!')),
+                          );
+                        }
+                      : null,
+                  icon: _emailSending
+                      ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                      : const Icon(Icons.bookmark_add),
+                  label: const Text('Save to My Schemes'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.primaryColor,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                OutlinedButton.icon(
+                  onPressed: anySelected && !_emailSending
+                      ? () async {
+                          setState(() => _emailSending = true);
+                          await _saveSelectedSchemesAndSendEmail(sendEmail: true);
+                          if (!mounted) return;
+                          setState(() => _emailSending = false);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text(_emailResultMessage ?? 'Email sent!')),
+                          );
+                        }
+                      : null,
+                  icon: const Icon(Icons.email_outlined),
+                  label: const Text('Save & Email Me'),
+                  style: OutlinedButton.styleFrom(
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                ),
+                if (!anySelected)
+                  const Padding(
+                    padding: EdgeInsets.only(top: 6),
+                    child: Text(
+                      'Tap the 🔖 bookmark next to a scheme to select it',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: Colors.grey, fontSize: 12),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -934,22 +1050,51 @@ class _SchemeFinderScreenState extends State<SchemeFinderScreen>
     return _recommendations.asMap().entries.map((entry) {
       int index = entry.key;
       SchemeRecommendation recommendation = entry.value;
+      final isSelected = _showSchemeSelection &&
+          _selectedSchemes.length > index &&
+          _selectedSchemes[index];
       return Padding(
         padding: const EdgeInsets.only(bottom: 16.0),
         child: Card(
           elevation: 3,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+            side: isSelected
+                ? BorderSide(color: AppTheme.primaryColor, width: 2)
+                : BorderSide.none,
+          ),
           child: ExpansionTile(
-            leading: CircleAvatar(
-              backgroundColor: AppTheme.primaryColor,
-              child: Text(
-                '${index + 1}',
-                style: const TextStyle(color: Colors.white),
-              ),
-            ),
+            leading: _showSchemeSelection
+                ? GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        if (_selectedSchemes.length > index) {
+                          _selectedSchemes[index] = !_selectedSchemes[index];
+                        }
+                      });
+                    },
+                    child: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 200),
+                      child: Icon(
+                        isSelected ? Icons.bookmark : Icons.bookmark_border,
+                        key: ValueKey(isSelected),
+                        color: isSelected ? AppTheme.primaryColor : Colors.grey,
+                        size: 28,
+                      ),
+                    ),
+                  )
+                : CircleAvatar(
+                    backgroundColor: AppTheme.primaryColor,
+                    child: Text(
+                      '${index + 1}',
+                      style: const TextStyle(color: Colors.white),
+                    ),
+                  ),
             title: Text(
               recommendation.scheme.schemeName,
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
+                    color: isSelected ? AppTheme.primaryColor : null,
                   ),
             ),
             subtitle: Text(
@@ -989,6 +1134,19 @@ class _SchemeFinderScreenState extends State<SchemeFinderScreen>
                             ],
                           ),
                         ),
+                      ),
+                    ],
+                    if (_showSchemeSelection) ...[const SizedBox(height: 16),
+                      OutlinedButton.icon(
+                        onPressed: () {
+                          setState(() {
+                            if (_selectedSchemes.length > index) {
+                              _selectedSchemes[index] = !_selectedSchemes[index];
+                            }
+                          });
+                        },
+                        icon: Icon(isSelected ? Icons.bookmark_remove : Icons.bookmark_add),
+                        label: Text(isSelected ? 'Remove from My Schemes' : 'Save to My Schemes'),
                       ),
                     ],
                   ],

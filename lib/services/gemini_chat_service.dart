@@ -56,6 +56,7 @@ class GeminiChatService {
     required String userMessage,
     required UserProfile profile,
     required List<Scheme> availableSchemes,
+    String? sessionLanguage,
   }) async {
     try {
       if (!_enabled || _model == null) {
@@ -68,8 +69,8 @@ class GeminiChatService {
         'message': userMessage,
       });
 
-      // Detect user language for response matching
-      String detectedLanguage = _detectLanguage(userMessage);
+      // Prioritize session language over detection
+      String detectedLanguage = sessionLanguage ?? _detectLanguage(userMessage);
 
       // Build STRICT system prompt with full context
       // NEVER send raw user text - always compose full prompt
@@ -211,11 +212,11 @@ CRITICAL RULES FOR SCHEMES:
     switch (detectedLanguage) {
       case 'hi':
         languageInstruction =
-            'RESPOND IN HINDI. Use simple, rural-friendly Hindi language.';
+            'RESPOND IN THE EXACT SAME LANGUAGE AS THE USER\'S CURRENT MESSAGE. Ensure your response is entirely in simple Hindi. Do not use English if you are supposed to reply in Hindi.';
         break;
       case 'mr':
         languageInstruction =
-            'RESPOND IN MARATHI. Use simple, rural-friendly Marathi language.';
+            'RESPOND IN THE EXACT SAME LANGUAGE AS THE USER\'S CURRENT MESSAGE. Ensure your response is entirely in simple Marathi. Do not use English if you are supposed to reply in Marathi.';
         break;
       default:
         languageInstruction =
