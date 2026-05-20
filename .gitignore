@@ -50,7 +50,7 @@ temp_schemes.json
 # Local env (DO NOT COMMIT)
 .env
 client_secret*.json
-.env
+serviceAccountKey.json
 .env.example
 
 # Android keystore credentials (NEVER commit this!)

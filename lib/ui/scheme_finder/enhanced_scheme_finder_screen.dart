@@ -53,6 +53,22 @@ class _EnhancedSchemeFinderScreenState extends State<EnhancedSchemeFinderScreen>
   String? _initialProblemText; // Store first user message for context
   int _followUpCount = 0; // Track follow-up questions (soft limit at 5)
 
+  // Public welfare query detection keywords - dynamically updated from schemes
+  late Set<String> _dynamicPublicWelfareKeywords;
+  static const List<String> _intentActionWords = [
+    'build', 'develop', 'construct', 'create', 'start', 'open', 'improve',
+    'establish', 'setup', 'set up', 'launch', 'begin', 'initiate', 'organize',
+    'organize', 'run', 'manage', 'support', 'implement', 'promote', 'provide',
+    'need', 'want', 'require', 'seeking', 'looking for', 'apply', 'get',
+  ];
+
+
+  // NEW: State for public welfare direct-response mode
+  bool _isPublicWelfareMode = false;
+
+  // NEW: Store scores for public welfare matches
+  Map<String, int> _publicWelfareScores = {};
+
   // NEW: Session-level state for intelligent questioning
   String? _sessionLanguage; // Lock language to first message (en/hi/mr)
   final Set<String> _askedQuestions = {}; // Track which questions were asked
@@ -82,6 +98,9 @@ class _EnhancedSchemeFinderScreenState extends State<EnhancedSchemeFinderScreen>
     final speechReady = await _speechService.initialize();
     await _ttsService.initialize();
     _allSchemes = await DataService.loadSchemes();
+
+    // 🔥 DYNAMIC KEYWORD EXTRACTION: Build keyword pool from actual schemes
+    _buildDynamicPublicWelfareKeywords();
 
     // Set voice mode based on speech service availability (not platform)
     _voiceMode = speechReady;
@@ -126,11 +145,38 @@ class _EnhancedSchemeFinderScreenState extends State<EnhancedSchemeFinderScreen>
   Future<void> _handleUser(String message) async {
     if (message.trim().isEmpty) return;
 
-    // Add user message and clear input
+    final raw = message.toLowerCase();
+
+    // 🔥 STEP 1: PUBLIC WELFARE DETECTION (FIRST PRIORITY)
+    if (isPublicWelfareQuery(raw)) {
+      debugPrint("🔥 PUBLIC WELFARE TRIGGERED BEFORE ANY FLOW");
+
+      _addUser(message);
+      setState(() => _isLoading = true);
+
+      final results = _matchPublicWelfareSchemes(raw);
+
+      await _showPublicWelfareResults(results, raw);
+
+      if (!mounted) return; // ✅ PREVENT CRASH
+      setState(() => _isLoading = false);
+
+      return; // 🚨 HARD STOP — NOTHING ELSE RUNS
+    }
+
+    // 🔥 STEP 2: NORMAL FLOW (ONLY IF NOT WELFARE)
+
     _addUser(message);
     _textController.clear();
 
+    if (!mounted) return;
     setState(() => _isLoading = true);
+
+    if (!_initialProblemCaptured) {
+      _initialProblemCaptured = true;
+      _initialProblemText = message;
+      debugPrint('📝 First message captured as problem description');
+    }
 
     // Step 0: Detect user's language and LOCK it for the session
     final detectedLanguage = ProfileExtractor.detectLanguage(message);
@@ -154,19 +200,26 @@ class _EnhancedSchemeFinderScreenState extends State<EnhancedSchemeFinderScreen>
       }
     }
 
-    // Step 2: First message is ALWAYS treated as problem description (no Gemini decision)
-    if (!_initialProblemCaptured) {
-      _initialProblemCaptured = true;
-      _initialProblemText = message;
-      debugPrint('📝 First message captured as problem description');
+    // Step 2: FALLBACK PUBLIC WELFARE CHECK (if raw check missed it)
+    if (isPublicWelfareQuery(message)) {
+      debugPrint('🚨 Public welfare query detected (fallback); bypassing follow-ups');
+      _isPublicWelfareMode = true;
+      final results = _matchPublicWelfareSchemes(message);
+      await _showPublicWelfareResults(results, message);
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+      return;
+    }
 
+    // Step 3: First message initialization for Gemini flow (only if not welfare)
+    if (!_initialProblemCaptured) {
       // If Gemini is disabled, go straight to filtering
       if (!_geminiReady) {
         debugPrint('🚫 Gemini unavailable; filtering schemes directly');
         _matchedSchemes = _rankSchemes(_filterSchemes());
         await _showSchemeResults();
       }
-      // If Gemini is enabled, continue to Step 3 for follow-up decision
+      // If Gemini is enabled, continue to Step 4 for follow-up decision
     }
 
     // Step 3: Only call Gemini AFTER first message AND only if Gemini is ready
@@ -242,10 +295,10 @@ class _EnhancedSchemeFinderScreenState extends State<EnhancedSchemeFinderScreen>
         );
 
         if (geminiDecision == null) {
-          // Gemini call failed: fallback
-          debugPrint('⚠️ Gemini call failed; filtering schemes');
+          debugPrint('🚨 Gemini failed → fallback to direct schemes');
           _matchedSchemes = _rankSchemes(filteredSchemes);
           await _showSchemeResults();
+          return; // 🔥 CRITICAL: prevent follow-up logic
         } else if (geminiDecision == 'DONE') {
           // Gemini says: enough info, show schemes
           debugPrint('✅ Gemini returned DONE; showing schemes');
@@ -369,15 +422,13 @@ Do NOT include any other text.''';
         sessionLanguage: sessionLanguage,
       );
 
-      // Parse response strictly
+      // Parse response strictly — ENFORCE FORMAT
       final trimmed = response.trim();
-      if (trimmed.startsWith('ASK:') || trimmed == 'DONE') {
-        return trimmed;
-      } else {
-        // If Gemini forgot the ASK: prefix but wrote a question, accept it
-        debugPrint('⚠️ Gemini missing prefix: "$trimmed" — treating as question');
-        return 'ASK: $trimmed';
+      if (!trimmed.startsWith('ASK:') && trimmed != 'DONE') {
+        debugPrint('🚫 Invalid Gemini response — forcing DONE');
+        return 'DONE';
       }
+      return trimmed;
     } catch (e) {
       debugPrint('❌ Gemini error: $e');
       return null; // Trigger fallback
@@ -395,8 +446,16 @@ Do NOT include any other text.''';
 
     _addBot("Great! I found ${_matchedSchemes.length} scheme(s) for you:");
 
+    final queryText = (_initialProblemText ?? '').trim();
+    final normalizedQuery = _normalizeText(queryText);
+    final keywords = _expandProblemKeywords(_extractProblemKeywords(normalizedQuery));
+
     for (final scheme in _matchedSchemes.take(3)) {
       final score = _schemeScores[scheme.schemeId] ?? 0;
+      final reason = _schemeProblemMatchReason(scheme, keywords, normalizedQuery);
+      final keyBenefit = _schemeKeyBenefit(scheme);
+      final baseText =
+          '${scheme.schemeName}: $reason\nKey benefit: $keyBenefit';
 
       // If scheme is a low-scoring partial match, warn the user before explaining
       if (score < 20) {
@@ -426,13 +485,13 @@ Do NOT include any other text.''';
               .startsWith(scheme.schemeName.toLowerCase())) {
             explanation = '${scheme.schemeName}: ' + explanation.trim();
           }
-          _addBot(explanation);
+          _addBot('$baseText\n$explanation');
         } catch (e) {
           debugPrint('❌ Gemini explain error: $e');
-          _addBot('${scheme.schemeName}: This scheme matches your profile.');
+          _addBot(baseText);
         }
       } else {
-        _addBot('${scheme.schemeName}: This scheme matches your profile.');
+        _addBot(baseText);
       }
     }
 
@@ -452,22 +511,455 @@ Do NOT include any other text.''';
   // ELIGIBILITY FILTER (NO AI) - STRICT DATABASE-DRIVEN FILTERING
   // ===============================================================
   List<Scheme> _filterSchemes() {
-    // Use the EligibilityFilter service which performs:
-    // 1. Hard elimination (7 strict rules: age, income, occupation, caste, gender, state, beneficiaryType)
-    // 2. Weighted scoring + ranking (returns top 10)
-    try {
-      final filtered = EligibilityFilter.filterSchemes(
-        _allSchemes,
-        _profile,
-        initialProblemText: _initialProblemText,
-      );
-      debugPrint(
-          '🔍 Filtered ${_allSchemes.length} → ${filtered.length} schemes');
-      return filtered;
-    } catch (e) {
-      debugPrint('⚠️ EligibilityFilter error: $e — returning all schemes');
-      return _allSchemes;
+    // Do not eliminate schemes early based on age/category/income.
+    // All schemes should remain available for ranking by problem intent first.
+    debugPrint('🔍 Using all ${_allSchemes.length} schemes for ranking (no hard eligibility elimination)');
+    return _allSchemes;
+  }
+
+  /// Build a public welfare-friendly searchable string for each scheme
+  String _schemeSearchText(Scheme scheme) {
+    return '${scheme.schemeName} ${scheme.benefits} ${scheme.benefitType} ${scheme.allBenefitsDescription} ${scheme.remarks} ${scheme.department} ${scheme.targetGroup}'
+        .toLowerCase();
+  }
+
+  /// Normalize text for keyword extraction and phrase matching
+  String _normalizeText(String text) {
+    return text
+        .toLowerCase()
+        .replaceAll(RegExp(r'[^a-z0-9\s]'), ' ')
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .trim();
+  }
+
+  /// Extract the user problem keywords from a query
+  Set<String> _extractProblemKeywords(String query) {
+    const stopWords = {
+      'the', 'and', 'for', 'with', 'from', 'that', 'this', 'will', 'have',
+      'been', 'are', 'all', 'more', 'other', 'through', 'person', 'also',
+      'individual', 'such', 'eligible', 'scheme', 'india', 'state', 'a',
+      'an', 'in', 'on', 'at', 'by', 'of', 'to', 'or', 'as', 'is', 'it',
+      'its', 'but', 'if', 'be', 'you', 'your', 'my', 'our', 'we', 'they',
+      'them', 'their', 'these', 'those',
+      'has', 'had', 'do', 'does', 'did', 'can', 'could', 'should', 'would'
+    };
+
+    return _normalizeText(query)
+        .split(' ')
+        .where((word) => word.length >= 3 && !stopWords.contains(word))
+        .toSet();
+  }
+
+  /// Expand keywords using domain-aware synonyms so related schemes score higher.
+  Set<String> _expandProblemKeywords(Set<String> keywords) {
+    final expanded = Set<String>.from(keywords);
+    for (final keyword in keywords) {
+      switch (keyword) {
+        case 'solar':
+          expanded.addAll(['renewable', 'electricity', 'energy', 'pv']);
+          break;
+        case 'pump':
+          expanded.addAll(['irrigation', 'water', 'submersible', 'borewell']);
+          break;
+        case 'farming':
+        case 'farmer':
+        case 'agriculture':
+          expanded.addAll(['farm', 'crop', 'irrigation', 'harvest']);
+          break;
+        case 'irrigation':
+          expanded.addAll(['water', 'pump', 'canal', 'drip']);
+          break;
+        case 'electric':
+        case 'electricity':
+          expanded.addAll(['power', 'solar', 'renewable']);
+          break;
+        case 'housing':
+        case 'house':
+        case 'home':
+          expanded.addAll(['shelter', 'pucca', 'rental']);
+          break;
+        case 'health':
+          expanded.addAll(['medical', 'hospital', 'treatment', 'doctor']);
+          break;
+        case 'education':
+          expanded.addAll(['scholarship', 'school', 'college', 'training']);
+          break;
+        case 'women':
+        case 'widow':
+          expanded.addAll(['female', 'girl', 'mother']);
+          break;
+        case 'startup':
+        case 'business':
+        case 'entrepreneur':
+          expanded.addAll(['loan', 'finance', 'funding', 'trade']);
+          break;
+        case 'skill':
+        case 'training':
+          expanded.addAll(['course', 'workshop', 'development']);
+          break;
+      }
+      if (keyword.endsWith('ing') && keyword.length > 5) {
+        expanded.add(keyword.substring(0, keyword.length - 3));
+      }
+      if (keyword.endsWith('s') && keyword.length > 3) {
+        expanded.add(keyword.substring(0, keyword.length - 1));
+      }
     }
+    return expanded;
+  }
+
+  int _calculateProblemScore(
+    Scheme scheme,
+    Set<String> keywords,
+    String normalizedQuery,
+  ) {
+    if (keywords.isEmpty) return 0;
+
+    final searchText = _schemeSearchText(scheme);
+    int score = 0;
+    int keywordMatches = 0;
+
+    for (final keyword in keywords) {
+      if (!searchText.contains(keyword)) continue;
+      keywordMatches += 1;
+      if (scheme.schemeName.toLowerCase().contains(keyword)) {
+        score += 18;
+      } else if (scheme.benefitType.toLowerCase().contains(keyword) ||
+          scheme.department.toLowerCase().contains(keyword) ||
+          scheme.targetGroup.toLowerCase().contains(keyword)) {
+        score += 14;
+      } else {
+        score += 10;
+      }
+    }
+
+    if (keywordMatches > 1) {
+      score += (keywordMatches - 1) * 6;
+    }
+
+    if (normalizedQuery.isNotEmpty && searchText.contains(normalizedQuery)) {
+      score += 40;
+    }
+
+    if (keywordMatches >= 4) {
+      score += 15;
+    }
+
+    return score.clamp(0, 100);
+  }
+
+  int _calculateEligibilityScore(Scheme scheme) {
+    int score = 0;
+    final occupation = (_profile.occupation ?? '').toLowerCase();
+    final category = (_profile.category ?? '').toLowerCase();
+    final gender = (_profile.gender ?? '').toLowerCase();
+    final state = (_profile.state ?? '').toLowerCase();
+
+    if (occupation.isNotEmpty &&
+        scheme.occupationEligible.toLowerCase().contains(occupation)) {
+      score += 20;
+    }
+    if (occupation.isNotEmpty &&
+        scheme.beneficiaryType.toLowerCase().contains(occupation)) {
+      score += 15;
+    }
+    if (category.isNotEmpty &&
+        (scheme.categoryEligible.toLowerCase().contains(category) ||
+            scheme.casteEligible.toLowerCase().contains(category))) {
+      score += 15;
+    }
+    if (gender.isNotEmpty &&
+        scheme.genderEligible.toLowerCase() != 'all' &&
+        scheme.genderEligible.toLowerCase().contains(gender)) {
+      score += 5;
+    }
+    if (state.isNotEmpty &&
+        scheme.state.isNotEmpty &&
+        scheme.state.toLowerCase() != 'india' &&
+        scheme.state.toLowerCase() == state) {
+      score += 5;
+    }
+    if (_profile.age != null && (scheme.minAge != null || scheme.maxAge != null)) {
+      if ((scheme.minAge == null || _profile.age! >= scheme.minAge!) &&
+          (scheme.maxAge == null || _profile.age! <= scheme.maxAge!)) {
+        score += 10;
+      }
+    }
+    if (_profile.annualIncome != null && scheme.maxIncomeINR != null) {
+      if (_profile.annualIncome! <= scheme.maxIncomeINR!) {
+        score += 10;
+      }
+    }
+    return score.clamp(0, 100);
+  }
+
+  String _schemeProblemMatchReason(
+    Scheme scheme,
+    Set<String> keywords,
+    String normalizedQuery,
+  ) {
+    final searchText = _schemeSearchText(scheme);
+    if (normalizedQuery.isNotEmpty && searchText.contains(normalizedQuery)) {
+      return 'Matches your request for "$normalizedQuery".';
+    }
+
+    final matched = keywords.where((k) => searchText.contains(k)).toList();
+    if (matched.isNotEmpty) {
+      final top = matched.take(4).join(', ');
+      return 'Matches your problem keywords: $top.';
+    }
+    return 'This scheme is relevant based on your problem and eligibility.';
+  }
+
+  String _schemeKeyBenefit(Scheme scheme) {
+    final benefitSource = scheme.benefitType.isNotEmpty
+        ? scheme.benefitType
+        : scheme.benefits.isNotEmpty
+            ? scheme.benefits
+            : scheme.allBenefitsDescription.isNotEmpty
+                ? scheme.allBenefitsDescription
+                : scheme.remarks;
+
+    final normalized = _normalizeText(benefitSource);
+    if (normalized.length > 100) {
+      return '${normalized.substring(0, 100).trim()}...';
+    }
+    return normalized.isEmpty ? 'No benefit details available.' : normalized;
+  }
+
+  /// 🔥 DYNAMIC KEYWORD EXTRACTION: Build keyword pool from Firestore schemes
+  /// This runs once in _init() to populate _dynamicPublicWelfareKeywords
+  /// from actual scheme fields instead of hardcoding
+  void _buildDynamicPublicWelfareKeywords() {
+    final keywords = <String>{};
+
+    // Extract nouns, verbs, and domain-specific terms from all schemes
+    for (final scheme in _allSchemes) {
+      _extractKeywordsFromText(scheme.schemeName, keywords);
+      _extractKeywordsFromText(scheme.benefitType, keywords);
+      _extractKeywordsFromText(scheme.benefits, keywords);
+      _extractKeywordsFromText(scheme.allBenefitsDescription, keywords);
+      _extractKeywordsFromText(scheme.department, keywords);
+      _extractKeywordsFromText(scheme.targetGroup, keywords);
+      _extractKeywordsFromText(scheme.remarks, keywords);
+    }
+
+    _dynamicPublicWelfareKeywords = keywords;
+    debugPrint(
+        '🔑 Built dynamic keyword pool: ${keywords.length} unique keywords');
+    if (keywords.length <= 50) {
+      debugPrint('   Keywords: ${keywords.take(20).join(", ")}...');
+    }
+  }
+
+  /// Extract meaningful keywords from text by splitting and filtering
+  /// Removes common stop words and keeps only significant terms
+  void _extractKeywordsFromText(String text, Set<String> keywordSet) {
+    if (text.isEmpty) return;
+
+    // Normalize: lowercase, remove punctuation, split by common delimiters
+    final normalized = text
+        .toLowerCase()
+        .replaceAll(RegExp(r'[^a-z0-9\s]'), ' ')
+        .split(RegExp(r'\s+'))
+        .where((word) => word.isNotEmpty && word.length > 3) // Only >3 chars
+        .toList();
+
+    // Common stop words to exclude
+    const stopWords = {
+      'the', 'and', 'for', 'with', 'from', 'that', 'this', 'will', 'have',
+      'been', 'are', 'all', 'more', 'other', 'through', 'person', 'also',
+      'individual', 'such', 'eligible', 'benefit', 'scheme', 'india', 'state'
+    };
+
+    for (final word in normalized) {
+      if (!stopWords.contains(word)) {
+        keywordSet.add(word);
+      }
+    }
+  }
+
+  /// Detect public welfare queries using both scheme fields and strong keywords
+  bool isPublicWelfareQuery(String text) {
+    final t = text.toLowerCase();
+
+    // 🔥 INTENT WORDS
+    const intentWords = [
+      'build', 'develop', 'construct', 'create', 'start', 'make',
+      'open', 'setup', 'establish', 'launch', 'improve', 'upgrade'
+    ];
+
+    // 🔥 DOMAIN WORDS (VERY IMPORTANT)
+    const domainWords = [
+      'garden', 'park', 'playground', 'tree', 'plantation', 'forest',
+      'road', 'drainage', 'sewage', 'water', 'toilet', 'sanitation',
+      'vendor', 'street', 'shop', 'market', 'tourism', 'temple',
+      'community', 'hall', 'camp', 'event', 'training', 'solar',
+      'electric', 'waste', 'recycle', 'green', 'environment'
+    ];
+
+    if (intentWords.any((w) => t.contains(w))) return true;
+    if (domainWords.any((w) => t.contains(w))) return true;
+
+    if (_dynamicPublicWelfareKeywords.isNotEmpty) {
+      if (_dynamicPublicWelfareKeywords.any((w) => t.contains(w))) {
+        return true;
+      }
+    }
+
+    for (final scheme in _allSchemes) {
+      if (scheme.schemeId.toUpperCase().startsWith('ENV')) {
+        if (_queryMatchesSchemeFields(scheme, t)) {
+          return true;
+        }
+      }
+    }
+
+    return false;
+  }
+
+  bool _queryMatchesSchemeFields(Scheme scheme, String query) {
+    final searchText = _schemeSearchText(scheme);
+    final queryWords = query.split(RegExp(r'\s+')).where((w) => w.length > 2).toList();
+    if (queryWords.isEmpty) return false;
+
+    int hits = 0;
+    for (final word in queryWords) {
+      if (searchText.contains(word)) {
+        hits++;
+      }
+    }
+
+    return hits >= 1;
+  }
+
+  /// Return schemes that match broad public welfare intent keywords and scheme fields
+  List<Map<String, dynamic>> _matchPublicWelfareSchemes(String query) {
+    final lowerQuery = query.toLowerCase();
+    final queryWords = lowerQuery.split(RegExp(r'\s+')).where((w) => w.length > 2).toList();
+
+    final matched = <Scheme, int>{};
+
+    for (final scheme in _allSchemes) {
+      final searchText = _schemeSearchText(scheme);
+      int score = 0;
+
+      if (scheme.schemeId.toUpperCase().startsWith('ENV')) {
+        score += 30;
+      }
+
+      for (final word in queryWords) {
+        if (searchText.contains(word)) {
+          score += 20;
+        }
+      }
+
+      if (queryWords.length > 1) {
+        final phrase = queryWords.join(' ');
+        if (searchText.contains(phrase)) {
+          score += 25;
+        }
+      }
+
+      if (score > 0) {
+        matched[scheme] = score;
+      }
+    }
+
+    final sorted = matched.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+
+    return sorted
+        .map((entry) => {
+              'scheme': entry.key,
+              'score': entry.value,
+            })
+        .toList();
+  }
+
+  String _shortSchemeDescription(Scheme scheme) {
+    var description = scheme.benefits.isNotEmpty
+        ? scheme.benefits
+        : scheme.allBenefitsDescription.isNotEmpty
+            ? scheme.allBenefitsDescription
+            : scheme.remarks;
+    description = description.trim();
+    if (description.isEmpty) {
+      return 'No short description available.';
+    }
+    if (description.length > 90) {
+      description = '${description.substring(0, 90).trim()}...';
+    }
+    return description;
+  }
+
+  String _publicWelfareMatchReason(Scheme scheme, String query) {
+    final searchText = _schemeSearchText(scheme);
+    final queryWords = query
+        .toLowerCase()
+        .split(RegExp(r'\s+'))
+        .where((w) => w.length > 3)
+        .toSet();
+
+    final matched = queryWords.where((word) => searchText.contains(word)).toList();
+    if (matched.isNotEmpty) {
+      final reasonWords = matched.take(3).join(', ');
+      return 'Matches your request for $reasonWords.';
+    }
+    if (scheme.schemeId.toUpperCase().startsWith('ENV')) {
+      return 'This is an environmental/public welfare scheme.';
+    }
+    return 'This scheme is relevant to your request.';
+  }
+
+  Future<void> _showPublicWelfareResults(
+      List<Map<String, dynamic>> results, String query) async {
+    if (results.isEmpty) {
+      _addBot(
+          'No relevant public welfare schemes found. Try keywords like garden, vendor, or tourism.');
+      return;
+    }
+
+    _addBot(
+        'I found ${results.length} public welfare scheme(s) for your request. Here are the best matches:');
+
+    final displayCount = results.length > 7 ? 7 : results.length;
+    _matchedSchemes = results
+        .take(displayCount)
+        .map((entry) => entry['scheme'] as Scheme)
+        .toList();
+
+    final topCount = displayCount >= 3 ? 3 : displayCount;
+    for (int i = 0; i < topCount; i++) {
+      final scheme = results[i]['scheme'] as Scheme;
+      final description = _shortSchemeDescription(scheme);
+      final reason = _publicWelfareMatchReason(scheme, query);
+      final detailLine = scheme.officialApplyLink.isNotEmpty
+          ? 'View Details: ${scheme.officialApplyLink}'
+          : 'View details in the app.';
+      _addBot(
+          '${i + 1}. ${scheme.schemeName}\n$reason\n$description\n$detailLine');
+    }
+
+    for (int i = topCount; i < displayCount; i++) {
+      final scheme = results[i]['scheme'] as Scheme;
+      final description = _shortSchemeDescription(scheme);
+      _addBot('${i + 1}. ${scheme.schemeName}: $description');
+    }
+
+    if (results.length > displayCount) {
+      _addBot(
+          'There are ${results.length} matching public welfare schemes in total. Use the app list to explore more.');
+    }
+
+    if (!mounted) return;
+    setState(() {
+      _showSchemeSelection = true;
+      _showEmailPrompt = false;
+      _emailSending = false;
+      _emailResultMessage = null;
+      _selectedSchemes = List.generate(_matchedSchemes.length, (_) => false);
+    });
   }
 
   /// Compute which profile fields are REQUIRED by the given list of schemes
@@ -575,102 +1067,23 @@ Do NOT include any other text.''';
   // RANKING
   // ===============================================================
   List<Scheme> _rankSchemes(List<Scheme> schemes) {
-    final problem = (_initialProblemText ?? '').toLowerCase();
+    final queryText = (_initialProblemText ?? '').trim();
+    final normalizedQuery = _normalizeText(queryText);
+    final baseKeywords = _extractProblemKeywords(normalizedQuery);
+    final keywords = _expandProblemKeywords(baseKeywords);
+
+    debugPrint('🔑 User keywords: ${keywords.toList()}');
+
     final List<MapEntry<Scheme, int>> scored = [];
 
-    for (final s in schemes) {
-      int score = 0;
+    for (final scheme in schemes) {
+      final problemScore = _calculateProblemScore(scheme, keywords, normalizedQuery);
+      final eligibilityScore = _calculateEligibilityScore(scheme);
+      final finalScore = ((problemScore * 70) + (eligibilityScore * 30)) ~/ 100;
 
-      // +30 Occupation match (HIGHEST PRIORITY)
-      if (_profile.occupation != null && _profile.occupation!.isNotEmpty) {
-        if (s.occupationEligible
-            .toLowerCase()
-            .contains(_profile.occupation!.toLowerCase())) {
-          score += 30;
-        }
-      }
-
-      // +20 BeneficiaryType / targetGroup match
-      if (_profile.occupation != null && _profile.occupation!.isNotEmpty) {
-        if (s.beneficiaryType
-            .toLowerCase()
-            .contains(_profile.occupation!.toLowerCase())) {
-          score += 20;
-        }
-      }
-      if (_profile.category != null && _profile.category!.isNotEmpty) {
-        if (s.beneficiaryType
-            .toLowerCase()
-            .contains(_profile.category!.toLowerCase())) {
-          score += 20;
-        }
-      }
-
-      // +15 BenefitType matches problem intent
-      final intentKeywords = {
-        'education': [
-          'education',
-          'scholarship',
-          'fees',
-          'school',
-          'college',
-          'study'
-        ],
-        'agriculture': ['farmer', 'agriculture', 'crop', 'seeds', 'farming'],
-        'pension': ['pension', 'elderly', 'senior', 'old'],
-        'housing': ['house', 'housing', 'home'],
-        'health': ['hospital', 'illness', 'treatment', 'doctor', 'medical']
-      };
-      for (final entry in intentKeywords.entries) {
-        final hasIntent = entry.value.any((k) => problem.contains(k));
-        if (hasIntent && s.benefitType.toLowerCase().contains(entry.key)) {
-          score += 15;
-        }
-      }
-
-      // +10 Category/caste match
-      if (_profile.category != null) {
-        if (s.casteEligible
-                .toLowerCase()
-                .contains(_profile.category!.toLowerCase()) ||
-            s.categoryEligible
-                .toLowerCase()
-                .contains(_profile.category!.toLowerCase())) {
-          score += 10;
-        }
-      }
-
-      // +5 Age match
-      if (_profile.age != null && (s.minAge != null || s.maxAge != null)) {
-        if ((s.minAge == null || _profile.age! >= s.minAge!) &&
-            (s.maxAge == null || _profile.age! <= s.maxAge!)) {
-          score += 5;
-        }
-      }
-
-      // +5 Income match
-      if (_profile.annualIncome != null && s.maxIncomeINR != null) {
-        if (_profile.annualIncome! <= s.maxIncomeINR!) score += 5;
-      }
-
-      // -30 Penalty: health schemes when intent is NOT health
-      final benefitLower = s.benefitType.toLowerCase();
-      if (!problem.contains('health') &&
-          !problem.contains('illness') &&
-          benefitLower.contains('health')) {
-        score -= 30;
-      }
-      if (problem.contains('education') && benefitLower.contains('health')) {
-        score -= 30;
-      }
-      if (problem.contains('farmer') &&
-          benefitLower.contains('health') &&
-          !problem.contains('health')) {
-        score -= 30;
-      }
-
-      scored.add(MapEntry(s, score));
-      debugPrint('   🔎 ${s.schemeName}: score=$score');
+      scored.add(MapEntry(scheme, finalScore));
+      debugPrint(
+          '   🔎 ${scheme.schemeName}: problemScore=$problemScore eligibilityScore=$eligibilityScore finalScore=$finalScore');
     }
 
     scored.sort((a, b) => b.value.compareTo(a.value));
@@ -682,11 +1095,13 @@ Do NOT include any other text.''';
   // UI HELPERS
   // ===============================================================
   void _addUser(String text) {
+    if (!mounted) return;
     setState(() => _messages.add(_ChatMessage(text, true)));
     _scrollToBottom();
   }
 
   void _addBot(String text) async {
+    if (!mounted) return;
     setState(() => _messages.add(_ChatMessage(text, false)));
     _scrollToBottom();
     if (_voiceMode && _ttsService.isAvailable) {

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../core/utils/app_strings.dart';
 import '../../models/scheme.dart';
 import '../../services/firestore_service.dart';
@@ -161,6 +162,49 @@ class _MySchemesScreenState extends State<MySchemesScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Scheme removed successfully')),
       );
+    }
+  }
+
+  Future<void> _launchUrl(String url) async {
+    try {
+      // Add https:// scheme if not present
+      String finalUrl = url;
+      if (!url.startsWith('http://') && !url.startsWith('https://')) {
+        finalUrl = 'https://$url';
+      }
+
+      final uri = Uri.parse(finalUrl);
+      debugPrint('🔗 Attempting to launch URL: $finalUrl');
+
+      // Try launching with inAppBrowserView first (most reliable for MIUI devices)
+      bool result = await launchUrl(
+        uri,
+        mode: LaunchMode.inAppBrowserView,
+      );
+
+      if (!result) {
+        debugPrint('⚠️ Failed to open with browser view, trying external app');
+        result = await launchUrl(
+          uri,
+          mode: LaunchMode.externalApplication,
+        );
+      }
+
+      if (!result) {
+        debugPrint('❌ Failed to launch URL: $finalUrl');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Failed to open the link')),
+          );
+        }
+      }
+    } catch (e) {
+      debugPrint('❌ Error launching URL: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error opening link: $e')),
+        );
+      }
     }
   }
 
@@ -490,10 +534,7 @@ class _MySchemesScreenState extends State<MySchemesScreen> {
                   style: TextStyle(fontWeight: FontWeight.bold),
                 ),
                 InkWell(
-                  onTap: () {
-                    // You can use url_launcher here to open the link
-                    debugPrint('Open link: ${scheme.officialApplyLink}');
-                  },
+                  onTap: () => _launchUrl(scheme.officialApplyLink),
                   child: Text(
                     scheme.officialApplyLink,
                     style: const TextStyle(
@@ -503,6 +544,21 @@ class _MySchemesScreenState extends State<MySchemesScreen> {
                   ),
                 ),
               ],
+              const SizedBox(height: 12),
+              const Text(
+                'Tutorial Video:',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              InkWell(
+                onTap: () => _launchUrl('https://www.youtube.com/watch?v=evDDaNQgtDI'),
+                child: const Text(
+                  'https://www.youtube.com/watch?v=evDDaNQgtDI',
+                  style: TextStyle(
+                    color: Colors.blue,
+                    decoration: TextDecoration.underline,
+                  ),
+                ),
+              ),
             ],
           ),
         ),
