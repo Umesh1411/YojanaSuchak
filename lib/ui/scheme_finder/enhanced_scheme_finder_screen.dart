@@ -63,11 +63,7 @@ class _EnhancedSchemeFinderScreenState extends State<EnhancedSchemeFinderScreen>
   ];
 
 
-  // NEW: State for public welfare direct-response mode
-  bool _isPublicWelfareMode = false;
-
-  // NEW: Store scores for public welfare matches
-  Map<String, int> _publicWelfareScores = {};
+  // Public welfare variables removed
 
   // NEW: Session-level state for intelligent questioning
   String? _sessionLanguage; // Lock language to first message (en/hi/mr)
@@ -142,29 +138,40 @@ class _EnhancedSchemeFinderScreenState extends State<EnhancedSchemeFinderScreen>
   // ===============================================================
   // CHAT HANDLING (GEMINI-DRIVEN, SCHEME-AWARE)
   // ===============================================================
+  bool isProfileComplete(UserProfile profile) {
+    return profile.occupation != null && profile.occupation!.trim().isNotEmpty &&
+           profile.annualIncome != null &&
+           profile.age != null &&
+           profile.state != null && profile.state!.trim().isNotEmpty;
+  }
+
+  String _getFollowUpQuestion(String field, String lang) {
+    if (lang == 'hi') {
+      if (field == 'occupation') return 'आपका व्यवसाय क्या है?';
+      if (field == 'income') return 'आपकी वार्षिक आय कितनी है?';
+      if (field == 'age') return 'आपकी उम्र क्या है?';
+      if (field == 'state') return 'आप किस राज्य से हैं?';
+      if (field == 'location') return 'आप किस राज्य और ज़िले से हैं?';
+      if (field == 'annualIncome') return 'आपकी वार्षिक आय कितनी है?';
+    } else if (lang == 'mr') {
+      if (field == 'occupation') return 'तुमचा व्यवसाय काय आहे?';
+      if (field == 'income') return 'तुमचे वार्षिक उत्पन्न किती आहे?';
+      if (field == 'age') return 'तुमचे वय किती आहे?';
+      if (field == 'state') return 'तुम्ही कोणत्या राज्यातील आहात?';
+      if (field == 'location') return 'तुम्ही कोणत्या राज्य आणि जिल्ह्यात आहात?';
+      if (field == 'annualIncome') return 'तुमचे वार्षिक उत्पन्न किती आहे?';
+    }
+    if (field == 'occupation') return 'What is your occupation?';
+    if (field == 'income') return 'What is your annual income?';
+    if (field == 'age') return 'What is your age?';
+    if (field == 'state') return 'Which state do you belong to?';
+    if (field == 'location') return 'Which state and district do you belong to?';
+    if (field == 'annualIncome') return 'What is your annual income?';
+    return 'Please provide more details.';
+  }
+
   Future<void> _handleUser(String message) async {
     if (message.trim().isEmpty) return;
-
-    final raw = message.toLowerCase();
-
-    // 🔥 STEP 1: PUBLIC WELFARE DETECTION (FIRST PRIORITY)
-    if (isPublicWelfareQuery(raw)) {
-      debugPrint("🔥 PUBLIC WELFARE TRIGGERED BEFORE ANY FLOW");
-
-      _addUser(message);
-      setState(() => _isLoading = true);
-
-      final results = _matchPublicWelfareSchemes(raw);
-
-      await _showPublicWelfareResults(results, raw);
-
-      if (!mounted) return; // ✅ PREVENT CRASH
-      setState(() => _isLoading = false);
-
-      return; // 🚨 HARD STOP — NOTHING ELSE RUNS
-    }
-
-    // 🔥 STEP 2: NORMAL FLOW (ONLY IF NOT WELFARE)
 
     _addUser(message);
     _textController.clear();
@@ -172,168 +179,100 @@ class _EnhancedSchemeFinderScreenState extends State<EnhancedSchemeFinderScreen>
     if (!mounted) return;
     setState(() => _isLoading = true);
 
-    if (!_initialProblemCaptured) {
-      _initialProblemCaptured = true;
-      _initialProblemText = message;
-      debugPrint('📝 First message captured as problem description');
-    }
+    debugPrint('✉️ Received message: "$message"');
 
-    // Step 0: Detect user's language and LOCK it for the session
     final detectedLanguage = ProfileExtractor.detectLanguage(message);
     if (_sessionLanguage == null) {
       _sessionLanguage = detectedLanguage;
       debugPrint('🔒 Session language LOCKED: $_sessionLanguage');
-    } else {
-      debugPrint(
-          '🌐 Using session language: $_sessionLanguage (detected: $detectedLanguage)');
     }
 
-    // Step 1: Extract profile fields intelligently (handles multi-field in single message)
     final parsed = ProfileExtractor.extractMultipleFields(message);
     ProfileExtractor.applyParsedToProfile(_profile, parsed);
 
-    if (parsed.isNotEmpty) {
-      debugPrint('✅ Extracted fields: ${parsed.keys.join(", ")}');
-      // Mark these fields as "answered" so we don't ask about them again
-      for (final field in parsed.keys) {
-        _askedQuestions.add(field.toString());
-      }
+    if (!_initialProblemCaptured) {
+      _initialProblemCaptured = true;
+      _initialProblemText = message;
     }
 
-    // Step 2: FALLBACK PUBLIC WELFARE CHECK (if raw check missed it)
-    if (isPublicWelfareQuery(message)) {
-      debugPrint('🚨 Public welfare query detected (fallback); bypassing follow-ups');
-      _isPublicWelfareMode = true;
+    // Step 1: Public Welfare Exception bypass
+    final isWelfare = isPublicWelfareException(message);
+    if (isWelfare) {
+      debugPrint('🔥 PUBLIC WELFARE EXCEPTION DETECTED: directly showing schemes');
       final results = _matchPublicWelfareSchemes(message);
       await _showPublicWelfareResults(results, message);
-      if (!mounted) return;
       setState(() => _isLoading = false);
       return;
     }
 
-    // Step 3: First message initialization for Gemini flow (only if not welfare)
-    if (!_initialProblemCaptured) {
-      // If Gemini is disabled, go straight to filtering
-      if (!_geminiReady) {
-        debugPrint('🚫 Gemini unavailable; filtering schemes directly');
-        _matchedSchemes = _rankSchemes(_filterSchemes());
-        await _showSchemeResults();
-      }
-      // If Gemini is enabled, continue to Step 4 for follow-up decision
-    }
+    // Step 2: Enforce Profile Completeness
+    final complete = isProfileComplete(_profile);
+    debugPrint('📊 Profile completeness check: $complete');
 
-    // Step 3: Only call Gemini AFTER first message AND only if Gemini is ready
-    if (_initialProblemCaptured && _geminiReady) {
+    if (complete) {
+      // Profile is complete! Filter, rank, and return top 3 schemes.
+      debugPrint('✅ Profile complete, filtering and ranking schemes.');
       final filteredSchemes = _filterSchemes();
-      final profileMissing = _getProfileMissingFields();
+      _matchedSchemes = _rankSchemes(filteredSchemes).take(3).toList();
+      await _showSchemeResults();
+    } else {
+      // Profile is incomplete! Ask ONE missing field based on actual required information.
+      final candidateSchemes = _filterSchemes();
+      final requiredFields = _computeRequiredFields(candidateSchemes);
+      final nextField = _selectNextMissingField(requiredFields);
 
-      // CRITICAL: Distinguish "no schemes matched" from "profile incomplete"
-      final hasSchemes = filteredSchemes.isNotEmpty;
-      final profileComplete = profileMissing.isEmpty;
-
-      debugPrint(
-          '📊 State: hasSchemes=$hasSchemes, profileComplete=$profileComplete, followUp=$_followUpCount/5');
-
-      // Compute which fields are required by schemes that DID match
-      _requiredFields =
-          hasSchemes ? _computeRequiredFields(filteredSchemes) : <String>{};
-      debugPrint('📋 Required from schemes: $_requiredFields');
-      debugPrint('📋 Missing from profile: $profileMissing');
-
-      // MERGED required fields: from schemes + profile missing
-      // If schemes matched, prioritize their requirements
-      // If no schemes matched, fall back to general profile missing fields
-      final mergedMissingFields =
-          hasSchemes ? _requiredFields.union(profileMissing) : profileMissing;
-
-      // Compute which fields we haven't asked about yet
-      final missingToAsk = mergedMissingFields
-          .where((field) =>
-              !_askedQuestions.contains(field) && !_isFieldFilled(field))
-          .toSet();
-
-      debugPrint('❓ To ask: $missingToAsk (total asked: $_askedQuestions)');
-
-      // DECISION LOGIC:
-      // 1. If profile complete AND schemes matched → show results
-      // 2. If profile complete BUT no schemes → ask 1-2 last-resort clarifying Qs (soft limit +2)
-      // 3. If profile incomplete → ask missing fields (soft limit at 5, hard limit at 7)
-      // 4. Never ask if missingToAsk is empty
-
-      final shouldShowResults =
-          (profileComplete && hasSchemes) || (_followUpCount >= 7);
-      final allowEmergencyQuestions =
-          !hasSchemes && profileComplete && _followUpCount < 7;
-      final normalQuestioning = !profileComplete && _followUpCount < 5;
-      final softLimitReached = _followUpCount >= 5 && missingToAsk.length <= 1;
-
-      if (missingToAsk.isEmpty) {
-        // No more fields to ask about
-        debugPrint('🛑 No missing fields to ask');
-        _matchedSchemes = _rankSchemes(filteredSchemes);
-        await _showSchemeResults();
-      } else if (shouldShowResults) {
-        // Hard stop at 7 questions or profile complete + schemes found
-        debugPrint('🛑 Showing results (profile complete or hard limit)');
-        _matchedSchemes = _rankSchemes(filteredSchemes);
-        await _showSchemeResults();
-      } else if (softLimitReached && !allowEmergencyQuestions) {
-        // Soft limit: stop unless we have emergency questions to ask
-        debugPrint('⚠️ Soft limit reached; showing results');
-        _matchedSchemes = _rankSchemes(filteredSchemes);
-        await _showSchemeResults();
-      } else if (normalQuestioning || allowEmergencyQuestions) {
-        // Continue asking (normal mode or emergency mode)
-        debugPrint(
-            '❓ Asking follow-up (normal=$normalQuestioning, emergency=$allowEmergencyQuestions)');
-
-        final geminiDecision = await _askGeminiForNextStep(
-          _sessionLanguage!,
-          missingToAsk,
-          filteredSchemes,
-          noSchemeContext: !hasSchemes,
-        );
-
-        if (geminiDecision == null) {
-          debugPrint('🚨 Gemini failed → fallback to direct schemes');
-          _matchedSchemes = _rankSchemes(filteredSchemes);
-          await _showSchemeResults();
-          return; // 🔥 CRITICAL: prevent follow-up logic
-        } else if (geminiDecision == 'DONE') {
-          // Gemini says: enough info, show schemes
-          debugPrint('✅ Gemini returned DONE; showing schemes');
-          _matchedSchemes = _rankSchemes(filteredSchemes);
-          await _showSchemeResults();
-        } else if (geminiDecision.startsWith('ASK:')) {
-          // Gemini generated a question
+      if (nextField != null) {
+        // Avoid asking the same field repeatedly; if it is still missing, rephrase politely.
+        final alreadyAsked = _askedQuestions.contains(nextField);
+        final question = _getFollowUpQuestion(nextField, _sessionLanguage!);
+        _followUpCount++;
+        _addBot(question);
+        _askedQuestions.add(nextField);
+        debugPrint('❓ Follow-up asked for: "$nextField" (alreadyAsked=$alreadyAsked)');
+      } else {
+        // No specific missing field determined: fallback to profile order.
+        final fallbackField = ProfileExtractor.getNextMissingField(_profile);
+        if (fallbackField != null) {
+          final question = _getFollowUpQuestion(fallbackField, _sessionLanguage!);
           _followUpCount++;
-          final question = geminiDecision.substring(4).trim();
-
-          // Mark up to 2 missing fields as "asked" to prevent repeats
-          final toMark = missingToAsk.take(2).toList();
-          for (final f in toMark) {
-            _askedQuestions.add(f);
-          }
-
           _addBot(question);
-          debugPrint(
-              '❓ Follow-up $_followUpCount: $question (mode: ${allowEmergencyQuestions ? 'emergency' : 'normal'})');
+          _askedQuestions.add(fallbackField);
+          debugPrint('❓ Fallback follow-up asked for: "$fallbackField"');
         } else {
-          // Unexpected format: treat as DONE
-          debugPrint(
-              '⚠️ Unexpected Gemini response: "$geminiDecision" — treating as DONE');
-          _matchedSchemes = _rankSchemes(filteredSchemes);
+          // Fallback if all required fields are present (should not reach here)
+          final filteredSchemes = _filterSchemes();
+          _matchedSchemes = _rankSchemes(filteredSchemes).take(3).toList();
           await _showSchemeResults();
         }
-      } else {
-        // Fallback: should not reach here, but show results
-        debugPrint('⚠️ Unexpected state; showing results');
-        _matchedSchemes = _rankSchemes(filteredSchemes);
-        await _showSchemeResults();
       }
     }
 
     setState(() => _isLoading = false);
+  }
+
+  String? _selectNextMissingField(Set<String> requiredFields) {
+    final priority = [
+      'occupation',
+      'age',
+      'gender',
+      'location',
+      'annualIncome',
+      'category',
+    ];
+
+    final profileField = ProfileExtractor.getNextMissingField(_profile);
+    if (profileField != null && requiredFields.contains(profileField)) {
+      return profileField;
+    }
+
+    for (final field in priority) {
+      if (requiredFields.contains(field) && !_isFieldFilled(field)) {
+        return field;
+      }
+    }
+
+    // If no scheme requires any missing field, ask the next profile field in our standard order.
+    return profileField;
   }
 
   /// Ask Gemini to generate questions about missing required fields
@@ -422,13 +361,22 @@ Do NOT include any other text.''';
         sessionLanguage: sessionLanguage,
       );
 
-      // Parse response strictly — ENFORCE FORMAT
       final trimmed = response.trim();
-      if (!trimmed.startsWith('ASK:') && trimmed != 'DONE') {
-        debugPrint('🚫 Invalid Gemini response — forcing DONE');
+      if (trimmed.isEmpty) {
+        return 'Sorry, I couldn\'t understand. Could you please repeat?';
+      }
+
+      final upper = trimmed.toUpperCase();
+      if (upper == 'DONE' || upper.startsWith('DONE ') || upper.endsWith(' DONE') || upper.contains(' DONE ')) {
         return 'DONE';
       }
-      return trimmed;
+
+      if (trimmed.startsWith('ASK:')) {
+        return trimmed;
+      }
+
+      // Accept any non-empty natural language follow-up question.
+      return 'ASK: ${trimmed}';
     } catch (e) {
       debugPrint('❌ Gemini error: $e');
       return null; // Trigger fallback
@@ -436,21 +384,30 @@ Do NOT include any other text.''';
   }
 
   /// Display filtered schemes with explanations
+  /// ⚠️ CRITICAL: Always displays ONLY TOP 3 highest-scoring schemes
   Future<void> _showSchemeResults() async {
     if (_matchedSchemes.isEmpty) {
       _addBot(
           "I found some schemes that may help you. I may need one or two more details to confirm eligibility.");
+      debugPrint('📊 NO SCHEMES: Empty matched list after filtering');
       return;
     }
+    
+    // Re-rank to ensure consistent sorting by final scores
     _matchedSchemes = _rankSchemes(_matchedSchemes);
+    final topSchemes = _matchedSchemes.take(3).toList();
+    final scores = topSchemes.map((s) => _schemeScores[s.schemeId] ?? 0).toList();
+    
+    debugPrint('📊 SCHEME DISPLAY: Total=${_matchedSchemes.length}, Showing=TOP 3');
+    debugPrint('📊 Top 3 Scores: ${scores.join(", ")}');
 
-    _addBot("Great! I found ${_matchedSchemes.length} scheme(s) for you:");
+    _addBot("Great! I found ${topSchemes.length} matching scheme(s) for you:");
 
     final queryText = (_initialProblemText ?? '').trim();
     final normalizedQuery = _normalizeText(queryText);
     final keywords = _expandProblemKeywords(_extractProblemKeywords(normalizedQuery));
 
-    for (final scheme in _matchedSchemes.take(3)) {
+    for (final scheme in topSchemes) {
       final score = _schemeScores[scheme.schemeId] ?? 0;
       final reason = _schemeProblemMatchReason(scheme, keywords, normalizedQuery);
       final keyBenefit = _schemeKeyBenefit(scheme);
@@ -511,10 +468,18 @@ Do NOT include any other text.''';
   // ELIGIBILITY FILTER (NO AI) - STRICT DATABASE-DRIVEN FILTERING
   // ===============================================================
   List<Scheme> _filterSchemes() {
-    // Do not eliminate schemes early based on age/category/income.
-    // All schemes should remain available for ranking by problem intent first.
-    debugPrint('🔍 Using all ${_allSchemes.length} schemes for ranking (no hard eligibility elimination)');
-    return _allSchemes;
+    try {
+      final filtered = EligibilityFilter.filterSchemes(
+        _allSchemes,
+        _profile,
+        initialProblemText: _initialProblemText,
+      );
+      debugPrint('🔍 Filtered ${_allSchemes.length} → ${filtered.length} schemes');
+      return filtered;
+    } catch (e) {
+      debugPrint('⚠️ EligibilityFilter error: $e — returning all schemes');
+      return _allSchemes;
+    }
   }
 
   /// Build a public welfare-friendly searchable string for each scheme
@@ -779,43 +744,17 @@ Do NOT include any other text.''';
     }
   }
 
-  /// Detect public welfare queries using both scheme fields and strong keywords
-  bool isPublicWelfareQuery(String text) {
-    final t = text.toLowerCase();
+  /// Public Welfare Exception Check
+  bool isPublicWelfareException(String query) {
+    final q = query.toLowerCase();
 
-    // 🔥 INTENT WORDS
-    const intentWords = [
-      'build', 'develop', 'construct', 'create', 'start', 'make',
-      'open', 'setup', 'establish', 'launch', 'improve', 'upgrade'
-    ];
+    final positiveRegex = RegExp(r'\b(garden|park|plantation|community infrastructure)\b');
+    final negativeRegex = RegExp(r'\b(student|job|farmer|personal benefit|business)\b');
 
-    // 🔥 DOMAIN WORDS (VERY IMPORTANT)
-    const domainWords = [
-      'garden', 'park', 'playground', 'tree', 'plantation', 'forest',
-      'road', 'drainage', 'sewage', 'water', 'toilet', 'sanitation',
-      'vendor', 'street', 'shop', 'market', 'tourism', 'temple',
-      'community', 'hall', 'camp', 'event', 'training', 'solar',
-      'electric', 'waste', 'recycle', 'green', 'environment'
-    ];
+    bool hasPositive = positiveRegex.hasMatch(q);
+    bool hasNegative = negativeRegex.hasMatch(q);
 
-    if (intentWords.any((w) => t.contains(w))) return true;
-    if (domainWords.any((w) => t.contains(w))) return true;
-
-    if (_dynamicPublicWelfareKeywords.isNotEmpty) {
-      if (_dynamicPublicWelfareKeywords.any((w) => t.contains(w))) {
-        return true;
-      }
-    }
-
-    for (final scheme in _allSchemes) {
-      if (scheme.schemeId.toUpperCase().startsWith('ENV')) {
-        if (_queryMatchesSchemeFields(scheme, t)) {
-          return true;
-        }
-      }
-    }
-
-    return false;
+    return hasPositive && !hasNegative;
   }
 
   bool _queryMatchesSchemeFields(Scheme scheme, String query) {
@@ -923,14 +862,13 @@ Do NOT include any other text.''';
     _addBot(
         'I found ${results.length} public welfare scheme(s) for your request. Here are the best matches:');
 
-    final displayCount = results.length > 7 ? 7 : results.length;
+    final displayCount = results.length > 3 ? 3 : results.length;
     _matchedSchemes = results
         .take(displayCount)
         .map((entry) => entry['scheme'] as Scheme)
         .toList();
 
-    final topCount = displayCount >= 3 ? 3 : displayCount;
-    for (int i = 0; i < topCount; i++) {
+    for (int i = 0; i < displayCount; i++) {
       final scheme = results[i]['scheme'] as Scheme;
       final description = _shortSchemeDescription(scheme);
       final reason = _publicWelfareMatchReason(scheme, query);
@@ -939,12 +877,6 @@ Do NOT include any other text.''';
           : 'View details in the app.';
       _addBot(
           '${i + 1}. ${scheme.schemeName}\n$reason\n$description\n$detailLine');
-    }
-
-    for (int i = topCount; i < displayCount; i++) {
-      final scheme = results[i]['scheme'] as Scheme;
-      final description = _shortSchemeDescription(scheme);
-      _addBot('${i + 1}. ${scheme.schemeName}: $description');
     }
 
     if (results.length > displayCount) {
@@ -1067,12 +999,21 @@ Do NOT include any other text.''';
   // RANKING
   // ===============================================================
   List<Scheme> _rankSchemes(List<Scheme> schemes) {
+    // ⚠️ CRITICAL: This function MUST be called before displaying ANY schemes
+    // It ensures consistent scoring, sorting, and selection of top 3
+    
+    if (schemes.isEmpty) {
+      debugPrint('⚠️ RANK: Empty input list');
+      return [];
+    }
+    
     final queryText = (_initialProblemText ?? '').trim();
     final normalizedQuery = _normalizeText(queryText);
     final baseKeywords = _extractProblemKeywords(normalizedQuery);
     final keywords = _expandProblemKeywords(baseKeywords);
 
-    debugPrint('🔑 User keywords: ${keywords.toList()}');
+    debugPrint('🎯 RANK: Scoring ${schemes.length} schemes using query: "$queryText"');
+    debugPrint('🔑 RANK: Keywords: ${keywords.toList()}');
 
     final List<MapEntry<Scheme, int>> scored = [];
 
@@ -1082,13 +1023,29 @@ Do NOT include any other text.''';
       final finalScore = ((problemScore * 70) + (eligibilityScore * 30)) ~/ 100;
 
       scored.add(MapEntry(scheme, finalScore));
-      debugPrint(
-          '   🔎 ${scheme.schemeName}: problemScore=$problemScore eligibilityScore=$eligibilityScore finalScore=$finalScore');
+      
+      final schemeName = scheme.schemeName.length > 50 
+          ? scheme.schemeName.substring(0, 50) + "..." 
+          : scheme.schemeName;
+      debugPrint('   🔎 [$finalScore pts] $schemeName (problem=$problemScore, eligibility=$eligibilityScore)');
     }
 
+    // Sort by score descending (highest first)
     scored.sort((a, b) => b.value.compareTo(a.value));
+    
+    // Store scores for reference
     _schemeScores = {for (final e in scored) e.key.schemeId: e.value};
-    return scored.map((e) => e.key).toList();
+    
+    // Return sorted list
+    final ranked = scored.map((e) => e.key).toList();
+    
+    // Log top 3
+    if (ranked.isNotEmpty) {
+      final top3Scores = scored.take(3).map((e) => e.value).toList();
+      debugPrint('✅ RANK: Top 3 scores: $top3Scores');
+    }
+    
+    return ranked;
   }
 
   // ===============================================================

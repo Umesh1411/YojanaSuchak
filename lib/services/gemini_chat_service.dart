@@ -521,15 +521,68 @@ Benefits: ${scheme.benefits}
 
 Keep the explanation to 2-3 short sentences.''';
 
-      final response = await _model!.generateContent([Content.text(prompt)]).timeout(
-        const Duration(seconds: 20),
-      );
-
-      return response.text ?? 'This scheme matches your profile.';
+      // Use longer timeout and provide a local fallback if Gemini is slow/unavailable
+      try {
+        final response = await _model!.generateContent([Content.text(prompt)]).timeout(
+          const Duration(seconds: 40),
+          onTimeout: () {
+            debugPrint('⏱️ explainScheme timed out after 40s');
+            throw TimeoutException('explainScheme timed out after 40s');
+          },
+        );
+        return response.text ?? 'This scheme matches your profile.';
+      } on TimeoutException catch (te) {
+        debugPrint('⏱️ explainScheme TimeoutException: $te');
+        // Return a short deterministic local explanation instead of failing
+        return _localExplainScheme(profile, scheme);
+      }
     } catch (e) {
       debugPrint('GeminiChatService explainScheme error: $e');
       return 'This scheme matches your profile based on the details you provided.';
     }
+  }
+
+  /// Deterministic local explanation to use when Gemini times out or is unavailable.
+  /// Keeps to 2-3 short sentences and does not call external APIs.
+  String _localExplainScheme(UserProfile profile, Scheme scheme) {
+    final parts = <String>[];
+
+    // Occupation-based reason
+    if (profile.occupation != null &&
+        scheme.occupationEligible.toLowerCase() != 'any' &&
+        scheme.occupationEligible.toLowerCase().contains(profile.occupation!.toLowerCase())) {
+      parts.add('This scheme targets people working as ${profile.occupation} which matches your occupation.');
+    }
+
+    // Age reason
+    if (profile.age != null && (scheme.minAge != null || scheme.maxAge != null)) {
+      final min = scheme.minAge != null ? 'from ${scheme.minAge}' : '';
+      final max = scheme.maxAge != null ? ' up to ${scheme.maxAge}' : '';
+      parts.add('The age requirement ($min$max years) fits your age of ${profile.age}.');
+    }
+
+    // Income reason
+    if (profile.annualIncome != null && scheme.maxIncomeINR != null) {
+      if (profile.annualIncome! <= scheme.maxIncomeINR!) {
+        parts.add('Your annual income (₹${profile.annualIncome}) is within the limit for this benefit.');
+      }
+    }
+
+    // State reason
+    if (profile.state != null && scheme.state.isNotEmpty && scheme.state.toLowerCase() != 'india') {
+      if (profile.state!.toLowerCase() == scheme.state.toLowerCase()) {
+        parts.add('This is a state-level scheme for ${scheme.state}, which matches your state.');
+      }
+    }
+
+    // Fallback brief description
+    if (parts.isEmpty) {
+      parts.add('This scheme provides ${scheme.benefitType.toLowerCase()} benefits which may help with ${scheme.benefits.isNotEmpty ? scheme.benefits.split('.').first : 'your stated need'}.');
+    }
+
+    // Keep only first 3 sentences and join
+    final result = parts.take(3).join(' ');
+    return result.trim();
   }
 
   // Removed _parseRecommendations - no longer needed as we return all eligible schemes directly

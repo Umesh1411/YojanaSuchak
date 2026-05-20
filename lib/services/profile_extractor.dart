@@ -73,7 +73,7 @@ class ProfileExtractor {
     
     // Lakh format (100,000 units)
     // Handles: "5 lakh", "5lakh", "5 lakh rupees", etc.
-    final lakhRegex = RegExp(r'(\d+(?:\.\d+)?)\s*(?:lakh|lac)');
+    final lakhRegex = RegExp(r'(\d+(?:\.\d+)?)\s*(?:lakh|lakha|lac)');
     final lakhMatch = lakhRegex.firstMatch(cleaned);
     if (lakhMatch != null) {
       final d = double.tryParse(lakhMatch.group(1) ?? '0') ?? 0;
@@ -143,8 +143,14 @@ class ProfileExtractor {
   // ============== BASIC EXTRACTORS (NON-DESTRUCTIVE) ==============
   static int? extractAge(String text) {
     final cleaned = text.toLowerCase();
+    
+    // Prevent income values (e.g., "5 lakhs", "8 lakha", "50000") from being falsely parsed as age
+    final textWithoutIncome = cleaned
+        .replaceAll(RegExp(r'\b\d+(?:\.\d+)?\s*(?:lakh|lakha|lac|thousand|k|th)\b'), '')
+        .replaceAll(RegExp(r'\b\d{4,8}\b'), '');
+
     final numberRegex = RegExp(r'\b(\d{1,3})\b');
-    final match = numberRegex.firstMatch(cleaned);
+    final match = numberRegex.firstMatch(textWithoutIncome);
     if (match != null) {
       final v = int.tryParse(match.group(1) ?? '');
       if (v != null && v > 0 && v < 150) return v;
@@ -161,7 +167,7 @@ class ProfileExtractor {
       'sixty': 60,
     };
     for (final e in wordNumbers.entries) {
-      if (cleaned.contains(e.key)) return e.value;
+      if (textWithoutIncome.contains(e.key)) return e.value;
     }
     return null;
   }
@@ -228,6 +234,30 @@ class ProfileExtractor {
     };
     for (final e in map.entries) {
       if (cleaned.contains(e.key)) return e.value;
+    }
+    // Infer farming occupation from agricultural / irrigation / solar pump context
+    final farmKeywords = [
+      'solar pump',
+      'solar pumps',
+      'solar-panel',
+      'solar panel',
+      'irrigation',
+      'tractor',
+      'farm',
+      'farming',
+      'agriculture',
+      'crop',
+      'dairy',
+      'animal husbandry',
+      'fishery',
+      'fisherman',
+      'livestock',
+      'orchard',
+      'plantation',
+      'greenhouse',
+    ];
+    if (farmKeywords.any(cleaned.contains)) {
+      return 'Farmer';
     }
     return null;
   }
