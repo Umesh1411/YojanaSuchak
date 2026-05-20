@@ -176,6 +176,12 @@ class _EnhancedSchemeFinderScreenState extends State<EnhancedSchemeFinderScreen>
       _initialProblemCaptured = true;
       _initialProblemText = message;
       debugPrint('📝 First message captured as problem description');
+
+      if (!_geminiReady) {
+        debugPrint('🚫 Gemini unavailable; filtering schemes directly');
+        _matchedSchemes = _rankSchemes(_filterSchemes());
+        await _showSchemeResults();
+      }
     }
 
     // Step 0: Detect user's language and LOCK it for the session
@@ -209,17 +215,6 @@ class _EnhancedSchemeFinderScreenState extends State<EnhancedSchemeFinderScreen>
       if (!mounted) return;
       setState(() => _isLoading = false);
       return;
-    }
-
-    // Step 3: First message initialization for Gemini flow (only if not welfare)
-    if (!_initialProblemCaptured) {
-      // If Gemini is disabled, go straight to filtering
-      if (!_geminiReady) {
-        debugPrint('🚫 Gemini unavailable; filtering schemes directly');
-        _matchedSchemes = _rankSchemes(_filterSchemes());
-        await _showSchemeResults();
-      }
-      // If Gemini is enabled, continue to Step 4 for follow-up decision
     }
 
     // Step 3: Only call Gemini AFTER first message AND only if Gemini is ready
@@ -511,10 +506,20 @@ Do NOT include any other text.''';
   // ELIGIBILITY FILTER (NO AI) - STRICT DATABASE-DRIVEN FILTERING
   // ===============================================================
   List<Scheme> _filterSchemes() {
-    // Do not eliminate schemes early based on age/category/income.
-    // All schemes should remain available for ranking by problem intent first.
-    debugPrint('🔍 Using all ${_allSchemes.length} schemes for ranking (no hard eligibility elimination)');
-    return _allSchemes;
+    // Use the EligibilityFilter service to find the best candidate schemes
+    // based on profile, initial problem description, and scheme eligibility.
+    try {
+      final filtered = EligibilityFilter.filterSchemes(
+        _allSchemes,
+        _profile,
+        initialProblemText: _initialProblemText,
+      );
+      debugPrint('🔍 Filtered ${_allSchemes.length} → ${filtered.length} schemes');
+      return filtered;
+    } catch (e) {
+      debugPrint('⚠️ EligibilityFilter error: $e — returning all schemes');
+      return _allSchemes;
+    }
   }
 
   /// Build a public welfare-friendly searchable string for each scheme
@@ -783,6 +788,8 @@ Do NOT include any other text.''';
   bool isPublicWelfareQuery(String text) {
     final t = text.toLowerCase();
 
+    if (t.length < 15) return false;
+
     // 🔥 INTENT WORDS
     const intentWords = [
       'build', 'develop', 'construct', 'create', 'start', 'make',
@@ -798,20 +805,23 @@ Do NOT include any other text.''';
       'electric', 'waste', 'recycle', 'green', 'environment'
     ];
 
-    if (intentWords.any((w) => t.contains(w))) return true;
-    if (domainWords.any((w) => t.contains(w))) return true;
+    final bool hasIntent = intentWords.any((w) => t.contains(w));
+    final bool hasDomain = domainWords.any((w) => t.contains(w));
 
-    if (_dynamicPublicWelfareKeywords.isNotEmpty) {
-      if (_dynamicPublicWelfareKeywords.any((w) => t.contains(w))) {
-        return true;
-      }
-    }
+    if (hasIntent && hasDomain) return true;
 
     for (final scheme in _allSchemes) {
-      if (scheme.schemeId.toUpperCase().startsWith('ENV')) {
-        if (_queryMatchesSchemeFields(scheme, t)) {
-          return true;
-        }
+      if (!scheme.schemeId.toUpperCase().startsWith('ENV')) continue;
+
+      final queryWords = t.split(RegExp(r'\s+')).where((w) => w.length > 2).toList();
+      if (queryWords.isEmpty) continue;
+
+      final searchText = _schemeSearchText(scheme);
+      final keywordMatches = queryWords.where((w) => searchText.contains(w)).length;
+      final strongPhraseMatch = queryWords.length > 1 && searchText.contains(queryWords.join(' '));
+
+      if (keywordMatches >= 2 || strongPhraseMatch) {
+        return true;
       }
     }
 

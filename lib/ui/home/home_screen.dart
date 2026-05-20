@@ -13,6 +13,7 @@ import '../contact/contact_us_screen.dart';
 import '../settings/settings_screen.dart';
 import '../rate_us/rate_us_screen.dart';
 import '../admin/admin_scheme_upload_screen.dart';
+import 'widgets/scheme_carousel_ad.dart';
 
 /// Main Home Screen with Drawer Menu
 class HomeScreen extends StatefulWidget {
@@ -380,6 +381,11 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
                 const SizedBox(height: 32),
+                
+                // Sliding smart carousel component for government scheme advertisements
+                const SchemeCarouselAd(),
+                const SizedBox(height: 32),
+
                 // Quick stats or info cards
                 Row(
                   children: [

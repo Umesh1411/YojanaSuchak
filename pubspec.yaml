@@ -23,6 +23,7 @@ dependencies:
   intl: ^0.20.2
   smooth_page_indicator: ^1.2.0+3
   url_launcher: ^6.3.0
+  carousel_slider: ^5.0.0
   package_info_plus: ^8.0.2
   flutter_rating_bar: ^4.0.1
   mailer: ^6.0.1
