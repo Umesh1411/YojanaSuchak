@@ -16,7 +16,10 @@ class CsvUploaderService {
       debugPrint('✅ Parsed ${schemes.length} schemes from picked CSV');
 
       if (schemes.isEmpty) {
-        return UploadResult(success: false, message: 'No valid schemes found in the CSV.', schemesUploaded: 0);
+        return UploadResult(
+            success: false,
+            message: 'No valid schemes found in the CSV.',
+            schemesUploaded: 0);
       }
 
       int uploaded = 0;
@@ -26,7 +29,10 @@ class CsvUploaderService {
           final docId = scheme.schemeId.isNotEmpty
               ? scheme.schemeId
               : _generateDocId(scheme.schemeName);
-          await _firestore.collection('schemes').doc(docId).set(scheme.toJson());
+          await _firestore
+              .collection('schemes')
+              .doc(docId)
+              .set(scheme.toJson());
           uploaded++;
         } catch (e) {
           debugPrint('❌ Failed to upload ${scheme.schemeName}: $e');
@@ -36,12 +42,16 @@ class CsvUploaderService {
       FirestoreService.clearCache();
       return UploadResult(
         success: uploaded > 0,
-        message: 'Uploaded $uploaded scheme(s) successfully${failed > 0 ? ", $failed failed" : ""}.',
+        message:
+            'Uploaded $uploaded scheme(s) successfully${failed > 0 ? ", $failed failed" : ""}.',
         schemesUploaded: uploaded,
         schemesFailed: failed,
       );
     } catch (e) {
-      return UploadResult(success: false, message: 'Error processing CSV: $e', schemesUploaded: 0);
+      return UploadResult(
+          success: false,
+          message: 'Error processing CSV: $e',
+          schemesUploaded: 0);
     }
   }
 
@@ -248,6 +258,8 @@ class CsvUploaderService {
       officialApplyLink: row['Official_Apply_Link'] ?? '',
       officialSource: row['Official_Source'] ?? '',
       remarks: row['Remarks'] ?? '',
+      isPublicScheme: false,
+      tags: [],
     );
   }
 

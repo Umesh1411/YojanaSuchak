@@ -6,7 +6,10 @@ import '../../core/utils/app_strings.dart';
 import '../../core/services/auth_service.dart';
 import '../../core/services/language_service.dart';
 import '../../core/services/localization_service.dart';
+import '../../services/firestore_service.dart';
+import '../../models/scheme.dart';
 import '../scheme_finder/enhanced_scheme_finder_screen.dart';
+import '../scheme_finder/scheme_detail_screen.dart';
 import '../profile/profile_screen.dart';
 import '../my_schemes/my_schemes_screen.dart';
 import '../contact/contact_us_screen.dart';
@@ -24,12 +27,16 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final AuthService _authService = AuthService();
+  final FirestoreService _firestoreService = FirestoreService();
   Locale _currentLocale = LanguageService.defaultLocale;
+  List<Scheme> _publicSchemes = [];
+  bool _isLoadingPublicSchemes = true;
 
   @override
   void initState() {
     super.initState();
     _loadLanguage();
+    _loadPublicSchemes();
   }
 
   Future<void> _loadLanguage() async {
@@ -37,6 +44,26 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() {
       _currentLocale = locale;
     });
+  }
+
+  Future<void> _loadPublicSchemes() async {
+    try {
+      final schemes = await _firestoreService.fetchSchemes();
+      setState(() {
+        _publicSchemes =
+            schemes.where((scheme) => scheme.isPublicScheme).toList();
+      });
+    } catch (_) {
+      setState(() {
+        _publicSchemes = [];
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoadingPublicSchemes = false;
+        });
+      }
+    }
   }
 
   String _getUserName() {
@@ -411,11 +438,126 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ],
                 ),
+                const SizedBox(height: 32),
+                _buildPublicSchemesSection(),
               ],
             ),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildPublicSchemesSection() {
+    if (_isLoadingPublicSchemes) {
+      return const Padding(
+        padding: EdgeInsets.symmetric(vertical: 16.0),
+        child: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (_publicSchemes.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Environmental & Public Schemes',
+          style: const TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: AppTheme.textPrimary,
+          ),
+        ),
+        const SizedBox(height: 8),
+        SizedBox(
+          height: 230,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemBuilder: (context, index) {
+              final scheme = _publicSchemes[index];
+              return GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => SchemeDetailScreen(scheme: scheme),
+                    ),
+                  );
+                },
+                child: SizedBox(
+                  width: 260,
+                  child: Card(
+                    elevation: 2,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            scheme.schemeName,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            scheme.department,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey.shade700,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          Expanded(
+                            child: Text(
+                              scheme.allBenefitsDescription,
+                              maxLines: 5,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(fontSize: 14),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          Wrap(
+                            spacing: 6,
+                            runSpacing: 6,
+                            children: scheme.tags
+                                .take(3)
+                                .map((tag) => Chip(
+                                      visualDensity: VisualDensity.compact,
+                                      label: Text(tag),
+                                      backgroundColor: AppTheme.primaryColor
+                                          .withOpacity(0.15),
+                                      labelStyle: const TextStyle(
+                                        fontSize: 12,
+                                        color: AppTheme.primaryColor,
+                                      ),
+                                    ))
+                                .toList(),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            },
+            separatorBuilder: (_, __) => const SizedBox(width: 16),
+            itemCount: _publicSchemes.length,
+          ),
+        ),
+        const SizedBox(height: 24),
+      ],
     );
   }
 

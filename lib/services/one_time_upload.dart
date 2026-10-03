@@ -219,6 +219,8 @@ class OneTimeUploadService {
       officialApplyLink: row['Official_Apply_Link'] ?? '',
       officialSource: row['Official_Source'] ?? '',
       remarks: row['Remarks'] ?? '',
+      isPublicScheme: false,
+      tags: [],
     );
   }
 

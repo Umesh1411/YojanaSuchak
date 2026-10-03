@@ -146,6 +146,32 @@ class ChatService {
     return missing;
   }
 
+  bool _isPublicSchemeProblem(String problem) {
+    final text = problem.toLowerCase();
+    final keywords = [
+      'public',
+      'environment',
+      'environmental',
+      'urban',
+      'city',
+      'metro',
+      'park',
+      'clean',
+      'waste',
+      'swachh',
+      'sustainable',
+      'green',
+      'river',
+      'water',
+      'pollution',
+      'garden',
+      'street',
+      'community',
+      'public space',
+    ];
+    return keywords.any((keyword) => text.contains(keyword));
+  }
+
   String? detectSectorFromProblem(String problem) {
     final p = problem.toLowerCase();
     final mapping = {
@@ -179,6 +205,10 @@ class ChatService {
 
   Future<String> nextQuestion(
       String userProblem, Map<String, dynamic> profile, Locale locale) async {
+    if (_isPublicSchemeProblem(userProblem)) {
+      return '';
+    }
+
     // Ensure sector asked first
     if (!profile.containsKey('sector') ||
         profile['sector'] == null ||

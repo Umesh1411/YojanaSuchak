@@ -163,15 +163,24 @@ class _EnhancedSchemeFinderScreenState extends State<EnhancedSchemeFinderScreen>
       // If Gemini is disabled, go straight to filtering
       if (!_geminiReady) {
         debugPrint('🚫 Gemini unavailable; filtering schemes directly');
-        _matchedSchemes = _rankSchemes(_filterSchemes());
+        _matchedSchemes = _rankSchemes(_resolveSchemeSetForProblem(message));
         await _showSchemeResults();
+        return;
       }
       // If Gemini is enabled, continue to Step 3 for follow-up decision
     }
 
     // Step 3: Only call Gemini AFTER first message AND only if Gemini is ready
     if (_initialProblemCaptured && _geminiReady) {
-      final filteredSchemes = _filterSchemes();
+      final filteredSchemes = _resolveSchemeSetForProblem(message);
+      if (_isPublicSchemeProblem(message) && filteredSchemes.isNotEmpty) {
+        debugPrint(
+            '🌿 Public/environmental query detected; skipping follow-up and showing results');
+        _matchedSchemes = _rankSchemes(filteredSchemes);
+        await _showSchemeResults();
+        return;
+      }
+
       final profileMissing = _getProfileMissingFields();
 
       // CRITICAL: Distinguish "no schemes matched" from "profile incomplete"
@@ -375,7 +384,8 @@ Do NOT include any other text.''';
         return trimmed;
       } else {
         // If Gemini forgot the ASK: prefix but wrote a question, accept it
-        debugPrint('⚠️ Gemini missing prefix: "$trimmed" — treating as question');
+        debugPrint(
+            '⚠️ Gemini missing prefix: "$trimmed" — treating as question');
         return 'ASK: $trimmed';
       }
     } catch (e) {
@@ -569,6 +579,45 @@ Do NOT include any other text.''';
     }
 
     return mapped;
+  }
+
+  List<Scheme> _resolveSchemeSetForProblem(String message) {
+    if (_isPublicSchemeProblem(message)) {
+      final publicSchemes =
+          _allSchemes.where((scheme) => scheme.isPublicScheme).toList();
+      if (publicSchemes.isNotEmpty) {
+        debugPrint(
+            '🌿 Public/environmental query detected; returning public schemes');
+        return publicSchemes;
+      }
+    }
+    return _filterSchemes();
+  }
+
+  bool _isPublicSchemeProblem(String message) {
+    final text = message.toLowerCase();
+    final keywords = [
+      'public',
+      'environment',
+      'environmental',
+      'urban',
+      'city',
+      'metro',
+      'park',
+      'clean',
+      'swachh',
+      'waste',
+      'sustainable',
+      'green',
+      'river',
+      'water',
+      'pollution',
+      'garden',
+      'street',
+      'community',
+      'public space',
+    ];
+    return keywords.any((keyword) => text.contains(keyword));
   }
 
   // ===============================================================
@@ -789,13 +838,15 @@ Do NOT include any other text.''';
             Padding(
               padding: const EdgeInsets.all(8.0),
               child: Text(_emailResultMessage!,
-                  style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
+                  style: const TextStyle(
+                      color: Colors.green, fontWeight: FontWeight.bold)),
             ),
           Expanded(
             child: ListView.builder(
               controller: _scrollController,
               padding: const EdgeInsets.all(16),
-              itemCount: _messages.length + (_showSchemeSelection && _matchedSchemes.isNotEmpty ? 1 : 0),
+              itemCount: _messages.length +
+                  (_showSchemeSelection && _matchedSchemes.isNotEmpty ? 1 : 0),
               itemBuilder: (_, i) {
                 if (i < _messages.length) {
                   return _bubble(_messages[i]);
@@ -817,10 +868,10 @@ Do NOT include any other text.''';
   Widget _buildSaveCard() {
     final anySelected = _selectedSchemes.any((s) => s);
     final selectedCount = _selectedSchemes.where((s) => s).length;
-    final titleText = _sessionLanguage == 'hi' 
-        ? 'योजनाएं सहेजें' 
-        : _sessionLanguage == 'mr' 
-            ? 'योजना जतन करा' 
+    final titleText = _sessionLanguage == 'hi'
+        ? 'योजनाएं सहेजें'
+        : _sessionLanguage == 'mr'
+            ? 'योजना जतन करा'
             : 'Save Schemes';
     final subText = _sessionLanguage == 'hi'
         ? '🔖 चुनें, फिर सेव या ईमेल करें'
@@ -832,11 +883,13 @@ Do NOT include any other text.''';
       elevation: 4,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: AppTheme.primaryColor.withOpacity(0.4), width: 1.5),
+        side: BorderSide(
+            color: AppTheme.primaryColor.withOpacity(0.4), width: 1.5),
       ),
       child: ExpansionTile(
         initiallyExpanded: true,
-        leading: const Icon(Icons.bookmark_add_outlined, color: AppTheme.primaryColor),
+        leading: const Icon(Icons.bookmark_add_outlined,
+            color: AppTheme.primaryColor),
         title: Text(
           anySelected ? '$titleText  (✓ $selectedCount)' : titleText,
           style: const TextStyle(
@@ -849,7 +902,8 @@ Do NOT include any other text.''';
           ..._matchedSchemes.asMap().entries.map((entry) {
             int idx = entry.key;
             final scheme = entry.value;
-            final selected = _selectedSchemes.length > idx && _selectedSchemes[idx];
+            final selected =
+                _selectedSchemes.length > idx && _selectedSchemes[idx];
             return ListTile(
               onTap: () {
                 setState(() {
@@ -873,9 +927,11 @@ Do NOT include any other text.''';
                   color: selected ? AppTheme.primaryColor : Colors.black87,
                 ),
               ),
-              subtitle: Text(scheme.department, style: const TextStyle(fontSize: 12)),
+              subtitle:
+                  Text(scheme.department, style: const TextStyle(fontSize: 12)),
               trailing: selected
-                  ? const Icon(Icons.check_circle, color: Colors.green, size: 20)
+                  ? const Icon(Icons.check_circle,
+                      color: Colors.green, size: 20)
                   : null,
             );
           }),
@@ -888,15 +944,21 @@ Do NOT include any other text.''';
                   onPressed: anySelected && !_emailSending
                       ? () async {
                           setState(() => _emailSending = true);
-                          await _saveSelectedSchemesAndSendEmail(sendEmail: false);
+                          await _saveSelectedSchemesAndSendEmail(
+                              sendEmail: false);
                         }
                       : null,
                   icon: const Icon(Icons.bookmark_add),
-                  label: Text(_sessionLanguage == 'hi' ? 'सहेजें (Save)' : _sessionLanguage == 'mr' ? 'जतन करा (Save)' : 'Save to My Schemes'),
+                  label: Text(_sessionLanguage == 'hi'
+                      ? 'सहेजें (Save)'
+                      : _sessionLanguage == 'mr'
+                          ? 'जतन करा (Save)'
+                          : 'Save to My Schemes'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppTheme.primaryColor,
                     foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10)),
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -904,13 +966,19 @@ Do NOT include any other text.''';
                   onPressed: anySelected && !_emailSending
                       ? () async {
                           setState(() => _emailSending = true);
-                          await _saveSelectedSchemesAndSendEmail(sendEmail: true);
+                          await _saveSelectedSchemesAndSendEmail(
+                              sendEmail: true);
                         }
                       : null,
                   icon: const Icon(Icons.email_outlined),
-                  label: Text(_sessionLanguage == 'hi' ? 'ईमेल करें (Email)' : _sessionLanguage == 'mr' ? 'ईमेल करा (Email)' : 'Save & Email Me'),
+                  label: Text(_sessionLanguage == 'hi'
+                      ? 'ईमेल करें (Email)'
+                      : _sessionLanguage == 'mr'
+                          ? 'ईमेल करा (Email)'
+                          : 'Save & Email Me'),
                   style: OutlinedButton.styleFrom(
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10)),
                   ),
                 ),
               ],

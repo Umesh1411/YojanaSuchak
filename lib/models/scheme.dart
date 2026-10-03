@@ -26,6 +26,10 @@ class Scheme {
   final String benefitFrequency; // Monthly, Yearly, One-time, etc.
   final String allBenefitsDescription;
 
+  // Public / environmental scheme metadata
+  final bool isPublicScheme;
+  final List<String> tags;
+
   // Application Details
   final String applicationMode; // Online, Offline, etc.
   final String applicationDeadline; // Open, As notified, etc.
@@ -68,6 +72,8 @@ class Scheme {
     required this.benefitAmount,
     required this.benefitFrequency,
     required this.allBenefitsDescription,
+    required this.isPublicScheme,
+    required this.tags,
     required this.applicationMode,
     required this.applicationDeadline,
     required this.importantDocuments,
@@ -151,6 +157,11 @@ class Scheme {
         benefitAmount: json['benefitAmount'] as String? ?? '',
         benefitFrequency: json['benefitFrequency'] as String? ?? '',
         allBenefitsDescription: json['allBenefitsDescription'] as String? ?? '',
+        isPublicScheme: json['isPublicScheme'] as bool? ?? false,
+        tags: (json['tags'] as List<dynamic>?)
+                ?.map((e) => e.toString())
+                .toList() ??
+            [],
         applicationMode: json['applicationMode'] as String? ?? 'Online',
         applicationDeadline: json['applicationDeadline'] as String? ?? 'Open',
         importantDocuments: (json['importantDocuments'] as List<dynamic>?)
@@ -193,6 +204,8 @@ class Scheme {
         officialApplyLink: '',
         officialSource: '',
         remarks: '',
+        isPublicScheme: false,
+        tags: [],
       );
     }
   }
@@ -220,6 +233,8 @@ class Scheme {
       'benefitAmount': benefitAmount,
       'benefitFrequency': benefitFrequency,
       'allBenefitsDescription': allBenefitsDescription,
+      'isPublicScheme': isPublicScheme,
+      'tags': tags,
       'applicationMode': applicationMode,
       'applicationDeadline': applicationDeadline,
       'importantDocuments': importantDocuments,
