@@ -141,13 +141,45 @@ class ProfileExtractor {
   }
 
   // ============== BASIC EXTRACTORS (NON-DESTRUCTIVE) ==============
+  static bool _containsIncomeHint(String text) {
+    final cleaned = text.toLowerCase();
+    return RegExp(r'\b(income|salary|earnings?|annual|per year|per annum|rupees|rs\.?|lakh|lac|thousand|k)\b')
+        .hasMatch(cleaned);
+  }
+
+  static bool _containsAgeHint(String text) {
+    final cleaned = text.toLowerCase();
+    return RegExp(r'\b(age|how old|years? old|yrs?|year old|old|aged)\b')
+        .hasMatch(cleaned);
+  }
+
   static int? extractAge(String text) {
     final cleaned = text.toLowerCase();
+
+    // Require explicit age context for ambiguous numeric responses.
+    final ageContextMatch =
+        RegExp(r'(\d{1,3})\s*(?:year|yr|years|yrs)\s*old').firstMatch(cleaned);
+    if (ageContextMatch != null) {
+      final age = int.tryParse(ageContextMatch.group(1) ?? '');
+      if (age != null && age > 0 && age < 150) {
+        return age;
+      }
+    }
+
+    final hasAgeHint = _containsAgeHint(cleaned);
+    final hasIncomeHint = _containsIncomeHint(cleaned);
+
+    if (!hasAgeHint && hasIncomeHint) {
+      return null;
+    }
+
     final numberRegex = RegExp(r'\b(\d{1,3})\b');
     final match = numberRegex.firstMatch(cleaned);
     if (match != null) {
       final v = int.tryParse(match.group(1) ?? '');
-      if (v != null && v > 0 && v < 150) return v;
+      if (v != null && v > 0 && v < 130) {
+        return v;
+      }
     }
 
     // Simple word-based mapping (basic support)

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:carousel_slider/carousel_slider.dart';
+import 'package:carousel_slider/carousel_controller.dart' as cs;
 import 'package:url_launcher/url_launcher.dart';
 import '../../../models/scheme_ad.dart';
 
@@ -11,7 +12,7 @@ class SchemeCarouselAd extends StatefulWidget {
 }
 
 class _SchemeCarouselAdState extends State<SchemeCarouselAd> {
-  final CarouselSliderController _carouselController = CarouselSliderController();
+  final cs.CarouselSliderController _carouselController = cs.CarouselSliderController();
   int _currentIndex = 0;
   final List<SchemeAd> _schemes = SchemeAd.featuredSchemes;
 

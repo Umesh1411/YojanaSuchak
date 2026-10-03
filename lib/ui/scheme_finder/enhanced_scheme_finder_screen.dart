@@ -227,7 +227,7 @@ class _EnhancedSchemeFinderScreenState extends State<EnhancedSchemeFinderScreen>
       final profileComplete = profileMissing.isEmpty;
 
       debugPrint(
-          '📊 State: hasSchemes=$hasSchemes, profileComplete=$profileComplete, followUp=$_followUpCount/5');
+          '📊 State: hasSchemes=$hasSchemes, profileComplete=$profileComplete, followUp=$_followUpCount/7');
 
       // Compute which fields are required by schemes that DID match
       _requiredFields =
@@ -241,26 +241,24 @@ class _EnhancedSchemeFinderScreenState extends State<EnhancedSchemeFinderScreen>
       final mergedMissingFields =
           hasSchemes ? _requiredFields.union(profileMissing) : profileMissing;
 
-      // Compute which fields we haven't asked about yet
+      // Compute which fields still need to be asked
       final missingToAsk = mergedMissingFields
-          .where((field) =>
-              !_askedQuestions.contains(field) && !_isFieldFilled(field))
+          .where((field) => !_isFieldFilled(field))
           .toSet();
 
       debugPrint('❓ To ask: $missingToAsk (total asked: $_askedQuestions)');
 
       // DECISION LOGIC:
       // 1. If profile complete AND schemes matched → show results
-      // 2. If profile complete BUT no schemes → ask 1-2 last-resort clarifying Qs (soft limit +2)
-      // 3. If profile incomplete → ask missing fields (soft limit at 5, hard limit at 7)
+      // 2. If profile complete BUT no schemes → ask 1-2 last-resort clarifying Qs
+      // 3. If profile incomplete → keep asking missing fields until hard limit at 7
       // 4. Never ask if missingToAsk is empty
 
       final shouldShowResults =
           (profileComplete && hasSchemes) || (_followUpCount >= 7);
       final allowEmergencyQuestions =
           !hasSchemes && profileComplete && _followUpCount < 7;
-      final normalQuestioning = !profileComplete && _followUpCount < 5;
-      final softLimitReached = _followUpCount >= 5 && missingToAsk.length <= 1;
+      final normalQuestioning = !profileComplete && _followUpCount < 7;
 
       if (missingToAsk.isEmpty) {
         // No more fields to ask about
@@ -270,11 +268,6 @@ class _EnhancedSchemeFinderScreenState extends State<EnhancedSchemeFinderScreen>
       } else if (shouldShowResults) {
         // Hard stop at 7 questions or profile complete + schemes found
         debugPrint('🛑 Showing results (profile complete or hard limit)');
-        _matchedSchemes = _rankSchemes(filteredSchemes);
-        await _showSchemeResults();
-      } else if (softLimitReached && !allowEmergencyQuestions) {
-        // Soft limit: stop unless we have emergency questions to ask
-        debugPrint('⚠️ Soft limit reached; showing results');
         _matchedSchemes = _rankSchemes(filteredSchemes);
         await _showSchemeResults();
       } else if (normalQuestioning || allowEmergencyQuestions) {
@@ -290,11 +283,45 @@ class _EnhancedSchemeFinderScreenState extends State<EnhancedSchemeFinderScreen>
         );
 
         if (geminiDecision == null) {
+          if (!profileComplete) {
+            final fallbackQuestion = _buildFallbackQuestion(missingToAsk);
+            if (fallbackQuestion.isNotEmpty) {
+              _followUpCount++;
+              final askedFields = _fieldsMentionedInQuestion(fallbackQuestion, missingToAsk);
+              if (askedFields.isEmpty) {
+                askedFields.add(missingToAsk.first);
+              }
+              for (final f in askedFields) {
+                _askedQuestions.add(f);
+              }
+              _addBot(fallbackQuestion);
+              debugPrint(
+                  '⚠️ Gemini failed; asking fallback question instead (fields: $askedFields)');
+              setState(() => _isLoading = false);
+              return;
+            }
+          }
+
           debugPrint('🚨 Gemini failed → fallback to direct schemes');
           _matchedSchemes = _rankSchemes(filteredSchemes);
           await _showSchemeResults();
-          return; // 🔥 CRITICAL: prevent follow-up logic
         } else if (geminiDecision == 'DONE') {
+          if (!profileComplete) {
+            final fallbackQuestion = _buildFallbackQuestion(missingToAsk);
+            _followUpCount++;
+            final askedFields = _fieldsMentionedInQuestion(fallbackQuestion, missingToAsk);
+            if (askedFields.isEmpty) {
+              askedFields.add(missingToAsk.first);
+            }
+            for (final f in askedFields) {
+              _askedQuestions.add(f);
+            }
+            _addBot(fallbackQuestion);
+            debugPrint(
+                '⚠️ Gemini returned DONE early; forcing another follow-up (fields: $askedFields)');
+            setState(() => _isLoading = false);
+            return;
+          }
           // Gemini says: enough info, show schemes
           debugPrint('✅ Gemini returned DONE; showing schemes');
           _matchedSchemes = _rankSchemes(filteredSchemes);
@@ -303,18 +330,32 @@ class _EnhancedSchemeFinderScreenState extends State<EnhancedSchemeFinderScreen>
           // Gemini generated a question
           _followUpCount++;
           final question = geminiDecision.substring(4).trim();
-
-          // Mark up to 2 missing fields as "asked" to prevent repeats
-          final toMark = missingToAsk.take(2).toList();
-          for (final f in toMark) {
+          final askedFields = _fieldsMentionedInQuestion(question, missingToAsk);
+          for (final f in askedFields) {
             _askedQuestions.add(f);
           }
 
           _addBot(question);
           debugPrint(
-              '❓ Follow-up $_followUpCount: $question (mode: ${allowEmergencyQuestions ? 'emergency' : 'normal'})');
+              '❓ Follow-up $_followUpCount: $question (mode: ${allowEmergencyQuestions ? 'emergency' : 'normal'}, fields: $askedFields)');
         } else {
-          // Unexpected format: treat as DONE
+          final fallbackQuestion = _buildFallbackQuestion(missingToAsk);
+          if (fallbackQuestion.isNotEmpty) {
+            _followUpCount++;
+            final askedFields = _fieldsMentionedInQuestion(fallbackQuestion, missingToAsk);
+            if (askedFields.isEmpty) {
+              askedFields.add(missingToAsk.first);
+            }
+            for (final f in askedFields) {
+              _askedQuestions.add(f);
+            }
+            _addBot(fallbackQuestion);
+            debugPrint(
+                '⚠️ Unexpected Gemini response: "$geminiDecision" — asking fallback question (fields: $askedFields)');
+            setState(() => _isLoading = false);
+            return;
+          }
+
           debugPrint(
               '⚠️ Unexpected Gemini response: "$geminiDecision" — treating as DONE');
           _matchedSchemes = _rankSchemes(filteredSchemes);
@@ -401,11 +442,13 @@ Your job:
 2. Combine 1–2 fields into a natural question if possible (e.g., "What is your age and income?")
 3. Do NOT ask any other questions
 4. Do NOT decide eligibility or scheme relevance
-5. Do NOT repeat these fields: ${_askedQuestions.join(", ")}
+5. If a missing field was asked before but the user has not provided it, you may ask it again more clearly.
 
 Respond with EXACTLY:
 - ASK: <your natural question asking for: $missingFieldsList>
-- DONE (if somehow all required info is present)
+- DONE (only when no required field remains missing; otherwise answer with ASK:)
+
+If you cannot comply, default to ASK: <question>.
 
 Do NOT include any other text.''';
 
@@ -419,15 +462,105 @@ Do NOT include any other text.''';
 
       // Parse response strictly — ENFORCE FORMAT
       final trimmed = response.trim();
-      if (!trimmed.startsWith('ASK:') && trimmed != 'DONE') {
-        debugPrint('🚫 Invalid Gemini response — forcing DONE');
+      if (trimmed == 'DONE') {
+        if (missingFields.isNotEmpty) {
+          debugPrint('⚠️ Gemini returned DONE while fields remain; using fallback ask');
+          return _buildFallbackQuestion(missingFields);
+        }
         return 'DONE';
       }
-      return trimmed;
+
+      if (trimmed.startsWith('ASK:')) {
+        return trimmed;
+      }
+
+      if (trimmed.endsWith('?') || trimmed.toLowerCase().contains('what') || trimmed.toLowerCase().contains('which') || trimmed.toLowerCase().contains('please')) {
+        return 'ASK: ${trimmed.replaceFirst(RegExp(r'^ASK:\s*', caseSensitive: false), '').trim()}';
+      }
+
+      debugPrint('⚠️ Gemini response not ASK or DONE; using fallback question');
+      return _buildFallbackQuestion(missingFields);
     } catch (e) {
       debugPrint('❌ Gemini error: $e');
       return null; // Trigger fallback
     }
+  }
+
+  String _buildFallbackQuestion(Set<String> missingFields) {
+    if (missingFields.isEmpty) return '';
+
+    final fieldLabels = {
+      'age': 'age',
+      'gender': 'gender',
+      'occupation': 'occupation',
+      'location': 'state and district',
+      'state': 'state',
+      'district': 'district',
+      'annualIncome': 'annual income',
+      'category': 'caste/category',
+    };
+
+    final order = [
+      'age',
+      'gender',
+      'location',
+      'occupation',
+      'annualIncome',
+      'category',
+    ];
+    final orderedMissing = order.where(missingFields.contains).toList();
+
+    if (orderedMissing.contains('location')) {
+      return 'ASK: Which state and district do you live in?';
+    }
+
+    if (orderedMissing.length == 1) {
+      return 'ASK: What is your ${fieldLabels[orderedMissing.first]}?';
+    }
+
+    final firstTwo = orderedMissing.take(2).toList();
+    final firstLabel = fieldLabels[firstTwo[0]] ?? firstTwo[0];
+    final secondLabel = fieldLabels[firstTwo[1]] ?? firstTwo[1];
+    return 'ASK: What is your $firstLabel and $secondLabel?';
+  }
+
+  Set<String> _fieldsMentionedInQuestion(
+      String question, Set<String> missingFields) {
+    final text = question.toLowerCase();
+    final found = <String>{};
+
+    final patterns = {
+      'age': RegExp(r'\bage\b|\bhow old\b|\byears? old\b'),
+      'gender': RegExp(r'\bgender\b|\bmale\b|\bfemale\b|\bother\b|\bsex\b'),
+      'occupation': RegExp(r'\boccupation\b|\bjob\b|\bwork\b|\bprofession\b|\bdoing\b'),
+      'location': RegExp(r'\bstate\b|\bdistrict\b|\blocation\b|\bwhere\b'),
+      'annualIncome': RegExp(r'\bincome\b|\bsalary\b|\bearnings?\b|\bannual\b|\bper year\b'),
+      'category': RegExp(r'\bcategory\b|\bcaste\b|\bsc\b|\bst\b|\bobc\b|\bgeneral\b|\breserved\b'),
+    };
+
+    for (final field in missingFields) {
+      final pattern = patterns[field];
+      if (pattern != null && pattern.hasMatch(text)) {
+        found.add(field);
+      }
+    }
+
+    // If Gemini asked a question that clearly refers to two fields, preserve both
+    if (found.isEmpty) {
+      if (text.contains('state') && text.contains('district')) {
+        if (missingFields.contains('location')) found.add('location');
+      }
+      if (text.contains('age') && text.contains('income')) {
+        if (missingFields.contains('age')) found.add('age');
+        if (missingFields.contains('annualIncome')) found.add('annualIncome');
+      }
+    }
+
+    if (found.isEmpty && missingFields.isNotEmpty) {
+      found.add(missingFields.first);
+    }
+
+    return found;
   }
 
   /// Display filtered schemes with explanations

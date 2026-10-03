@@ -86,13 +86,11 @@ class GeminiChatService {
 
       // Get response with timeout
       debugPrint('📡 Calling Gemini API...');
-        final response =
-          await _model!.generateContent([Content.text(prompt)]).timeout(
-        const Duration(seconds: 30),
+        final response = await _model!.generateContent([Content.text(prompt)]).timeout(
+        const Duration(seconds: 60),
         onTimeout: () {
-          debugPrint('⏱️ Request timed out after 30 seconds');
-          throw TimeoutException('Request timed out after 30 seconds',
-              const Duration(seconds: 30));
+          debugPrint('⏱️ Request timed out after 60 seconds');
+          throw TimeoutException('Request timed out after 60 seconds', const Duration(seconds: 60));
         },
       );
 
